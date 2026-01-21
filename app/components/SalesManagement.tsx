@@ -288,6 +288,9 @@ export default function SalesManagement() {
   const [selectedLeadIds, setSelectedLeadIds] = useState<number[]>([])
   const [selectAllChecked, setSelectAllChecked] = useState(false)
   const [showAssignSalesModal, setShowAssignSalesModal] = useState(false)
+  const [showEditNoteModal, setShowEditNoteModal] = useState(false)
+  const [showDeleteNoteConfirm, setShowDeleteNoteConfirm] = useState(false)
+  const [editNoteContent, setEditNoteContent] = useState('')
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false)
   const [showBulkStatusModal, setShowBulkStatusModal] = useState(false)
   const [selectedBulkStatus, setSelectedBulkStatus] = useState('')
@@ -5471,9 +5474,29 @@ export default function SalesManagement() {
 
                     {/* Ghi chú bổ sung */}
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <StickyNote className="w-5 h-5 text-yellow-500" />
-                        Ghi chú bổ sung
+                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <StickyNote className="w-5 h-5 text-yellow-500" />
+                          Ghi chú bổ sung
+                        </div>
+                        {selectedLead.notes && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setShowEditNoteModal(true)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Sửa ghi chú"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteNoteConfirm(true)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Xóa ghi chú"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </h4>
                       <div className="bg-gray-50 rounded-lg p-4">
                         <p className="text-sm text-gray-700 leading-relaxed">
@@ -7860,6 +7883,126 @@ export default function SalesManagement() {
                 {selectedFiles && selectedFiles.length > 0 && (
                   <span className="text-xs">({selectedFiles.length} file)</span>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sửa Ghi Chú */}
+      {showEditNoteModal && selectedLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Edit className="w-5 h-5 text-blue-600" />
+                Sửa ghi chú
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditNoteModal(false)
+                  setEditNoteContent('')
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nội dung ghi chú
+              </label>
+              <textarea
+                value={editNoteContent || selectedLead.notes || ''}
+                onChange={(e) => setEditNoteContent(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Nhập ghi chú..."
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowEditNoteModal(false)
+                  setEditNoteContent('')
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedLead) {
+                    const updatedLeads = leads.map(lead =>
+                      lead.id === selectedLead.id
+                        ? { ...lead, notes: editNoteContent || selectedLead.notes }
+                        : lead
+                    )
+                    setLeads(updatedLeads)
+                    setSelectedLead({ ...selectedLead, notes: editNoteContent || selectedLead.notes })
+                    setShowEditNoteModal(false)
+                    setEditNoteContent('')
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Xóa Ghi Chú */}
+      {showDeleteNoteConfirm && selectedLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                Xác nhận xóa
+              </h3>
+              <button
+                onClick={() => setShowDeleteNoteConfirm(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700">
+                Bạn có xác nhận xóa ghi chú này? Hành động này sẽ không được hoàn tác.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setShowDeleteNoteConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedLead) {
+                    const updatedLeads = leads.map(lead =>
+                      lead.id === selectedLead.id
+                        ? { ...lead, notes: '' }
+                        : lead
+                    )
+                    setLeads(updatedLeads)
+                    setSelectedLead({ ...selectedLead, notes: '' })
+                    setShowDeleteNoteConfirm(false)
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Đồng ý
               </button>
             </div>
           </div>

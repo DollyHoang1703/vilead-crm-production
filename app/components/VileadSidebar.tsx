@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  LayoutDashboard, 
-  UserPlus, 
-  Target, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  UserPlus,
+  Target,
+  BarChart3,
   Settings,
   Building2,
   UserCheck,
@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  CreditCard
+  CreditCard,
+  MessageSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -101,6 +102,15 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "📈",
       tooltip: "Quản lý KPI: Thiết lập và theo dõi chỉ số hiệu suất",
       roles: ["admin", "ceo", "leader"],
+      disabled: false
+    },
+    {
+      id: 'chat',
+      icon: MessageSquare,
+      label: "Quản lý Chat",
+      iconText: "💬",
+      tooltip: "Quản lý Chat: Tin nhắn và hội thoại với khách hàng",
+      roles: ["admin", "ceo", "leader", "sale"],
       disabled: false
     },
     /*

@@ -31,6 +31,8 @@ import {
   ChevronDown,
   ChevronRight,
   CheckCircle,
+  XCircle,
+  HelpCircle,
   AlertTriangle,
   Info,
   Lock,
@@ -216,7 +218,11 @@ interface IntegrationConfig {
   id: string
   type: 'zalo' | 'facebook'
   name: string
-  status: 'connected' | 'disconnected' | 'error'
+  status: 'connected' | 'pending' | 'disconnected' | 'error'
+  accountId: string // NEW: OA ID / Page ID
+  creator: string // NEW: Người tạo / Người liên hệ
+  createdAt: string // NEW: Thời gian tạo
+  badges: string[] // NEW: Array of badge labels
   config: {
     appId?: string
     token?: string
@@ -226,6 +232,7 @@ interface IntegrationConfig {
     syncLeads: boolean
     syncMessages: boolean
     syncForms: boolean
+    syncNotifications: boolean // NEW: Switch 2
   }
   permissions: {
     connect: string[] // user roles
@@ -678,6 +685,12 @@ export default function SettingsManagement() {
   const [showTagModal, setShowTagModal] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showIntegrationModal, setShowIntegrationModal] = useState(false)
+  const [selectedIntegrationType, setSelectedIntegrationType] = useState<'zalo-personal' | 'zalo-oa' | 'facebook' | ''>('')
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [showOALinkModal, setShowOALinkModal] = useState(false)
+  const [showOAPermissionModal, setShowOAPermissionModal] = useState(false)
+  const [qrCheckStatus, setQRCheckStatus] = useState<'pending' | 'checking' | 'success' | 'error'>('pending')
+  const [qrCheckInterval, setQRCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [selectedRole, setSelectedRole] = useState<any>(null)
   const [selectedStage, setSelectedStage] = useState<SalesStage | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null)
@@ -3102,51 +3115,121 @@ export default function SettingsManagement() {
   // Component: Integration Management
   const IntegrationManagement = () => {
     const [integrations, setIntegrations] = useState<IntegrationConfig[]>([
+      // Zalo 1 - Pending
       {
-        id: '1',
+        id: 'zalo-001',
         type: 'zalo',
-        name: 'Zalo OA - Công ty ABC',
-        status: 'connected',
+        name: 'Lưu Thị Hằng',
+        status: 'pending',
+        accountId: '1234567890',
+        creator: 'Nguyễn Văn A',
+        createdAt: '2025-01-15',
+        lastSync: '2025-01-22T08:48:00',
+        badges: ['Zalo'],
         config: {
-          appId: 'zalo_app_123',
+          appId: 'zalo_app_001',
           token: 'zalo_token_***',
-          webhookUrl: 'https://api.company.com/webhook/zalo',
-          syncFrequency: 5,
-          autoTags: ['Zalo OA', 'Tự động'],
+          webhookUrl: 'https://api.company.com/webhook/zalo/001',
+          syncFrequency: 30,
+          autoTags: ['Zalo OA'],
           syncLeads: true,
           syncMessages: true,
-          syncForms: true
+          syncForms: false,
+          syncNotifications: false
         },
         permissions: {
           connect: ['admin', 'manager'],
           edit: ['admin'],
           delete: ['admin']
         },
-        lastSync: '2025-06-11T08:30:00',
         errorLog: []
       },
+      // Zalo 2 - Connected
       {
-        id: '2',
-        type: 'facebook',
-        name: 'Fanpage - Công ty ABC',
-        status: 'error',
+        id: 'zalo-002',
+        type: 'zalo',
+        name: 'My Shop OA',
+        status: 'connected',
+        accountId: '0987654321',
+        creator: 'Trần Thị B',
+        createdAt: '2025-01-10',
+        lastSync: '2025-01-22T09:15:00',
+        badges: ['Zalo', 'Vip'],
         config: {
-          appId: 'fb_app_456',
-          token: 'fb_token_***',
-          webhookUrl: 'https://api.company.com/webhook/facebook',
-          syncFrequency: 15,
-          autoTags: ['Facebook', 'Fanpage'],
+          appId: 'zalo_app_002',
+          token: 'zalo_token_***',
+          webhookUrl: 'https://api.company.com/webhook/zalo/002',
+          syncFrequency: 60,
+          autoTags: ['Zalo OA', 'VIP'],
           syncLeads: true,
           syncMessages: true,
-          syncForms: false
+          syncForms: true,
+          syncNotifications: true
         },
         permissions: {
           connect: ['admin', 'manager'],
           edit: ['admin'],
           delete: ['admin']
         },
-        lastSync: '2025-06-10T15:20:00',
-        errorLog: ['Token hết hạn', 'Kết nối thất bại']
+        errorLog: []
+      },
+      // Facebook 1 - Pending
+      {
+        id: 'fb-001',
+        type: 'facebook',
+        name: 'My Shop OA',
+        status: 'pending',
+        accountId: '5555666677',
+        creator: 'Lê Văn C',
+        createdAt: '2025-01-18',
+        lastSync: '2025-01-22T08:30:00',
+        badges: ['Facebook'],
+        config: {
+          appId: 'fb_app_001',
+          token: 'fb_token_***',
+          webhookUrl: 'https://api.company.com/webhook/facebook/001',
+          syncFrequency: 30,
+          autoTags: ['Facebook'],
+          syncLeads: true,
+          syncMessages: false,
+          syncForms: false,
+          syncNotifications: true
+        },
+        permissions: {
+          connect: ['admin', 'manager'],
+          edit: ['admin'],
+          delete: ['admin']
+        },
+        errorLog: []
+      },
+      // Facebook 2 - Connected
+      {
+        id: 'fb-002',
+        type: 'facebook',
+        name: 'My Shop OA',
+        status: 'connected',
+        accountId: '8888999900',
+        creator: 'Phạm Thị D',
+        createdAt: '2025-01-12',
+        lastSync: '2025-01-22T09:00:00',
+        badges: ['Facebook', 'Vip'],
+        config: {
+          appId: 'fb_app_002',
+          token: 'fb_token_***',
+          webhookUrl: 'https://api.company.com/webhook/facebook/002',
+          syncFrequency: 60,
+          autoTags: ['Facebook', 'VIP'],
+          syncLeads: true,
+          syncMessages: true,
+          syncForms: true,
+          syncNotifications: true
+        },
+        permissions: {
+          connect: ['admin', 'manager'],
+          edit: ['admin'],
+          delete: ['admin']
+        },
+        errorLog: []
       }
     ])
 
@@ -3172,6 +3255,370 @@ export default function SettingsManagement() {
       }
     }
 
+    // Format date/time helper
+    const formatDateTime = (dateStr: string) => {
+      try {
+        const date = new Date(dateStr)
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+
+        if (dateStr.includes('T') || dateStr.includes(':')) {
+          return `${day}/${month}/${year} ${hours}:${minutes}`
+        }
+        return `${day}/${month}/${year}`
+      } catch {
+        return dateStr
+      }
+    }
+
+    // Status badge helper
+    const getStatusBadge = (status: string) => {
+      switch (status) {
+        case 'connected':
+          return <Badge className="bg-blue-500 text-white font-medium">ĐÃ KẾT NỐI</Badge>
+        case 'pending':
+          return <Badge className="bg-orange-500 text-white font-medium">MẤT KẾT NỐI</Badge>
+        case 'error':
+          return <Badge className="bg-red-500 text-white font-medium">LỖI</Badge>
+        default:
+          return null
+      }
+    }
+
+    // Sync frequency options
+    const syncFrequencyOptions = [
+      { value: 30, label: '30 phút' },
+      { value: 60, label: '60 phút' },
+      { value: 120, label: '2 giờ' },
+      { value: 240, label: '4 giờ' }
+    ]
+
+    // Handler: Sync integration
+    const handleSync = (id: string) => {
+      setIntegrations(prev => prev.map(i =>
+        i.id === id
+          ? { ...i, lastSync: new Date().toISOString() }
+          : i
+      ))
+    }
+
+    // Handler: Edit integration
+    const handleEdit = (id: string) => {
+      const integration = integrations.find(i => i.id === id)
+      if (integration) {
+        // TODO: Open edit modal
+        console.log('Edit:', integration)
+      }
+    }
+
+    // Handler: Delete integration
+    const handleDelete = (id: string) => {
+      if (confirm('Bạn có chắc muốn xóa tích hợp này?')) {
+        setIntegrations(prev => prev.filter(i => i.id !== id))
+      }
+    }
+
+    // Handler: Toggle switches
+    const handleToggleSwitch = (id: string, field: 'syncMessages' | 'syncNotifications', value: boolean) => {
+      setIntegrations(prev => prev.map(i =>
+        i.id === id
+          ? {
+              ...i,
+              config: {
+                ...i.config,
+                [field]: value
+              }
+            }
+          : i
+      ))
+    }
+
+    // Handler: Change sync frequency
+    const handleFrequencyChange = (id: string, frequency: number) => {
+      setIntegrations(prev => prev.map(i =>
+        i.id === id
+          ? {
+              ...i,
+              config: {
+                ...i.config,
+                syncFrequency: frequency
+              }
+            }
+          : i
+      ))
+    }
+
+    // Handler: Auto-check QR connection
+    const startQRCheck = () => {
+      setQRCheckStatus('checking')
+
+      // Simulate API check (replace with real API)
+      const interval = setInterval(() => {
+        // TODO: Call API to check if QR was scanned
+        // Example: fetch('/api/zalo/check-qr-status')
+
+        // Simulate success after random time (for demo)
+        const randomSuccess = Math.random() > 0.7
+        if (randomSuccess) {
+          setQRCheckStatus('success')
+          clearInterval(interval)
+          setQRCheckInterval(null)
+
+          // Add new integration to list
+          const newIntegration: IntegrationConfig = {
+            id: `zalo-personal-${Date.now()}`,
+            type: 'zalo',
+            name: 'Zalo Cá nhân',
+            status: 'connected',
+            accountId: 'zalo_personal_' + Math.random().toString(36).substr(2, 9),
+            creator: 'Người dùng hiện tại',
+            createdAt: new Date().toISOString(),
+            lastSync: new Date().toISOString(),
+            badges: ['Zalo', 'Cá nhân'],
+            config: {
+              syncFrequency: 30,
+              autoTags: ['Zalo Personal'],
+              syncLeads: false,
+              syncMessages: true,
+              syncForms: false,
+              syncNotifications: true
+            },
+            permissions: {
+              connect: ['admin'],
+              edit: ['admin'],
+              delete: ['admin']
+            },
+            errorLog: []
+          }
+
+          setIntegrations(prev => [...prev, newIntegration])
+
+          // Close modal after 1.5s
+          setTimeout(() => {
+            setShowQRModal(false)
+            setQRCheckStatus('pending')
+          }, 1500)
+        }
+      }, 3000) // Check every 3 seconds
+
+      setQRCheckInterval(interval)
+    }
+
+    // Handler: Cleanup on modal close
+    const closeQRModal = () => {
+      if (qrCheckInterval) {
+        clearInterval(qrCheckInterval)
+        setQRCheckInterval(null)
+      }
+      setQRCheckStatus('pending')
+      setShowQRModal(false)
+    }
+
+    // Handler: Integration type selection
+    const handleIntegrationTypeSelect = () => {
+      if (selectedIntegrationType === 'zalo-personal') {
+        setShowIntegrationModal(false)
+        setShowQRModal(true)
+        // Auto-start checking when modal opens
+        setTimeout(() => startQRCheck(), 500)
+      } else if (selectedIntegrationType === 'zalo-oa') {
+        setShowIntegrationModal(false)
+        setShowOALinkModal(true)
+      } else if (selectedIntegrationType === 'facebook') {
+        // Disabled for now
+        alert('Tính năng này sẽ được phát triển sau')
+      }
+    }
+
+    // Handler: Open OA Permission modal from OA Link modal
+    const handleOAConnect = () => {
+      setShowOALinkModal(false)
+      setShowOAPermissionModal(true)
+    }
+
+    // Handler: Grant OA permissions
+    const handleOAGrantPermission = () => {
+      // TODO: Call OAuth API
+      // For now, just add to integrations
+
+      const newIntegration: IntegrationConfig = {
+        id: `zalo-oa-${Date.now()}`,
+        type: 'zalo',
+        name: 'Pancake Viet Nam',
+        status: 'connected',
+        accountId: '3310249125083374313',
+        creator: 'Admin',
+        createdAt: new Date().toISOString(),
+        lastSync: new Date().toISOString(),
+        badges: ['Zalo', 'OA', 'Premium'],
+        config: {
+          appId: '4052056140860594003',
+          syncFrequency: 60,
+          autoTags: ['Zalo OA', 'Official'],
+          syncLeads: true,
+          syncMessages: true,
+          syncForms: true,
+          syncNotifications: true
+        },
+        permissions: {
+          connect: ['admin', 'manager'],
+          edit: ['admin'],
+          delete: ['admin']
+        },
+        errorLog: []
+      }
+
+      setIntegrations(prev => [...prev, newIntegration])
+      setShowOAPermissionModal(false)
+      setSelectedIntegrationType('')
+    }
+
+    // IntegrationCard Component
+    const IntegrationCard = ({ integration }: { integration: IntegrationConfig }) => {
+      return (
+        <Card className="hover:shadow-md transition-shadow">
+          {/* Header */}
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold">
+                {integration.name}
+              </CardTitle>
+              {getStatusBadge(integration.status)}
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {/* Info Section */}
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">
+                  {integration.type === 'zalo' ? 'OA ID:' : 'Page ID:'}
+                </span>
+                <span className="font-medium break-all">{integration.accountId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">
+                  {integration.type === 'zalo' ? 'Người tạo:' : 'Người liên hệ:'}
+                </span>
+                <span className="font-medium">{integration.creator}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Thời gian tạo:</span>
+                <span className="font-medium">
+                  {formatDateTime(integration.createdAt)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Đồng bộ lần cuối:</span>
+                <span className="font-medium">
+                  {formatDateTime(integration.lastSync)}
+                </span>
+              </div>
+            </div>
+
+            {/* Settings Section */}
+            <div className="border rounded-lg p-3 space-y-3 bg-gray-50">
+              {/* Switch 1: Sync Messages */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor={`sync-messages-${integration.id}`} className="text-sm">
+                  Đồng bộ Tin nhắn
+                </Label>
+                <Switch
+                  id={`sync-messages-${integration.id}`}
+                  checked={integration.config.syncMessages}
+                  onCheckedChange={(checked) =>
+                    handleToggleSwitch(integration.id, 'syncMessages', checked)
+                  }
+                />
+              </div>
+
+              {/* Switch 2: Sync Notifications */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor={`sync-notifications-${integration.id}`} className="text-sm">
+                  Đồng bộ Thông báo
+                </Label>
+                <Switch
+                  id={`sync-notifications-${integration.id}`}
+                  checked={integration.config.syncNotifications}
+                  onCheckedChange={(checked) =>
+                    handleToggleSwitch(integration.id, 'syncNotifications', checked)
+                  }
+                />
+              </div>
+
+              {/* Dropdown: Sync Frequency */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Tần suất đồng bộ:</span>
+                <Select
+                  value={String(integration.config.syncFrequency)}
+                  onValueChange={(value) =>
+                    handleFrequencyChange(integration.id, Number(value))
+                  }
+                >
+                  <SelectTrigger className="w-32 h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {syncFrequencyOptions.map(opt => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-2">
+              {/* Left - Badges */}
+              <div className="flex flex-wrap gap-1">
+                {integration.badges.map((badge, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {badge}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Right - Action Icons */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleSync(integration.id)}
+                  title="Đồng bộ ngay"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleDelete(integration.id)}
+                  title="Xóa"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => handleEdit(integration.id)}
+                  title="Chỉnh sửa"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -3186,200 +3633,435 @@ export default function SettingsManagement() {
           </Button>
         </div>
 
-        {/* Integration Cards */}
+        {/* 2-Column Grouped Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {integrations.map((integration) => (
-            <Card key={integration.id} className="relative">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {integration.type === 'zalo' ? (
-                      <MessageSquare className="w-8 h-8 text-blue-600" />
-                    ) : (
-                      <Facebook className="w-8 h-8 text-blue-600" />
-                    )}
-                    <div>
-                      <CardTitle className="text-lg">{integration.name}</CardTitle>
-                      <CardDescription>
-                        {integration.type === 'zalo' ? 'Zalo Official Account' : 'Facebook Fanpage'}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(integration.status)}
-                    <Badge className={getStatusColor(integration.status)}>
-                      {integration.status === 'connected' ? 'Đã kết nối' :
-                       integration.status === 'disconnected' ? 'Ngắt kết nối' :
-                       integration.status === 'error' ? 'Lỗi' : 'Đang kết nối'}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Sync Settings */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Đồng bộ Leads</span>
-                    <Switch checked={integration.config.syncLeads} />
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Đồng bộ Tin nhắn</span>
-                    <Switch checked={integration.config.syncMessages} />
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Đồng bộ Forms</span>
-                    <Switch checked={integration.config.syncForms} />
-                  </div>
-                </div>
+          {/* Left Column - Zalo */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <MessageSquare className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold">Zalo / Zalo OA</h3>
+            </div>
+            {integrations
+              .filter(i => i.type === 'zalo')
+              .map(integration => (
+                <IntegrationCard
+                  key={integration.id}
+                  integration={integration}
+                />
+              ))
+            }
+            {integrations.filter(i => i.type === 'zalo').length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center text-gray-500">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>Chưa có tích hợp Zalo OA</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-                {/* Sync Frequency */}
-                <div className="flex items-center justify-between text-sm">
-                  <span>Tần suất đồng bộ</span>
-                  <Badge variant="outline">{integration.config.syncFrequency} phút</Badge>
-                </div>
+          {/* Right Column - Facebook */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Facebook className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold">Facebook Fanpage</h3>
+            </div>
+            {integrations
+              .filter(i => i.type === 'facebook')
+              .map(integration => (
+                <IntegrationCard
+                  key={integration.id}
+                  integration={integration}
+                />
+              ))
+            }
+            {integrations.filter(i => i.type === 'facebook').length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center text-gray-500">
+                  <Facebook className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>Chưa có tích hợp Facebook</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
 
-                {/* Auto Tags */}
+        {/* Modal: Chọn loại tích hợp */}
+        {showIntegrationModal && (
+          <Dialog open={showIntegrationModal} onOpenChange={setShowIntegrationModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Thêm tích hợp mới</DialogTitle>
+                <DialogDescription>
+                  Chọn loại tích hợp bạn muốn kết nối với Vilead CRM
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm font-medium mb-2">Nhãn tự động</div>
-                  <div className="flex flex-wrap gap-1">
-                    {integration.config.autoTags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  <Label>Loại tích hợp</Label>
+                  <Select
+                    value={selectedIntegrationType}
+                    onValueChange={setSelectedIntegrationType}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Chọn loại tích hợp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zalo-personal">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Kết nối Zalo cá nhân
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="zalo-oa">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Kết nối Zalo OA
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="facebook" disabled>
+                        <div className="flex items-center gap-2 opacity-50">
+                          <Facebook className="w-4 h-4" />
+                          Kết nối Facebook Fanpage (Sắp ra mắt)
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Last Sync */}
-                <div className="text-sm text-gray-500">
-                  <Clock className="w-4 h-4 inline mr-1" />
-                  Đồng bộ cuối: {formatDate(integration.lastSync)}
-                </div>
-
-                {/* Error Log */}
-                {integration.errorLog.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                    <div className="text-sm font-medium text-red-800 mb-1">Lỗi gần đây:</div>
-                    {integration.errorLog.slice(0, 2).map((error, index) => (
-                      <div key={index} className="text-xs text-red-600">{error}</div>
-                    ))}
+                {selectedIntegrationType === 'zalo-personal' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                    <p className="text-sm text-blue-800">
+                      Quét mã QR bằng ứng dụng Zalo để kết nối tài khoản cá nhân với CRM
+                    </p>
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex justify-between pt-3 border-t">
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      Cài đặt
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="w-4 h-4 mr-1" />
-                      Đồng bộ
-                    </Button>
+                {selectedIntegrationType === 'zalo-oa' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <p className="text-sm text-yellow-800">
+                      <AlertTriangle className="w-4 h-4 inline mr-1" />
+                      Yêu cầu gói <strong>OA Nâng cao</strong> hoặc <strong>OA Premium</strong>
+                    </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <QrCode className="w-4 h-4 mr-1" />
-                    QR Code
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                )}
+              </div>
 
-        {/* Integration Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tích hợp hoạt động</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {integrations.filter(i => i.status === 'connected').length}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowIntegrationModal(false)
+                    setSelectedIntegrationType('')
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={handleIntegrationTypeSelect}
+                  disabled={!selectedIntegrationType}
+                >
+                  Tiếp tục
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Modal: QR Code - Kết nối Zalo cá nhân */}
+        {showQRModal && (
+          <Dialog open={showQRModal} onOpenChange={closeQRModal}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl">Kết nối Zalo cá nhân</DialogTitle>
+              </DialogHeader>
+
+              <div className="flex gap-8">
+                {/* Left: QR Code */}
+                <div className="flex-shrink-0">
+                  <div className="w-64 h-64 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center relative">
+                    {qrCheckStatus === 'pending' || qrCheckStatus === 'checking' ? (
+                      <>
+                        {/* Placeholder QR code - replace with real QR */}
+                        <div className="w-56 h-56 bg-white border border-gray-200 rounded flex items-center justify-center">
+                          <QrCode className="w-32 h-32 text-gray-400" />
+                        </div>
+                        {qrCheckStatus === 'checking' && (
+                          <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+                          </div>
+                        )}
+                      </>
+                    ) : qrCheckStatus === 'success' ? (
+                      <div className="text-center">
+                        <CheckCircle className="w-24 h-24 text-green-500 mx-auto mb-2" />
+                        <p className="text-green-600 font-medium">Kết nối thành công!</p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <XCircle className="w-24 h-24 text-red-500 mx-auto mb-2" />
+                        <p className="text-red-600 font-medium">Lỗi kết nối</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={startQRCheck}
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          Thử lại
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Instructions */}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Quét QR để kết nối Zalo với Vilead CRM
+                  </h3>
+
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        1
+                      </span>
+                      <div>
+                        <span>Mở ứng dụng </span>
+                        <Badge variant="outline" className="mx-1">
+                          <MessageSquare className="w-3 h-3 mr-1" />
+                          Zalo
+                        </Badge>
+                        <span>trên di động.</span>
+                      </div>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        2
+                      </span>
+                      <div>
+                        <span>Ở mục ⚙️ </span>
+                        <strong>Cài đặt</strong>
+                        <span>, nhấn nút quét QR 📷</span>
+                      </div>
+                    </li>
+
+                    <li className="flex items-start gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        3
+                      </span>
+                      <span>Quét mã QR để đăng nhập.</span>
+                    </li>
+                  </ol>
+
+                  <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded p-3">
+                    <p className="text-sm font-medium text-yellow-900 mb-1">Lưu ý:</p>
+                    <ul className="text-xs text-yellow-800 space-y-1">
+                      <li>• Không truy cập: <code className="bg-yellow-100 px-1 rounded">chat.Zalo.me</code> để tránh bị mất kết nối</li>
+                      <li>• Nếu mất kết nối: Bạn làm mới kết nối và đăng nhập lại</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={closeQRModal}>
+                  Đóng
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Modal: Kết nối Zalo OA - Step 1 (Link) */}
+        {showOALinkModal && (
+          <Dialog open={showOALinkModal} onOpenChange={setShowOALinkModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-center">
+                  Kết nối Pancake
+                </DialogTitle>
+                <DialogDescription className="text-center">
+                  với tài khoản Zalo OA
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Logo Section */}
+                <div className="flex items-center justify-center gap-6">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-2xl font-bold text-blue-600">V</span>
+                  </div>
+
+                  <RefreshCw className="w-6 h-6 text-gray-400" />
+
+                  <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                    <MessageSquare className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+
+                {/* Warning Message */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-700">
+                    Zalo OA yêu cầu bạn phải mua gói{' '}
+                    <strong className="text-yellow-800">OA Nâng cao</strong> hoặc{' '}
+                    <strong className="text-yellow-800">OA Premium</strong>{' '}
+                    để có thể kết nối với Vilead CRM
                   </p>
                 </div>
-                <Zap className="w-6 h-6 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Leads hôm nay</p>
-                  <p className="text-2xl font-bold text-blue-600">127</p>
+
+                {/* Connect Button */}
+                <Button
+                  className="w-full h-12 text-base"
+                  onClick={handleOAConnect}
+                >
+                  <MessageSquare className="w-5 h-5 mr-2" />
+                  Kết nối tài khoản Zalo OA
+                </Button>
+
+                {/* Help Link */}
+                <div className="text-center">
+                  <button className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
+                    <HelpCircle className="w-4 h-4" />
+                    Hướng dẫn kết nối
+                  </button>
                 </div>
-                <Users className="w-6 h-6 text-blue-500" />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tin nhắn hôm nay</p>
-                  <p className="text-2xl font-bold text-purple-600">456</p>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Modal: Zalo OA Permissions - Step 2 (OAuth) */}
+        {showOAPermissionModal && (
+          <Dialog open={showOAPermissionModal} onOpenChange={setShowOAPermissionModal}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-xl">
+                  Yêu cầu cấp quyền truy cập Official Account
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                {/* App Info */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white rounded border flex items-center justify-center">
+                      <span className="text-lg font-bold text-blue-600">P</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Pancake V2</p>
+                      <p className="text-xs text-gray-500">APP ID: 4052056140860594003</p>
+                    </div>
+                  </div>
+
+                  <RefreshCw className="w-5 h-5 text-gray-400" />
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Pancake Viet Nam</p>
+                      <p className="text-xs text-gray-500">OA ID: 3310249125083374313</p>
+                    </div>
+                  </div>
                 </div>
-                <MessageSquare className="w-6 h-6 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Lỗi cần xử lý</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {integrations.reduce((acc, i) => acc + i.errorLog.length, 0)}
+
+                {/* Description */}
+                <p className="text-sm text-gray-700">
+                  Ứng dụng đang yêu cầu Official Account <strong>Pancake Viet Nam</strong> cấp các quyền sau:
+                </p>
+
+                {/* Warning */}
+                <div className="bg-orange-50 border border-orange-200 rounded p-3">
+                  <p className="text-sm text-orange-800">
+                    ⚠️ OA đã <strong>xác thực</strong> và <strong>năng cấp gói</strong> sẽ được sử dụng các API sau:
                   </p>
                 </div>
-                <AlertTriangle className="w-6 h-6 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Quick Setup Guide */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Hướng dẫn thiết lập nhanh</CardTitle>
-            <CardDescription>Các bước cơ bản để kết nối tích hợp</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Zalo Setup */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-5 h-5 text-blue-600" />
-                  <h4 className="font-medium">Thiết lập Zalo OA</h4>
+                {/* API Permissions */}
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Quyền sử dụng API (7)</h4>
+                  <div className="space-y-1">
+                    {[
+                      'Quyền: Sử dụng ZNS',
+                      'Quyền: Gửi tin nhắn',
+                      'Quyền: Quản lý thông tin OA',
+                      'Quyền: Quản lý tin nhắn người quan tâm',
+                      'Quyền: Quản lý Nhóm Chat - GMF',
+                      'Quyền: Quản lý cửa hàng, đơn hàng',
+                      'Quyền: Quản lý bài viết'
+                    ].map((permission, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
+                      >
+                        <span>{permission}</span>
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <ol className="text-sm space-y-2 ml-7">
-                  <li>1. Truy cập Zalo OA Dashboard</li>
-                  <li>2. Tạo App và lấy App ID</li>
-                  <li>3. Cấu hình Webhook URL</li>
-                  <li>4. Xác thực bằng QR Code</li>
-                  <li>5. Test kết nối và đồng bộ</li>
-                </ol>
+
+                {/* Event Permissions */}
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Quyền nhận sự kiện (5)</h4>
+                  <div className="space-y-1">
+                    {[
+                      'Quyền: Nhận sự kiện quản lý gửi ZNS',
+                      'Quyền: Nhận sự kiện quản lý tin nhắn',
+                      'Quyền: Nhận sự kiện quản lý người quan tâm',
+                      'Quyền: Nhận sự kiện Quản lý Nhóm Chat - GMF',
+                      'Quyền: Nhận sự kiện quản lý cửa hàng, đơn hàng'
+                    ].map((permission, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
+                      >
+                        <span>{permission}</span>
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Terms Checkbox */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    className="w-4 h-4 rounded border-gray-300"
+                    defaultChecked
+                  />
+                  <label htmlFor="terms-checkbox" className="text-sm text-gray-700">
+                    Tôi đã đọc và đồng ý với{' '}
+                    <a href="#" className="text-blue-600 hover:underline">
+                      Điều khoản sử dụng của Zalo
+                    </a>
+                    {' '}và{' '}
+                    <a href="#" className="text-blue-600 hover:underline">
+                      Điều khoản sử dụng Mạng xã hội Zalo
+                    </a>
+                  </label>
+                </div>
               </div>
 
-              {/* Facebook Setup */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Facebook className="w-5 h-5 text-blue-600" />
-                  <h4 className="font-medium">Thiết lập Facebook Fanpage</h4>
-                </div>
-                <ol className="text-sm space-y-2 ml-7">
-                  <li>1. Tạo Facebook App</li>
-                  <li>2. Cấu hình Messenger API</li>
-                  <li>3. Lấy Page Access Token</li>
-                  <li>4. Thiết lập Webhook</li>
-                  <li>5. Xác thực và test</li>
-                </ol>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowOAPermissionModal(false)}
+                >
+                  Hủy
+                </Button>
+                <Button onClick={handleOAGrantPermission}>
+                  Cấp quyền
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     )
   }
@@ -4714,13 +5396,12 @@ export default function SettingsManagement() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="company">Công ty</TabsTrigger>
           <TabsTrigger value="workflow">Quy trình</TabsTrigger>
           <TabsTrigger value="interface">Giao diện</TabsTrigger>
           <TabsTrigger value="products">Sản phẩm</TabsTrigger>
-          {/* <TabsTrigger value="integrations">Tích hợp</TabsTrigger> */}
-          {/* <TabsTrigger value="templates">Mẫu dữ liệu</TabsTrigger> */}
+          <TabsTrigger value="integrations">Tích hợp</TabsTrigger>
           <TabsTrigger value="history">Lịch sử</TabsTrigger>
         </TabsList>
 
