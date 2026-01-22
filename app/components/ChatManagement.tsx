@@ -10,6 +10,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Search,
   Filter,
   Send,
@@ -22,6 +34,7 @@ import {
   Tag,
   Info,
   Plus,
+  Building2,
   X,
   Trash2,
   MoreVertical,
@@ -29,7 +42,15 @@ import {
   CheckCheck,
   Clock,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown,
+  User,
+  Briefcase,
+  Clock as ClockIcon,
+  TrendingUp,
+  Eye,
+  MessageSquare,
+  Settings
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -86,6 +107,32 @@ interface PurchaseHistory {
   status: string
 }
 
+interface GroupMember {
+  id: string
+  name: string
+  avatar?: string
+  role: 'admin' | 'member'
+  joinedAt: string
+  isActive: boolean
+  lastSeenAt: string
+  phone?: string
+  email?: string
+}
+
+interface CRMCustomer {
+  id: string
+  name: string
+  phone: string
+  email?: string
+  company?: string
+  source: string
+  status: 'lead' | 'customer' | 'potential'
+  tags: string[]
+  createdAt: string
+  lastContactedAt: string
+  avatar?: string
+}
+
 interface ZaloConversation {
   id: string
   contactId: string
@@ -98,12 +145,15 @@ interface ZaloConversation {
   tags: string[]
   priority: 'low' | 'medium' | 'high' | 'urgent'
   channel: 'zalo'
+  conversationType: 'individual' | 'group'
+  members?: GroupMember[]
+  memberCount?: number
 }
 
 // ===== GENERATE DEMO DATA =====
 
 const vietnameseNames = [
-  'Nguyễn Hải Yến', 'Nguyễn Văn Tiến', 'Lam Omichat', 'Vũ Trần Digital',
+  'Nguyễn Hải Yến', 'Nguyễn Văn Tiến', 'Cộng đồng Omichat', 'Vũ Trần Digital',
   'Lê Thị Trang', 'ABQ Startup Com', 'TunVN - HỖ TRỢ TÀI CHÍNH'
 ]
 
@@ -139,6 +189,83 @@ const tags = [
   ['Báo giá'],
   ['Hỗ trợ kỹ thuật'],
   ['Tư vấn']
+]
+
+// Connected Zalo accounts
+interface ZaloAccount {
+  id: string
+  name: string
+  avatar?: string
+  unreadCount: number
+  type: 'personal' | 'oa'
+}
+
+const connectedZaloAccounts: ZaloAccount[] = [
+  { id: '1', name: 'Chính Nghĩa', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChinhNghia', unreadCount: 9, type: 'personal' },
+  { id: '2', name: 'Hải Yến Shop', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HaiYen', unreadCount: 25, type: 'personal' },
+  { id: '3', name: 'Tech Support', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSupport', unreadCount: 3, type: 'oa' },
+  { id: '4', name: 'Sale Team', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SaleTeam', unreadCount: 0, type: 'personal' },
+]
+
+// Demo shared files data
+interface SharedFile {
+  id: string
+  name: string
+  type: 'file' | 'image' | 'video'
+  size: string
+  time: string
+  sender: string
+  storage: string
+  thumbnail?: string
+}
+
+const demoSharedFiles: SharedFile[] = [
+  { id: '1', name: 'b5c6c763ac2e22707b3f.jpg', type: 'image', size: '0.205 MB', time: '18 phút trước', sender: 'Lam Omichat → Chính Nghĩa', storage: 'Zalo Cloud' },
+  { id: '2', name: '9edde128056a8b34d27b.jpg', type: 'image', size: '0.437 MB', time: '1 giờ trước', sender: 'Lam Omichat → Chính Nghĩa', storage: 'Zalo Cloud' },
+  { id: '3', name: 'Bản sao của Omichat-....pdf', type: 'file', size: '0.419 MB', time: '1 giờ trước', sender: 'Zalo → Lam Omichat', storage: 'Zalo Cloud' },
+  { id: '4', name: 'video_demo_product.mp4', type: 'video', size: '12.5 MB', time: '2 giờ trước', sender: 'Chính Nghĩa → Lam Omichat', storage: 'Zalo Cloud' },
+  { id: '5', name: 'bao_gia_2024.xlsx', type: 'file', size: '0.125 MB', time: '1 ngày trước', sender: 'Lam Omichat → Chính Nghĩa', storage: 'Zalo Cloud' },
+]
+
+// Demo group members for community
+const demoGroupMembers: GroupMember[] = [
+  { id: '1', name: 'Nguyễn Văn Anh', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NguyenVanAnh', role: 'admin', joinedAt: '2024-01-15T10:00:00Z', isActive: true, lastSeenAt: '2024-01-22T14:30:00Z', phone: '0901234567', email: 'nva@email.com' },
+  { id: '2', name: 'Trần Thị Bình', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TranThiBinh', role: 'admin', joinedAt: '2024-01-15T10:05:00Z', isActive: true, lastSeenAt: '2024-01-22T14:25:00Z', phone: '0901234568' },
+  { id: '3', name: 'Lê Văn Cường', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LeVanCuong', role: 'member', joinedAt: '2024-01-16T09:00:00Z', isActive: true, lastSeenAt: '2024-01-22T14:20:00Z' },
+  { id: '4', name: 'Phạm Thị Dung', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PhamThiDung', role: 'member', joinedAt: '2024-01-16T11:30:00Z', isActive: false, lastSeenAt: '2024-01-22T10:15:00Z' },
+  { id: '5', name: 'Hoàng Văn Em', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HoangVanEm', role: 'member', joinedAt: '2024-01-17T14:00:00Z', isActive: true, lastSeenAt: '2024-01-22T14:28:00Z' },
+  { id: '6', name: 'Đỗ Thị Phương', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DoThiPhuong', role: 'member', joinedAt: '2024-01-17T16:20:00Z', isActive: false, lastSeenAt: '2024-01-22T08:45:00Z' },
+  { id: '7', name: 'Vũ Văn Giang', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VuVanGiang', role: 'member', joinedAt: '2024-01-18T10:10:00Z', isActive: true, lastSeenAt: '2024-01-22T14:15:00Z' },
+  { id: '8', name: 'Bùi Thị Hà', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=BuiThiHa', role: 'member', joinedAt: '2024-01-18T13:45:00Z', isActive: true, lastSeenAt: '2024-01-22T14:10:00Z' },
+  { id: '9', name: 'Ngô Văn Ích', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NgoVanIch', role: 'member', joinedAt: '2024-01-19T08:30:00Z', isActive: false, lastSeenAt: '2024-01-21T18:00:00Z' },
+  { id: '10', name: 'Đinh Thị Kiều', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DinhThiKieu', role: 'member', joinedAt: '2024-01-19T11:00:00Z', isActive: true, lastSeenAt: '2024-01-22T14:05:00Z' },
+  { id: '11', name: 'Lý Văn Long', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LyVanLong', role: 'member', joinedAt: '2024-01-20T09:15:00Z', isActive: false, lastSeenAt: '2024-01-22T07:30:00Z' },
+  { id: '12', name: 'Mai Thị Minh', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MaiThiMinh', role: 'member', joinedAt: '2024-01-20T14:00:00Z', isActive: true, lastSeenAt: '2024-01-22T13:55:00Z' },
+  { id: '13', name: 'Trương Văn Nam', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TruongVanNam', role: 'member', joinedAt: '2024-01-21T10:30:00Z', isActive: true, lastSeenAt: '2024-01-22T14:00:00Z' },
+  { id: '14', name: 'Phan Thị Oanh', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PhanThiOanh', role: 'member', joinedAt: '2024-01-21T15:20:00Z', isActive: true, lastSeenAt: '2024-01-22T13:50:00Z' },
+  { id: '15', name: 'Dương Văn Phúc', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DuongVanPhuc', role: 'member', joinedAt: '2024-01-22T08:00:00Z', isActive: true, lastSeenAt: '2024-01-22T13:45:00Z' },
+]
+
+// Demo CRM customers for sync tab
+const demoCRMCustomers: CRMCustomer[] = [
+  { id: 'crm-1', name: 'Nguyễn Hải Yến', phone: '0901234567', email: 'haiyen@company.com', company: 'Công ty thế giới số', source: 'Facebook', status: 'lead', tags: ['VIP', 'Quan tâm CRM'], createdAt: '2024-01-10T10:00:00Z', lastContactedAt: '2024-01-22T09:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NguyenHaiYen' },
+  { id: 'crm-2', name: 'Nguyễn Văn Tiến', phone: '0901234568', email: 'tien@startup.vn', company: 'Startup Tech', source: 'Zalo', status: 'customer', tags: ['Hot Lead'], createdAt: '2024-01-12T14:20:00Z', lastContactedAt: '2024-01-21T16:45:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NguyenVanTien' },
+  { id: 'crm-3', name: 'Lam Omichat', phone: '0901234569', email: 'lam@omichat.vn', company: 'Omichat Solutions', source: 'Google Ads', status: 'lead', tags: ['Marketing', 'Tư vấn'], createdAt: '2024-01-15T11:00:00Z', lastContactedAt: '2024-01-22T08:15:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LamOmichat' },
+  { id: 'crm-4', name: 'Vũ Trần Digital', phone: '0901234570', email: 'vu@digitalagency.com', company: 'Digital Marketing Agency', source: 'Website', status: 'potential', tags: ['Demo'], createdAt: '2024-01-18T09:30:00Z', lastContactedAt: '2024-01-20T15:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VuTranDigital' },
+  { id: 'crm-5', name: 'Lê Thị Trang', phone: '0901234571', email: 'trang@company.vn', company: 'Công ty TNHH ABC', source: 'Referral', status: 'customer', tags: ['VIP', 'Gia hạn'], createdAt: '2024-01-08T13:15:00Z', lastContactedAt: '2024-01-22T10:20:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LeThiTrang' },
+  { id: 'crm-6', name: 'ABQ Startup Com', phone: '0901234572', email: 'contact@abqstartup.com', company: 'ABQ Startup Community', source: 'Facebook', status: 'lead', tags: ['Startup', 'Tech'], createdAt: '2024-01-20T10:45:00Z', lastContactedAt: '2024-01-21T14:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ABQStartup' },
+  { id: 'crm-7', name: 'TunVN - Hỗ Trợ Tài Chính', phone: '0901234573', email: 'tun@finance.vn', company: 'Financial Services Ltd', source: 'Zalo', status: 'potential', tags: ['Báo giá', 'Hỗ trợ kỹ thuật'], createdAt: '2024-01-16T16:00:00Z', lastContactedAt: '2024-01-19T11:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TunVN' },
+]
+
+// Sales Pipeline Stages
+const salesStages = [
+  { id: 'new-lead', name: 'Lead mới', color: 'bg-gray-100 text-gray-700', icon: UserPlus },
+  { id: 'consulting', name: 'Đang tư vấn', color: 'bg-blue-100 text-blue-700', icon: MessageSquare },
+  { id: 'quote-sent', name: 'Đã gửi ĐX', color: 'bg-green-100 text-green-700', icon: Mail },
+  { id: 'negotiation', name: 'Đàm phán', color: 'bg-yellow-100 text-yellow-700', icon: Briefcase },
+  { id: 'payment-pending', name: 'Chuyển đổi - chờ thanh toán', color: 'bg-purple-100 text-purple-700', icon: Clock },
+  { id: 'converted', name: 'Chuyển đổi thành công', color: 'bg-green-100 text-green-700', icon: Check },
+  { id: 'lost', name: 'Thất bại', color: 'bg-red-100 text-red-700', icon: X },
 ]
 
 function generateDemoContacts(): ZaloContact[] {
@@ -222,6 +349,9 @@ function generateDemoConversations(): ZaloConversation[] {
     const hoursAgo = index < 3 ? index * 4 : Math.floor(Math.random() * 24 * 30)
     const lastMessageAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
 
+    // Các conversation có index 2, 4, 6 sẽ là group
+    const isGroup = index % 3 === 2
+    
     return {
       id: contact.id,
       contactId: contact.id,
@@ -233,7 +363,10 @@ function generateDemoConversations(): ZaloConversation[] {
       assignedTo: index % 3 === 0 ? 'Tư vấn viên A' : index % 3 === 1 ? 'Tư vấn viên B' : undefined,
       tags: contact.tags,
       priority: ['low', 'medium', 'high', 'urgent'][index % 4] as any,
-      channel: 'zalo'
+      channel: 'zalo',
+      conversationType: isGroup ? 'group' : 'individual',
+      members: isGroup ? demoGroupMembers : undefined,
+      memberCount: isGroup ? demoGroupMembers.length : undefined
     }
   })
 }
@@ -358,8 +491,23 @@ export default function ChatManagement() {
   const [filterUnread, setFilterUnread] = useState(false)
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'contacts'>('all')
   const [contactTab, setContactTab] = useState<'friends' | 'groups' | 'strangers'>('friends')
+  const [selectedAccount, setSelectedAccount] = useState<ZaloAccount>(connectedZaloAccounts[0])
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false)
+  const [rightPanelTab, setRightPanelTab] = useState<'zalo' | 'sync' | 'community' | 'files'>('zalo')
+  const [syncSearchTerm, setSyncSearchTerm] = useState('')
+  const [syncSearchAll, setSyncSearchAll] = useState(false)
+  const [fileSearchTerm, setFileSearchTerm] = useState('')
+  const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'file' | 'image' | 'video'>('all')
+  const [fileSenderFilter, setFileSenderFilter] = useState<'all' | 'staff' | 'customer'>('all')
+  const [memberSearchTerm, setMemberSearchTerm] = useState('')
+  const [connectedCustomers, setConnectedCustomers] = useState<Set<string>>(new Set())
+  const [conversationCustomerMap, setConversationCustomerMap] = useState<Map<string, string>>(new Map())
+  const [customerStageMap, setCustomerStageMap] = useState<Map<string, string>>(new Map())
+  const [selectedLeadDetail, setSelectedLeadDetail] = useState<CRMCustomer | null>(null)
+  const [leadDetailTab, setLeadDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
 
   const messageScrollRef = useRef<HTMLDivElement>(null)
+  const accountDropdownRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -368,10 +516,30 @@ export default function ChatManagement() {
     }
   }, [messages])
 
+  // Close account dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
+        setShowAccountDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   // Select conversation and load messages
   const handleSelectConversation = (conversation: ZaloConversation) => {
     setSelectedConversation(conversation)
     setMessages(demoMessages[conversation.id] || [])
+    
+    // Auto switch to community tab if it's a group conversation
+    if (conversation.conversationType === 'group') {
+      setRightPanelTab('community')
+    } else {
+      // Reset to zalo tab for individual conversations
+      setRightPanelTab('zalo')
+    }
+    
     // Mark as read
     if (conversation.unreadCount > 0) {
       setConversations(conversations.map(c =>
@@ -499,6 +667,76 @@ export default function ChatManagement() {
                   <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.546 20.2A1 1 0 003.8 21.454l3.032-.892A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 2a8 8 0 110 16 8 8 0 010-16zm-1 5v6h2V9h-2z"/>
                 </svg>
               </button>
+            </div>
+
+            {/* Account Selector Dropdown */}
+            <div className="relative mb-3" ref={accountDropdownRef}>
+              <button
+                onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+                className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors h-9"
+              >
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={selectedAccount.avatar} />
+                    <AvatarFallback className="bg-blue-500 text-white text-[10px]">
+                      {selectedAccount.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-gray-900 truncate max-w-[120px]">
+                    {selectedAccount.name}
+                  </span>
+                  {selectedAccount.unreadCount > 0 && (
+                    <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {selectedAccount.unreadCount > 9 ? '9+' : selectedAccount.unreadCount}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-gray-400 transition-transform flex-shrink-0",
+                  showAccountDropdown && "rotate-180"
+                )} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showAccountDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1">
+                  {connectedZaloAccounts.map((account) => (
+                    <button
+                      key={account.id}
+                      onClick={() => {
+                        setSelectedAccount(account)
+                        setShowAccountDropdown(false)
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition-colors",
+                        selectedAccount.id === account.id && "bg-blue-50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage src={account.avatar} />
+                          <AvatarFallback className="bg-blue-500 text-white text-[10px]">
+                            {account.name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-gray-900 truncate max-w-[120px]">
+                          {account.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {account.unreadCount > 0 && (
+                          <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                            {account.unreadCount > 9 ? '9+' : account.unreadCount}
+                          </span>
+                        )}
+                        {selectedAccount.id === account.id && (
+                          <Check className="w-4 h-4 text-blue-500" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Tabs and Filter */}
@@ -798,20 +1036,51 @@ export default function ChatManagement() {
                           `Hoạt động ${formatConversationTime(selectedConversation.contact.lastContactedAt)} trước`
                         )}
                       </p>
-                      <div className="hidden md:flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs py-0 h-5 bg-gray-50 whitespace-nowrap">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                          </svg>
-                          Chưa có nhãn
-                        </Badge>
-                        <Badge variant="outline" className="text-xs py-0 h-5 bg-gray-50 whitespace-nowrap">
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                          </svg>
-                          Chưa phân loại
-                        </Badge>
-                      </div>
+                      {conversationCustomerMap.has(selectedConversation.id) && (
+                        <div className="hidden md:flex items-center gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                className={cn(
+                                  "inline-flex items-center rounded-full border px-2.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs py-0 h-5 cursor-pointer hover:opacity-80 whitespace-nowrap",
+                                  salesStages.find(s => s.id === (customerStageMap.get(selectedConversation.contact.id) || 'new-lead'))?.color || "bg-gray-100 text-gray-700"
+                                )}
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                                {salesStages.find(s => s.id === (customerStageMap.get(selectedConversation.contact.id) || 'new-lead'))?.name || 'Lead mới'}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56">
+                              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase">
+                                Giai đoạn bán hàng
+                              </div>
+                              {salesStages.map((stage) => {
+                                const StageIcon = stage.icon
+                                const isSelected = (customerStageMap.get(selectedConversation.contact.id) || 'new-lead') === stage.id
+                                return (
+                                  <DropdownMenuItem 
+                                    key={stage.id}
+                                    onClick={() => {
+                                      const newMap = new Map(customerStageMap)
+                                      newMap.set(selectedConversation.contact.id, stage.id)
+                                      setCustomerStageMap(newMap)
+                                    }}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <div className={cn("w-8 h-8 rounded flex items-center justify-center", stage.color)}>
+                                      <StageIcon className="w-4 h-4" />
+                                    </div>
+                                    <span className="flex-1 text-sm">{stage.name}</span>
+                                    {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+                                  </DropdownMenuItem>
+                                )
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -968,7 +1237,7 @@ export default function ChatManagement() {
 
                       {/* Right Actions */}
                       <div className="flex items-center gap-2">
-                        <Button
+                        {/* <Button
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 hover:bg-gray-50"
@@ -977,7 +1246,7 @@ export default function ChatManagement() {
                           <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                           </svg>
-                        </Button>
+                        </Button> */}
 
                         <Button
                           onClick={handleSendMessage}
@@ -1008,9 +1277,63 @@ export default function ChatManagement() {
 
         {/* RIGHT PANEL - Contact Details */}
         {showContactDetail && selectedConversation && (
-          <div className="col-span-3 h-full flex flex-col bg-white">
-            {/* Contact Profile Header */}
-            <div className="p-4 border-b border-gray-200 text-center bg-gradient-to-b from-blue-50 to-white">
+          <div className="col-span-3 h-full flex flex-col bg-white overflow-hidden">
+            {/* Main Tab Menu */}
+            <div className="flex items-center border-b border-gray-200 bg-white flex-shrink-0">
+              <button
+                onClick={() => setRightPanelTab('zalo')}
+                className={cn(
+                  "px-4 py-3 text-sm font-medium transition-colors",
+                  rightPanelTab === 'zalo'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-blue-600"
+                )}
+              >
+                Zalo
+              </button>
+              {selectedConversation.conversationType === 'group' ? (
+                <button
+                  onClick={() => setRightPanelTab('community')}
+                  className={cn(
+                    "px-4 py-3 text-sm font-medium transition-colors",
+                    rightPanelTab === 'community'
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-blue-600"
+                  )}
+                >
+                  Thông tin cộng đồng
+                </button>
+              ) : (
+                <button
+                  onClick={() => setRightPanelTab('sync')}
+                  className={cn(
+                    "px-4 py-3 text-sm font-medium transition-colors",
+                    rightPanelTab === 'sync'
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-blue-600"
+                  )}
+                >
+                  Đồng bộ
+                </button>
+              )}
+              <button
+                onClick={() => setRightPanelTab('files')}
+                className={cn(
+                  "px-4 py-3 text-sm font-medium transition-colors",
+                  rightPanelTab === 'files'
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-blue-600"
+                )}
+              >
+                File chia sẻ
+              </button>
+            </div>
+
+            {/* Tab Content: Zalo */}
+            {rightPanelTab === 'zalo' && (
+              <>
+                {/* Contact Profile Header */}
+                <div className="p-4 border-b border-gray-200 text-center bg-gradient-to-b from-blue-50 to-white flex-shrink-0">
               <Avatar className="w-20 h-20 mx-auto mb-3 border-4 border-white shadow-lg">
                 <AvatarImage src={selectedConversation.contact.avatar} />
                 <AvatarFallback className="bg-blue-500 text-white text-2xl">
@@ -1020,17 +1343,6 @@ export default function ChatManagement() {
 
               <h3 className="font-semibold text-lg">{selectedConversation.contact.name}</h3>
               <p className="text-sm text-gray-500">{selectedConversation.contact.company}</p>
-
-              <div className="flex justify-center gap-2 mt-3">
-                <Button variant="outline" size="sm" className="text-xs">
-                  <Phone className="w-3 h-3 mr-1" />
-                  Gọi
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs">
-                  <Mail className="w-3 h-3 mr-1" />
-                  Email
-                </Button>
-              </div>
             </div>
 
             {/* Information Tabs */}
@@ -1069,13 +1381,13 @@ export default function ChatManagement() {
                   </div>
 
                   {/* CRM Integration */}
-                  <div className="pt-3 border-t border-gray-100">
+                  {/* <div className="pt-3 border-t border-gray-100">
                     <h4 className="font-semibold text-sm mb-3 text-gray-700">Liên kết CRM</h4>
                     <Button variant="outline" size="sm" className="w-full text-xs">
                       <UserPlus className="w-3 h-3 mr-2" />
                       Liên kết khách hàng
                     </Button>
-                  </div>
+                  </div> */}
 
                   {/* Tags */}
                   <div className="pt-3 border-t border-gray-100">
@@ -1192,9 +1504,949 @@ export default function ChatManagement() {
                 </div>
               </TabsContent>
             </Tabs>
+              </>
+            )}
+
+            {/* Tab Content: Đồng bộ CRM */}
+            {rightPanelTab === 'sync' && (
+              <>
+                {(() => {
+                  const connectedCustomerId = conversationCustomerMap.get(selectedConversation.id)
+                  const connectedCustomer = connectedCustomerId 
+                    ? demoCRMCustomers.find(c => c.id === connectedCustomerId)
+                    : null
+
+                  if (connectedCustomer) {
+                    // Show connected state UI
+                    return (
+                      <div className="flex-1 flex flex-col overflow-hidden">
+                        <ScrollArea className="flex-1">
+                          <div className="p-6">
+                            {/* Connected Status Banner */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+                              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="w-6 h-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-green-900 text-sm">Đã kết nối với CRM</h3>
+                                <p className="text-xs text-green-700 mt-0.5">
+                                  Hội thoại này đã được liên kết với khách hàng trong hệ thống CRM
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Customer Info Card */}
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                              {/* Header */}
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
+                                <h4 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                                  <User className="w-4 h-4 text-blue-600" />
+                                  Thông tin khách hàng
+                                </h4>
+                              </div>
+
+                              {/* Customer Details */}
+                              <div className="p-4">
+                                {/* Avatar + Name + Status */}
+                                <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
+                                  <Avatar className="w-16 h-16 flex-shrink-0">
+                                    <AvatarImage src={connectedCustomer.avatar} />
+                                    <AvatarFallback className="bg-blue-500 text-white text-lg">
+                                      {connectedCustomer.name.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-base text-gray-900 mb-1">
+                                      {connectedCustomer.name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge 
+                                        className={cn(
+                                          "text-xs px-2 py-0.5",
+                                          connectedCustomer.status === 'customer' ? "bg-green-100 text-green-700 border-green-300" :
+                                          connectedCustomer.status === 'lead' ? "bg-blue-100 text-blue-700 border-blue-300" :
+                                          "bg-yellow-100 text-yellow-700 border-yellow-300"
+                                        )}
+                                      >
+                                        {connectedCustomer.status === 'customer' ? 'Khách hàng' : 
+                                         connectedCustomer.status === 'lead' ? 'Lead' : 'Tiềm năng'}
+                                      </Badge>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Badge 
+                                            className={cn(
+                                              "text-xs py-0 h-5 cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap",
+                                              salesStages.find(s => s.id === (customerStageMap.get(connectedCustomer.id) || 'new-lead'))?.color || "bg-gray-100 text-gray-700"
+                                            )}
+                                          >
+                                            <Tag className="w-3 h-3 mr-1" />
+                                            {salesStages.find(s => s.id === (customerStageMap.get(connectedCustomer.id) || 'new-lead'))?.name || 'Lead mới'}
+                                          </Badge>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start" className="w-56">
+                                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase">
+                                            Giai đoạn bán hàng
+                                          </div>
+                                          {salesStages.map((stage) => {
+                                            const StageIcon = stage.icon
+                                            const isSelected = (customerStageMap.get(connectedCustomer.id) || 'new-lead') === stage.id
+                                            return (
+                                              <DropdownMenuItem 
+                                                key={stage.id}
+                                                onClick={() => {
+                                                  const newMap = new Map(customerStageMap)
+                                                  newMap.set(connectedCustomer.id, stage.id)
+                                                  setCustomerStageMap(newMap)
+                                                }}
+                                                className="flex items-center gap-2 cursor-pointer"
+                                              >
+                                                <div className={cn("w-8 h-8 rounded flex items-center justify-center", stage.color)}>
+                                                  <StageIcon className="w-4 h-4" />
+                                                </div>
+                                                <span className="flex-1 text-sm">{stage.name}</span>
+                                                {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+                                              </DropdownMenuItem>
+                                            )
+                                          })}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Contact Info */}
+                                <div className="space-y-3 mb-4">
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                    <span className="text-gray-600">Điện thoại:</span>
+                                    <span className="font-medium text-gray-900">{connectedCustomer.phone}</span>
+                                  </div>
+                                  {connectedCustomer.email && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                      <span className="text-gray-600">Email:</span>
+                                      <span className="font-medium text-gray-900 truncate">{connectedCustomer.email}</span>
+                                    </div>
+                                  )}
+                                  {connectedCustomer.company && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                      <span className="text-gray-600">Công ty:</span>
+                                      <span className="font-medium text-gray-900 truncate">{connectedCustomer.company}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Tags */}
+                                {connectedCustomer.tags.length > 0 && (
+                                  <div className="mb-4">
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {connectedCustomer.tags.map((tag, idx) => (
+                                        <span
+                                          key={idx}
+                                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Source & Dates */}
+                                <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Nguồn:</span>
+                                    <span className="font-medium text-gray-900">{connectedCustomer.source}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Ngày tạo:</span>
+                                    <span className="font-medium text-gray-900">
+                                      {new Date(connectedCustomer.createdAt).toLocaleDateString('vi-VN')}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Liên hệ cuối:</span>
+                                    <span className="font-medium text-gray-900">
+                                      {new Date(connectedCustomer.lastContactedAt).toLocaleDateString('vi-VN')}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 text-xs"
+                                    onClick={() => setSelectedLeadDetail(connectedCustomer)}
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    Xem chi tiết
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button size="sm" variant="outline" className="px-3">
+                                        <MoreVertical className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => {
+                                        const newMap = new Map(conversationCustomerMap)
+                                        newMap.delete(selectedConversation.id)
+                                        setConversationCustomerMap(newMap)
+                                        const newConnected = new Set(connectedCustomers)
+                                        newConnected.delete(connectedCustomer.id)
+                                        setConnectedCustomers(newConnected)
+                                      }}>
+                                        <X className="w-4 h-4 mr-2" />
+                                        Ngắt kết nối
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )
+                  }
+
+                  // Show search UI when not connected
+                  return (
+                    <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                      {/* Search input + Button row */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="relative flex-1">
+                          <Input
+                            placeholder="Tìm kiếm khách hàng..."
+                            value={syncSearchTerm}
+                            onChange={(e) => setSyncSearchTerm(e.target.value)}
+                            className="pr-16"
+                          />
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                            {syncSearchTerm && (
+                              <button onClick={() => setSyncSearchTerm('')} className="p-1 hover:bg-gray-100 rounded">
+                                <X className="w-4 h-4 text-gray-400" />
+                              </button>
+                            )}
+                            <Search className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" className="text-xs h-10">
+                          Thêm mới
+                        </Button>
+                      </div>
+
+                      {/* Checkbox row */}
+                      <div className="flex items-center mb-4">
+                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={syncSearchAll}
+                            onChange={(e) => setSyncSearchAll(e.target.checked)}
+                            className="rounded border-gray-300"
+                          />
+                          Tìm kiếm cả số liên hệ
+                        </label>
+                      </div>
+
+                      {/* Results or Empty state */}
+                      <ScrollArea className="flex-1">
+                        {(() => {
+                          const filteredCustomers = demoCRMCustomers.filter(customer => {
+                            if (!syncSearchTerm) return false
+                            const searchLower = syncSearchTerm.toLowerCase()
+                            const matchName = customer.name.toLowerCase().includes(searchLower)
+                            const matchPhone = syncSearchAll && customer.phone.includes(syncSearchTerm)
+                            const matchEmail = customer.email?.toLowerCase().includes(searchLower)
+                            const matchCompany = customer.company?.toLowerCase().includes(searchLower)
+                            return matchName || matchPhone || matchEmail || matchCompany
+                          })
+
+                          if (syncSearchTerm && filteredCustomers.length === 0) {
+                            return (
+                              <div className="flex-1 flex items-center justify-center py-12">
+                                <div className="bg-red-50 text-red-500 px-6 py-3 rounded-lg text-sm font-medium">
+                                  Không tìm thấy khách hàng nào !
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          if (!syncSearchTerm) {
+                            return (
+                              <div className="flex items-center justify-center py-12 text-gray-400 text-sm">
+                                Nhập từ khóa để tìm kiếm khách hàng
+                              </div>
+                            )
+                          }
+
+                          return (
+                            <div className="p-3 space-y-2">
+                              {filteredCustomers.map((customer) => (
+                                <div
+                                  key={customer.id}
+                                  className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="w-12 h-12 flex-shrink-0">
+                                      <AvatarImage src={customer.avatar} />
+                                      <AvatarFallback className="bg-blue-500 text-white text-sm">
+                                        {customer.name.substring(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-semibold text-sm text-gray-900 truncate">
+                                          {customer.name}
+                                        </h4>
+                                        <Badge 
+                                          className={cn(
+                                            "text-xs px-2 py-0 h-5",
+                                            customer.status === 'customer' ? "bg-green-100 text-green-700 border-green-300" :
+                                            customer.status === 'lead' ? "bg-blue-100 text-blue-700 border-blue-300" :
+                                            "bg-yellow-100 text-yellow-700 border-yellow-300"
+                                          )}
+                                        >
+                                          {customer.status === 'customer' ? 'Khách hàng' : customer.status === 'lead' ? 'Lead' : 'Tiềm năng'}
+                                        </Badge>
+                                      </div>
+                                      <div className="space-y-0.5">
+                                        <p className="text-xs text-gray-600 flex items-center gap-1">
+                                          <Phone className="w-3 h-3" />
+                                          {customer.phone}
+                                        </p>
+                                        {customer.email && (
+                                          <p className="text-xs text-gray-600 flex items-center gap-1 truncate">
+                                            <Mail className="w-3 h-3" />
+                                            {customer.email}
+                                          </p>
+                                        )}
+                                        {customer.company && (
+                                          <p className="text-xs text-gray-600 flex items-center gap-1 truncate">
+                                            <Building2 className="w-3 h-3" />
+                                            {customer.company}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {customer.tags.map((tag, idx) => (
+                                          <span
+                                            key={idx}
+                                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <div className="mt-2 pt-2 border-t border-gray-100">
+                                        <p className="text-xs text-gray-500">
+                                          Nguồn: <span className="font-medium text-gray-700">{customer.source}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {connectedCustomers.has(customer.id) ? (
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <div className="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg">
+                                          <Check className="w-4 h-4 text-green-600" />
+                                          <span className="text-xs font-medium text-green-700">Đã kết nối</span>
+                                        </div>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button size="sm" className="h-8 text-xs">
+                                              Thao tác
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-48">
+                                            <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
+                                              <Eye className="w-4 h-4 mr-2" />
+                                              Xem chi tiết
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => {
+                                              const newConnected = new Set(connectedCustomers)
+                                              newConnected.delete(customer.id)
+                                              setConnectedCustomers(newConnected)
+                                            }}>
+                                              <X className="w-4 h-4 mr-2" />
+                                              Hủy liên kết
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    ) : (
+                                      <Button 
+                                        size="sm" 
+                                        className="h-8 text-xs bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+                                        onClick={() => {
+                                          const newConnected = new Set(connectedCustomers)
+                                          newConnected.add(customer.id)
+                                          setConnectedCustomers(newConnected)
+                                          const newMap = new Map(conversationCustomerMap)
+                                          newMap.set(selectedConversation.id, customer.id)
+                                          setConversationCustomerMap(newMap)
+                                        }}
+                                      >
+                                        Liên kết
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        })()}
+                      </ScrollArea>
+                    </div>
+                  )
+                })()}
+              </>
+            )}
+
+            {/* Tab Content: Thông tin cộng đồng */}
+            {rightPanelTab === 'community' && selectedConversation.conversationType === 'group' && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Search Members */}
+                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Tìm kiếm thành viên..."
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
+                      className="pl-9 pr-8"
+                    />
+                    {memberSearchTerm && (
+                      <button 
+                        onClick={() => setMemberSearchTerm('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                      >
+                        <X className="w-4 h-4 text-gray-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Members List */}
+                <ScrollArea className="flex-1">
+                  <div className="p-4">
+                    {(() => {
+                      const filteredAdmins = selectedConversation.members?.filter(m => m.role === 'admin' && (!memberSearchTerm || m.name.toLowerCase().includes(memberSearchTerm.toLowerCase()))) || []
+                      const filteredMembers = selectedConversation.members?.filter(m => m.role === 'member' && (!memberSearchTerm || m.name.toLowerCase().includes(memberSearchTerm.toLowerCase()))) || []
+                      const hasResults = filteredAdmins.length > 0 || filteredMembers.length > 0
+
+                      if (!hasResults && memberSearchTerm) {
+                        return (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                              <Search className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-sm text-gray-600">Không tìm thấy thành viên</p>
+                            <p className="text-xs text-gray-500 mt-1">Thử từ khóa khác</p>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          {/* Admin section */}
+                          {filteredAdmins.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">
+                                Quản trị viên • {filteredAdmins.length}
+                              </h4>
+                              <div className="space-y-1">
+                                {filteredAdmins.map((member) => (
+                                  <div
+                                    key={member.id}
+                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    <div className="relative flex-shrink-0">
+                                      <Avatar className="w-11 h-11 border-2 border-orange-200">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback className="bg-orange-500 text-white text-sm">
+                                          {member.name.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      {member.isActive && (
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="font-medium text-sm text-gray-900 truncate">
+                                          {member.name}
+                                        </h4>
+                                        <Badge className="bg-orange-100 text-orange-700 text-xs px-2 py-0 h-5 border-orange-300">
+                                          Admin
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs text-gray-500">
+                                        {member.isActive ? (
+                                          <span className="text-green-600">● Đang hoạt động</span>
+                                        ) : (
+                                          `Hoạt động ${formatConversationTime(member.lastSeenAt)} trước`
+                                        )}
+                                      </p>
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full flex-shrink-0">
+                                          <MoreVertical className="w-4 h-4 text-gray-400" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem className="cursor-pointer">
+                                          <UserPlus className="w-4 h-4 mr-2" />
+                                          Gửi lời mời kết bạn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="cursor-pointer">
+                                          <MessageSquare className="w-4 h-4 mr-2" />
+                                          Nhắn tin
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Members section */}
+                          {filteredMembers.length > 0 && (
+                            <div className="pt-3">
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">
+                                Thành viên • {filteredMembers.length}
+                              </h4>
+                              <div className="space-y-1">
+                                {filteredMembers.map((member) => (
+                                  <div
+                                    key={member.id}
+                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    <div className="relative flex-shrink-0">
+                                      <Avatar className="w-11 h-11">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback className="bg-blue-500 text-white text-sm">
+                                          {member.name.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      {member.isActive && (
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="font-medium text-sm text-gray-900 truncate">
+                                        {member.name}
+                                      </h4>
+                                      <p className="text-xs text-gray-500">
+                                        {member.isActive ? (
+                                          <span className="text-green-600">● Đang hoạt động</span>
+                                        ) : (
+                                          `Hoạt động ${formatConversationTime(member.lastSeenAt)} trước`
+                                        )}
+                                      </p>
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full flex-shrink-0">
+                                          <MoreVertical className="w-4 h-4 text-gray-400" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem className="cursor-pointer">
+                                          <UserPlus className="w-4 h-4 mr-2" />
+                                          Gửi lời mời kết bạn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="cursor-pointer">
+                                          <MessageSquare className="w-4 h-4 mr-2" />
+                                          Nhắn tin
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </ScrollArea>
+
+                {/* Bottom Actions */}
+                <div className="p-4 border-t border-gray-200 flex-shrink-0">
+                  <Button variant="outline" className="w-full text-sm text-red-600 hover:bg-red-50 hover:text-red-700 border-red-300">
+                    <X className="w-4 h-4 mr-2" />
+                    Rời khỏi nhóm
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Tab Content: File chia sẻ */}
+            {rightPanelTab === 'files' && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Search */}
+                <div className="p-4 border-b border-gray-200">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Tìm kiếm tên file..."
+                      value={fileSearchTerm}
+                      onChange={(e) => setFileSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="p-4 space-y-3 border-b border-gray-200 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 w-20 flex-shrink-0">Loại file:</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['all', 'file', 'image', 'video'] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setFileTypeFilter(type)}
+                          className={cn(
+                            "px-3 py-1 text-xs rounded-md border transition-colors",
+                            fileTypeFilter === type
+                              ? "bg-blue-50 border-blue-500 text-blue-600"
+                              : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          {type === 'all' ? 'Tất cả' : type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 w-20 flex-shrink-0">Nguồn gửi:</span>
+                    <div className="flex gap-2 flex-wrap">
+                      {(['all', 'staff', 'customer'] as const).map((sender) => (
+                        <button
+                          key={sender}
+                          onClick={() => setFileSenderFilter(sender)}
+                          className={cn(
+                            "px-3 py-1 text-xs rounded-md border transition-colors",
+                            fileSenderFilter === sender
+                              ? "bg-blue-50 border-blue-500 text-blue-600"
+                              : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                          )}
+                        >
+                          {sender === 'all' ? 'Tất cả' : sender === 'staff' ? 'Nhân viên' : 'Khách hàng'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* File List */}
+                <ScrollArea className="flex-1">
+                  {demoSharedFiles
+                    .filter(file => {
+                      if (fileTypeFilter !== 'all' && file.type !== fileTypeFilter) return false
+                      if (fileSearchTerm && !file.name.toLowerCase().includes(fileSearchTerm.toLowerCase())) return false
+                      return true
+                    })
+                    .map((file) => (
+                      <div key={file.id} className="p-4 border-b border-gray-100">
+                        <div className="flex gap-3">
+                          {/* Thumbnail */}
+                          <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                            {file.type === 'image' ? (
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            ) : file.type === 'video' ? (
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            )}
+                          </div>
+                          {/* File Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">{file.name}</h4>
+                            <p className="text-xs text-gray-500 truncate">{file.sender}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className="bg-blue-500 text-white text-xs px-2 py-0.5">
+                                {file.storage}
+                              </Badge>
+                              <span className="text-xs text-gray-400">{file.time} • {file.size}</span>
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <Button variant="outline" size="sm" className="h-7 text-xs">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Tải xuống
+                              </Button>
+                              <Button size="sm" className="h-7 text-xs bg-blue-500 hover:bg-blue-600">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Đi tới tin nhắn
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </ScrollArea>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Lead Detail Modal */}
+      <Dialog open={selectedLeadDetail !== null} onOpenChange={(open) => !open && setSelectedLeadDetail(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          {selectedLeadDetail && (
+            <>
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Chi tiết Lead - {selectedLeadDetail.name}</h3>
+                    <Badge className={cn(
+                      "text-xs px-3 py-1",
+                      selectedLeadDetail.status === 'customer' ? "bg-green-100 text-green-800" :
+                      selectedLeadDetail.status === 'lead' ? "bg-blue-100 text-blue-800" :
+                      "bg-yellow-100 text-yellow-800"
+                    )}>
+                      {selectedLeadDetail.status === 'customer' ? 'Chuyển đổi thành công' :
+                       selectedLeadDetail.status === 'lead' ? 'Lead mới' : 'Tiềm năng'}
+                    </Badge>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedLeadDetail(null)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 -mb-px">
+                  <button
+                    onClick={() => setLeadDetailTab('contact')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                      leadDetailTab === 'contact' 
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    Thông tin liên hệ
+                  </button>
+                  <button
+                    onClick={() => setLeadDetailTab('history')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                      leadDetailTab === 'history'
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    Lịch sử tương tác
+                  </button>
+                  <button
+                    onClick={() => setLeadDetailTab('notes')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                      leadDetailTab === 'notes'
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    Ghi chú & Nội dung
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <ScrollArea className="flex-1 p-6">
+                {leadDetailTab === 'contact' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                      {/* Thông tin cơ bản */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <User className="w-5 h-5 text-blue-500" />
+                          Thông tin cơ bản
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Tên khách hàng:</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Công ty:</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.company || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Loại khách hàng:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {selectedLeadDetail.status === 'customer' ? 'Khách hàng' : 
+                               selectedLeadDetail.status === 'lead' ? 'Lead' : 'Tiềm năng'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thông tin liên hệ */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-green-500" />
+                          Thông tin liên hệ
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Số điện thoại:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.phone}</span>
+                              <button className="p-1 text-green-600 hover:bg-green-100 rounded">
+                                <Phone className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          {selectedLeadDetail.email && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Email:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.email}</span>
+                                <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                                  <Mail className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Nguồn:</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.source}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                      {/* Thông tin bán hàng */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Briefcase className="w-5 h-5 text-purple-500" />
+                          Thông tin bán hàng
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Sản phẩm quan tâm:</span>
+                            <span className="text-sm font-medium text-gray-900">CRM Solution</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Sales phụ trách:</span>
+                            <span className="text-sm font-medium text-gray-900">Minh Expert</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Giá trị lead:</span>
+                            <span className="text-sm font-medium text-green-600">50.000.000 VNĐ</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Xác suất thành công:</span>
+                            <span className="text-sm font-medium text-gray-900">85%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thông tin thời gian */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <ClockIcon className="w-5 h-5 text-orange-500" />
+                          Thông tin thời gian
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Ngày tạo:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Lần liên hệ cuối:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(selectedLeadDetail.lastContactedAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Số lần tương tác:</span>
+                            <span className="text-sm font-medium text-blue-600">8 lần</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedLeadDetail.tags.map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className={cn(
+                                "px-2 py-1 text-xs font-medium rounded-full",
+                                tag.toLowerCase().includes('vip') ? "bg-red-100 text-red-800" :
+                                tag.toLowerCase().includes('hot') ? "bg-red-100 text-red-800" :
+                                tag.toLowerCase().includes('enterprise') ? "bg-purple-100 text-purple-800" :
+                                "bg-gray-100 text-gray-800"
+                              )}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {leadDetailTab === 'history' && (
+                  <div className="text-center py-12 text-gray-500">
+                    Chức năng lịch sử tương tác đang được phát triển
+                  </div>
+                )}
+
+                {leadDetailTab === 'notes' && (
+                  <div className="text-center py-12 text-gray-500">
+                    Chức năng ghi chú & nội dung đang được phát triển
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedLeadDetail(null)}
+                  className="px-4 py-2 text-sm"
+                >
+                  Đóng
+                </Button>
+                <Button
+                  className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Chuyển đổi
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
