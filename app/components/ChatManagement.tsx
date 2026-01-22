@@ -104,12 +104,7 @@ interface ZaloConversation {
 
 const vietnameseNames = [
   'Nguyễn Hải Yến', 'Nguyễn Văn Tiến', 'Lam Omichat', 'Vũ Trần Digital',
-  'Lê Thị Trang', 'ABQ Startup Com', 'TunVN - HỖ TRỢ TÀI CHÍNH', 'Quản Trị Quán - Thống kê',
-  'Trần Minh Hoàng', 'Phạm Thu Hà', 'Hoàng Quốc Việt', 'Đặng Thị Lan',
-  'Bùi Văn Hùng', 'Võ Thị Mai', 'Đỗ Anh Tuấn', 'Lý Minh Châu',
-  'Phan Văn Long', 'Ngô Thị Hương', 'Dương Văn Nam', 'Trịnh Thị Linh',
-  'Hồ Văn Phúc', 'Đinh Thị Nga', 'Tô Văn Đức', 'Mai Thị Hoa',
-  'Chu Văn Khải', 'Lương Thị Thanh', 'Huỳnh Văn Tài', 'Cao Thị My'
+  'Lê Thị Trang', 'ABQ Startup Com', 'TunVN - HỖ TRỢ TÀI CHÍNH'
 ]
 
 const companies = [
@@ -130,15 +125,7 @@ const lastMessages = [
   'Em muốn tìm hiểu về gói CRM Professional',
   'Cho mình hỏi về tính năng marketing automation',
   'Tôi cần tư vấn về giải pháp CRM',
-  'Hợp đồng sắp hết hạn rồi',
-  'Hi, budget khoảng 10-15 triệu/năm',
-  'Có hỗ trợ A/B testing không?',
-  'Bên tôi có 8 nhân viên',
-  'Dạ được ạ! Em sẽ gửi báo giá',
-  'Anh có thể demo được không?',
-  'Khuyến mãi cho khách hàng cũ có không?',
-  'Tính năng báo cáo có đầy đủ không?',
-  'Có thể tích hợp với hệ thống hiện tại không?'
+  'Hợp đồng sắp hết hạn rồi'
 ]
 
 const tags = [
@@ -471,8 +458,8 @@ export default function ChatManagement() {
   const unreadCount = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      <div className="grid grid-cols-12 gap-0 h-full">
+    <div className="h-full flex flex-col bg-white overflow-hidden">
+      <div className="grid grid-cols-12 gap-0 h-full overflow-hidden">
 
         {/* LEFT PANEL - Conversation List */}
         <div className="col-span-3 border-r border-gray-200 h-full flex flex-col bg-white">
@@ -619,75 +606,115 @@ export default function ChatManagement() {
               {/* Contacts List - Friends */}
               {contactTab === 'friends' && (
                 <ScrollArea className="flex-1">
-                  {demoContacts.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarImage src={contact.avatar} />
-                          <AvatarFallback className="bg-blue-500 text-white text-xs">
-                            {contact.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-gray-900 truncate">
-                            {contact.name}
-                          </h4>
-                          <p className="text-xs text-gray-500 truncate">
-                            Tên danh bạ: {contact.company}
-                          </p>
+                  {demoContacts.map((contact, idx) => {
+                    // Use corresponding conversation from demo data (same as Groups)
+                    const conversation = conversations[idx % conversations.length]
+                    return (
+                      <div
+                        key={contact.id}
+                        onClick={() => {
+                          if (conversation) {
+                            handleSelectConversation(conversation)
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+                          selectedConversation?.id === conversation?.id && "bg-blue-50 border-l-4 border-l-blue-600"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="w-10 h-10 flex-shrink-0">
+                            <AvatarImage src={contact.avatar} />
+                            <AvatarFallback className="bg-blue-500 text-white text-xs">
+                              {contact.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">
+                              {contact.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 truncate">
+                              Tên danh bạ: {contact.company}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </ScrollArea>
               )}
 
               {/* Groups List */}
               {contactTab === 'groups' && (
                 <ScrollArea className="flex-1">
-                  {['365 DAYS MMO', 'ABQ Startup Community', 'ACAC ACADEMY', 'AE TAO MA CAO', 'AI CẦM TAY CHỈ VIỆC - Gr04', 'AI CẦM TAY CHỈ VIỆC 07', 'AI CẦM TAY CHỈ VIỆC 10', 'Amai Ft Ninja'].map((groupName, idx) => (
-                    <div
-                      key={idx}
-                      className="px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarFallback className="bg-orange-500 text-white text-xs font-semibold">
-                            {groupName.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-gray-900 truncate">
-                            {groupName}
-                          </h4>
+                  {['365 DAYS MMO', 'ABQ Startup Community', 'ACAC ACADEMY', 'AE TAO MA CAO', 'AI CẦM TAY CHỈ VIỆC - Gr04', 'AI CẦM TAY CHỈ VIỆC 07', 'AI CẦM TAY CHỈ VIỆC 10', 'Amai Ft Ninja'].map((groupName, idx) => {
+                    // Use corresponding conversation from demo data
+                    const conversation = conversations[idx % conversations.length]
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (conversation) {
+                            handleSelectConversation(conversation)
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+                          selectedConversation?.id === conversation?.id && "bg-blue-50 border-l-4 border-l-blue-600"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="w-10 h-10 flex-shrink-0">
+                            <AvatarFallback className="bg-orange-500 text-white text-xs font-semibold">
+                              {groupName.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">
+                              {groupName}
+                            </h4>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </ScrollArea>
               )}
 
               {/* Strangers List */}
               {contactTab === 'strangers' && (
                 <ScrollArea className="flex-1">
-                  <div className="px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar className="w-10 h-10 flex-shrink-0">
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=DuongLuan" />
-                        <AvatarFallback className="bg-gray-400 text-white text-xs">
-                          DL
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-gray-900 truncate">
-                          Dương Luân
-                        </h4>
+                  {(() => {
+                    // Use first conversation for stranger demo
+                    const conversation = conversations[0]
+                    return (
+                      <div
+                        onClick={() => {
+                          if (conversation) {
+                            handleSelectConversation(conversation)
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-2.5 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors",
+                          selectedConversation?.id === conversation?.id && "bg-blue-50 border-l-4 border-l-blue-600"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="w-10 h-10 flex-shrink-0">
+                            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=DuongLuan" />
+                            <AvatarFallback className="bg-gray-400 text-white text-xs">
+                              DL
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">
+                              Dương Luân
+                            </h4>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )
+                  })()}
                 </ScrollArea>
               )}
             </div>
@@ -747,7 +774,7 @@ export default function ChatManagement() {
 
         {/* MIDDLE PANEL - Chat Messages */}
         <div className={cn(
-          "border-r border-gray-200 h-full flex flex-col bg-white",
+          "border-r border-gray-200 h-full flex flex-col bg-white overflow-hidden",
           showContactDetail ? "col-span-6" : "col-span-9"
         )}>
           {selectedConversation ? (
@@ -790,11 +817,11 @@ export default function ChatManagement() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="In">
+                  {/* <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="In">
                     <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                     </svg>
-                  </Button>
+                  </Button> */}
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="Gọi điện">
                     <Phone className="w-4 h-4 text-gray-600" />
                   </Button>

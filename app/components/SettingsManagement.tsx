@@ -3702,7 +3702,7 @@ export default function SettingsManagement() {
                   <Label>Loại tích hợp</Label>
                   <Select
                     value={selectedIntegrationType}
-                    onValueChange={setSelectedIntegrationType}
+                    onValueChange={(value) => setSelectedIntegrationType(value as 'zalo-personal' | 'zalo-oa' | 'facebook' | '')}
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Chọn loại tích hợp" />
