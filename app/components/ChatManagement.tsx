@@ -630,11 +630,11 @@ export default function ChatManagement() {
       <div className="grid grid-cols-12 gap-0 h-full overflow-hidden">
 
         {/* LEFT PANEL - Conversation List */}
-        <div className="col-span-3 border-r border-gray-200 h-full flex flex-col bg-white">
+        <div className="col-span-3 border-r border-gray-200 h-full flex flex-col bg-white overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">Tin nhắn</h2>
+              <h2 className="text-base font-semibold text-gray-900">Tin nhắn</h2>
             </div>
 
             {/* Search */}
@@ -656,13 +656,13 @@ export default function ChatManagement() {
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </div>
               </button>
-              <button className="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors">
+              <button className="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
                 <span className="text-white font-semibold text-xs">OA</span>
                 <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   1
                 </div>
               </button>
-              <button className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-700 hover:bg-blue-800 transition-colors">
+              <button className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.546 20.2A1 1 0 003.8 21.454l3.032-.892A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 2a8 8 0 110 16 8 8 0 010-16zm-1 5v6h2V9h-2z"/>
                 </svg>
@@ -983,7 +983,7 @@ export default function ChatManagement() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-0.5">
-                        <h4 className="font-semibold text-sm truncate pr-2">
+                        <h4 className="font-semibold text-sm truncate pr-2 max-w-[180px]">
                           {conversation.contact.name}
                         </h4>
                         <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
@@ -992,7 +992,7 @@ export default function ChatManagement() {
                       </div>
 
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs text-gray-600 truncate flex-1">
+                        <p className="text-xs text-gray-600 truncate flex-1 max-w-[200px]">
                           {conversation.lastMessage?.content || 'Chưa có tin nhắn'}
                         </p>
 
@@ -1251,7 +1251,7 @@ export default function ChatManagement() {
                         <Button
                           onClick={handleSendMessage}
                           disabled={!messageInput.trim()}
-                          className="h-8 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm"
+                          className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Gửi tin nhắn"
                         >
                           <Send className="w-4 h-4 mr-1" />
@@ -1283,10 +1283,10 @@ export default function ChatManagement() {
               <button
                 onClick={() => setRightPanelTab('zalo')}
                 className={cn(
-                  "px-4 py-3 text-sm font-medium transition-colors",
+                  "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                   rightPanelTab === 'zalo'
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-blue-600"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 )}
               >
                 Zalo
@@ -1295,10 +1295,10 @@ export default function ChatManagement() {
                 <button
                   onClick={() => setRightPanelTab('community')}
                   className={cn(
-                    "px-4 py-3 text-sm font-medium transition-colors",
+                    "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                     rightPanelTab === 'community'
-                      ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   )}
                 >
                   Thông tin cộng đồng
@@ -1307,10 +1307,10 @@ export default function ChatManagement() {
                 <button
                   onClick={() => setRightPanelTab('sync')}
                   className={cn(
-                    "px-4 py-3 text-sm font-medium transition-colors",
+                    "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                     rightPanelTab === 'sync'
-                      ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-600 hover:text-blue-600"
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   )}
                 >
                   Đồng bộ
@@ -1319,10 +1319,10 @@ export default function ChatManagement() {
               <button
                 onClick={() => setRightPanelTab('files')}
                 className={cn(
-                  "px-4 py-3 text-sm font-medium transition-colors",
+                  "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                   rightPanelTab === 'files'
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-blue-600"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 )}
               >
                 File chia sẻ
@@ -1332,31 +1332,107 @@ export default function ChatManagement() {
             {/* Tab Content: Zalo */}
             {rightPanelTab === 'zalo' && (
               <>
-                {/* Contact Profile Header */}
-                <div className="p-4 border-b border-gray-200 text-center bg-gradient-to-b from-blue-50 to-white flex-shrink-0">
-              <Avatar className="w-20 h-20 mx-auto mb-3 border-4 border-white shadow-lg">
-                <AvatarImage src={selectedConversation.contact.avatar} />
-                <AvatarFallback className="bg-blue-500 text-white text-2xl">
-                  {selectedConversation.contact.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+                {selectedConversation.conversationType === 'group' ? (
+                  /* Community Info for Group Chats */
+                  <>
+                    {/* Community Header with Banner */}
+                    <div className="flex-shrink-0 bg-white">
+                      {/* Banner */}
+                      <div className="h-24 bg-gradient-to-r from-blue-500 to-indigo-500 relative">
+                        {/* Avatar overlapping banner */}
+                        <div className="absolute -bottom-10 left-4 z-10">
+                          <Avatar className="w-20 h-20 border-4 border-white shadow-md">
+                            <AvatarImage src={selectedConversation.contact.avatar} />
+                            <AvatarFallback className="bg-blue-500 text-white text-base">
+                              {selectedConversation.contact.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
 
-              <h3 className="font-semibold text-lg">{selectedConversation.contact.name}</h3>
-              <p className="text-sm text-gray-500">{selectedConversation.contact.company}</p>
-            </div>
+                      {/* Info section */}
+                      <div className="pt-12 px-4 pb-4 border-b border-gray-200">
+                        <h3 className="font-semibold text-base text-gray-900">{selectedConversation.contact.name}</h3>
+                        <p className="text-sm text-gray-500">{demoGroupMembers.length} thành viên</p>
+                      </div>
+                    </div>
+
+                    {/* Community Info Content */}
+                    <ScrollArea className="flex-1">
+                      <div className="p-4 space-y-4">
+                        {/* Basic Info */}
+                        <div>
+                          <h4 className="font-semibold text-sm mb-3 text-gray-700">Thông tin cộng đồng</h4>
+                          <div className="space-y-2.5 text-sm">
+                            <div className="flex items-start gap-2">
+                              <User className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <span className="text-gray-500 text-xs">Tên nhóm:</span>
+                                <p className="text-gray-900 font-medium">{selectedConversation.contact.name}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <User className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <span className="text-gray-500 text-xs">Số thành viên:</span>
+                                <p className="text-gray-900 font-medium">{demoGroupMembers.length} người</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <ClockIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <span className="text-gray-500 text-xs">Ngày tạo:</span>
+                                <p className="text-gray-900 font-medium">
+                                  {new Date(selectedConversation.contact.firstContactedAt).toLocaleDateString('vi-VN')}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ScrollArea>
+                  </>
+                ) : (
+                  /* Personal Contact Info */
+                  <>
+                    {/* Contact Profile Header with Banner */}
+                    <div className="flex-shrink-0 bg-white">
+                      {/* Banner */}
+                      <div className="h-24 bg-gradient-to-r from-blue-500 to-indigo-500 relative">
+                        {/* Avatar overlapping banner */}
+                        <div className="absolute -bottom-10 left-4 z-10">
+                          <Avatar className="w-20 h-20 border-4 border-white shadow-md">
+                            <AvatarImage src={selectedConversation.contact.avatar} />
+                            <AvatarFallback className="bg-blue-500 text-white text-base">
+                              {selectedConversation.contact.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+
+                      {/* Info section */}
+                      <div className="pt-12 px-4 pb-4 border-b border-gray-200">
+                        <h3 className="font-semibold text-base text-gray-900">{selectedConversation.contact.name}</h3>
+                        <p className="text-sm text-gray-500">{selectedConversation.contact.company}</p>
+                      </div>
+                    </div>
 
             {/* Information Tabs */}
             <Tabs defaultValue="info" className="flex-1 flex flex-col">
               <TabsList className="w-full justify-start border-b rounded-none p-0 bg-white h-auto">
-                <TabsTrigger value="info" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 text-xs px-4">
+                <TabsTrigger value="info" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
                   Thông tin
                 </TabsTrigger>
-                <TabsTrigger value="history" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 text-xs px-4">
-                  Lịch sử
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 text-xs px-4">
-                  Ghi chú
-                </TabsTrigger>
+                {conversationCustomerMap.has(selectedConversation.id) && (
+                  <>
+                    <TabsTrigger value="history" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
+                      Lịch sử
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
+                      Ghi chú
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
 
               <TabsContent value="info" className="flex-1 overflow-y-auto p-4 mt-0">
@@ -1406,27 +1482,6 @@ export default function ChatManagement() {
                       </Button>
                     </div>
                   </div>
-
-                  {/* Purchase History */}
-                  {selectedConversation.contact.purchaseHistory.length > 0 && (
-                    <div className="pt-3 border-t border-gray-100">
-                      <h4 className="font-semibold text-sm mb-3 text-gray-700">Lịch sử mua hàng</h4>
-                      <div className="space-y-2">
-                        {selectedConversation.contact.purchaseHistory.map((purchase) => (
-                          <div key={purchase.orderId} className="border border-gray-200 rounded-lg p-3 text-sm bg-gray-50">
-                            <div className="font-medium text-gray-900">{purchase.productName}</div>
-                            <div className="text-blue-600 font-semibold mt-1">{formatCurrency(purchase.amount)}</div>
-                            <div className="text-gray-500 text-xs mt-1">
-                              {new Date(purchase.purchaseDate).toLocaleDateString('vi-VN')}
-                            </div>
-                            <Badge variant="secondary" className="mt-2 text-xs">
-                              {purchase.status}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </TabsContent>
 
@@ -1504,6 +1559,8 @@ export default function ChatManagement() {
                 </div>
               </TabsContent>
             </Tabs>
+                  </>
+                )}
               </>
             )}
 
@@ -1551,7 +1608,7 @@ export default function ChatManagement() {
                                 <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
                                   <Avatar className="w-16 h-16 flex-shrink-0">
                                     <AvatarImage src={connectedCustomer.avatar} />
-                                    <AvatarFallback className="bg-blue-500 text-white text-lg">
+                                    <AvatarFallback className="bg-blue-500 text-white text-base">
                                       {connectedCustomer.name.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
@@ -1733,22 +1790,9 @@ export default function ChatManagement() {
                             <Search className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" className="text-xs h-10">
+                        <Button variant="outline" size="sm" className="text-xs h-8 px-3">
                           Thêm mới
                         </Button>
-                      </div>
-
-                      {/* Checkbox row */}
-                      <div className="flex items-center mb-4">
-                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={syncSearchAll}
-                            onChange={(e) => setSyncSearchAll(e.target.checked)}
-                            className="rounded border-gray-300"
-                          />
-                          Tìm kiếm cả số liên hệ
-                        </label>
                       </div>
 
                       {/* Results or Empty state */}
@@ -1877,7 +1921,7 @@ export default function ChatManagement() {
                                     ) : (
                                       <Button 
                                         size="sm" 
-                                        className="h-8 text-xs bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+                                        className="h-8 text-xs px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
                                         onClick={() => {
                                           const newConnected = new Set(connectedCustomers)
                                           newConnected.add(customer.id)
@@ -2180,13 +2224,13 @@ export default function ChatManagement() {
                               <span className="text-xs text-gray-400">{file.time} • {file.size}</span>
                             </div>
                             <div className="flex gap-2 mt-2">
-                              <Button variant="outline" size="sm" className="h-7 text-xs">
+                              <Button variant="outline" size="sm" className="h-8 text-xs px-3">
                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                                 Tải xuống
                               </Button>
-                              <Button size="sm" className="h-7 text-xs bg-blue-500 hover:bg-blue-600">
+                              <Button size="sm" className="h-8 text-xs px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
@@ -2213,12 +2257,12 @@ export default function ChatManagement() {
               <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-semibold text-gray-900">Chi tiết Lead - {selectedLeadDetail.name}</h3>
+                    <h3 className="text-base font-semibold text-gray-900">Chi tiết Lead - {selectedLeadDetail.name}</h3>
                     <Badge className={cn(
-                      "text-xs px-3 py-1",
-                      selectedLeadDetail.status === 'customer' ? "bg-green-100 text-green-800" :
-                      selectedLeadDetail.status === 'lead' ? "bg-blue-100 text-blue-800" :
-                      "bg-yellow-100 text-yellow-800"
+                      "text-xs px-2 py-0.5 h-5",
+                      selectedLeadDetail.status === 'customer' ? "bg-green-100 text-green-700" :
+                      selectedLeadDetail.status === 'lead' ? "bg-blue-100 text-blue-700" :
+                      "bg-yellow-100 text-yellow-700"
                     )}>
                       {selectedLeadDetail.status === 'customer' ? 'Chuyển đổi thành công' :
                        selectedLeadDetail.status === 'lead' ? 'Lead mới' : 'Tiềm năng'}
@@ -2278,7 +2322,7 @@ export default function ChatManagement() {
                     <div className="space-y-6">
                       {/* Thông tin cơ bản */}
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <User className="w-5 h-5 text-blue-500" />
                           Thông tin cơ bản
                         </h4>
@@ -2303,7 +2347,7 @@ export default function ChatManagement() {
 
                       {/* Thông tin liên hệ */}
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <Phone className="w-5 h-5 text-green-500" />
                           Thông tin liên hệ
                         </h4>
@@ -2340,7 +2384,7 @@ export default function ChatManagement() {
                     <div className="space-y-6">
                       {/* Thông tin bán hàng */}
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <Briefcase className="w-5 h-5 text-purple-500" />
                           Thông tin bán hàng
                         </h4>
@@ -2366,7 +2410,7 @@ export default function ChatManagement() {
 
                       {/* Thông tin thời gian */}
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <ClockIcon className="w-5 h-5 text-orange-500" />
                           Thông tin thời gian
                         </h4>
@@ -2392,7 +2436,7 @@ export default function ChatManagement() {
 
                       {/* Tags */}
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
+                        <h4 className="text-base font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
                         <div className="flex flex-wrap gap-2">
                           {selectedLeadDetail.tags.map((tag, idx) => (
                             <span
