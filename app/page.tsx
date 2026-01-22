@@ -12,6 +12,7 @@ import TaskManagement from './components/TaskManagement'
 import KPIManagement from './components/KPIManagement'
 import ReportsManagement from './components/ReportsManagement'
 import SettingsManagement from './components/SettingsManagement'
+import ChatManagement from './components/ChatManagement'
 import ChatbotAssistant from './components/ChatbotAssistantNew'
 // import VileadsChatbot from './components/VileadsChatbot'
 
@@ -65,6 +66,8 @@ export default function Home() {
         return <ReportsManagement />
       case 'settings':
         return <SettingsManagement />
+      case 'chat':
+        return <ChatManagement />
       default:
         return userRole === 'accountant' ? <AccountantDashboard /> : <Dashboard />
     }
@@ -80,7 +83,7 @@ export default function Home() {
       />
       <div className="flex-1 flex flex-col overflow-hidden" style={{ marginLeft: '256px' }}>
         <Header />
-        <main className="flex-1 overflow-auto p-6">
+        <main className={currentView === 'chat' ? 'flex-1 overflow-hidden' : 'flex-1 overflow-auto p-6'}>
           {renderContent()}
         </main>
       </div>
