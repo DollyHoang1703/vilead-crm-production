@@ -689,6 +689,10 @@ export default function SettingsManagement() {
   const [showQRModal, setShowQRModal] = useState(false)
   const [showOALinkModal, setShowOALinkModal] = useState(false)
   const [showOAPermissionModal, setShowOAPermissionModal] = useState(false)
+  const [showFacebookModal, setShowFacebookModal] = useState(false)
+  const [fbConnectionStatus, setFbConnectionStatus] = useState<'idle' | 'connecting' | 'selecting' | 'success'>('idle')
+  const [fbPages, setFbPages] = useState<{id: string, name: string, avatar: string, followers: number}[]>([])
+  const [selectedFbPages, setSelectedFbPages] = useState<string[]>([])
   const [qrCheckStatus, setQRCheckStatus] = useState<'pending' | 'checking' | 'success' | 'error'>('pending')
   const [qrCheckInterval, setQRCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [selectedRole, setSelectedRole] = useState<any>(null)
@@ -3428,22 +3432,17 @@ export default function SettingsManagement() {
         setShowIntegrationModal(false)
         setShowOALinkModal(true)
       } else if (selectedIntegrationType === 'facebook') {
-        // Disabled for now
-        alert('Tính năng này sẽ được phát triển sau')
+        setShowIntegrationModal(false)
+        setShowFacebookModal(true)
+        setFbConnectionStatus('idle')
       }
     }
 
-    // Handler: Open OA Permission modal from OA Link modal
+    // Handler: Connect Zalo OA - directly create integration (OAuth handled by Zalo)
     const handleOAConnect = () => {
-      setShowOALinkModal(false)
-      setShowOAPermissionModal(true)
-    }
-
-    // Handler: Grant OA permissions
-    const handleOAGrantPermission = () => {
-      // TODO: Call OAuth API
-      // For now, just add to integrations
-
+      // TODO: Call Zalo OAuth API - Zalo will show their own permission UI
+      // For now, simulate successful connection
+      
       const newIntegration: IntegrationConfig = {
         id: `zalo-oa-${Date.now()}`,
         type: 'zalo',
@@ -3472,7 +3471,7 @@ export default function SettingsManagement() {
       }
 
       setIntegrations(prev => [...prev, newIntegration])
-      setShowOAPermissionModal(false)
+      setShowOALinkModal(false)
       setSelectedIntegrationType('')
     }
 
@@ -3720,10 +3719,10 @@ export default function SettingsManagement() {
                           Kết nối Zalo OA
                         </div>
                       </SelectItem>
-                      <SelectItem value="facebook" disabled>
-                        <div className="flex items-center gap-2 opacity-50">
+                      <SelectItem value="facebook">
+                        <div className="flex items-center gap-2">
                           <Facebook className="w-4 h-4" />
-                          Kết nối Facebook Fanpage (Sắp ra mắt)
+                          Kết nối Facebook Fanpage
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -3875,13 +3874,65 @@ export default function SettingsManagement() {
           </Dialog>
         )}
 
+        {/* Modal: Kết nối Facebook Fanpage */}
+        {showFacebookModal && (
+          <Dialog open={showFacebookModal} onOpenChange={setShowFacebookModal}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-center">
+                  Kết nối Vilead CRM
+                </DialogTitle>
+                <DialogDescription className="text-center">
+                  với Facebook Fanpage
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Logo Section */}
+                <div className="flex items-center justify-center gap-6">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-2xl font-bold text-blue-600">V</span>
+                  </div>
+
+                  <RefreshCw className="w-6 h-6 text-gray-400" />
+
+                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                    <Facebook className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+
+                {/* Info Message */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-700">
+                    Đăng nhập Facebook để kết nối các{' '}
+                    <strong className="text-blue-600">Fanpage</strong> bạn quản lý{' '}
+                    với Vilead CRM
+                  </p>
+                </div>
+
+                {/* Connect Button */}
+                <Button
+                  className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    // TODO: Implement Facebook OAuth
+                    alert('Chức năng đang được phát triển')
+                  }}
+                >
+                  <Facebook className="w-5 h-5 mr-2" />
+                  Kết nối tài khoản Facebook
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* Modal: Kết nối Zalo OA - Step 1 (Link) */}
         {showOALinkModal && (
           <Dialog open={showOALinkModal} onOpenChange={setShowOALinkModal}>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-center">
-                  Kết nối Pancake
+                  Kết nối Vilead CRM
                 </DialogTitle>
                 <DialogDescription className="text-center">
                   với tài khoản Zalo OA
@@ -3920,145 +3971,7 @@ export default function SettingsManagement() {
                   <MessageSquare className="w-5 h-5 mr-2" />
                   Kết nối tài khoản Zalo OA
                 </Button>
-
-                {/* Help Link */}
-                <div className="text-center">
-                  <button className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
-                    <HelpCircle className="w-4 h-4" />
-                    Hướng dẫn kết nối
-                  </button>
-                </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        )}
-
-        {/* Modal: Zalo OA Permissions - Step 2 (OAuth) */}
-        {showOAPermissionModal && (
-          <Dialog open={showOAPermissionModal} onOpenChange={setShowOAPermissionModal}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-xl">
-                  Yêu cầu cấp quyền truy cập Official Account
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                {/* App Info */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white rounded border flex items-center justify-center">
-                      <span className="text-lg font-bold text-blue-600">P</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">Pancake V2</p>
-                      <p className="text-xs text-gray-500">APP ID: 4052056140860594003</p>
-                    </div>
-                  </div>
-
-                  <RefreshCw className="w-5 h-5 text-gray-400" />
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                      <MessageSquare className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Pancake Viet Nam</p>
-                      <p className="text-xs text-gray-500">OA ID: 3310249125083374313</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-gray-700">
-                  Ứng dụng đang yêu cầu Official Account <strong>Pancake Viet Nam</strong> cấp các quyền sau:
-                </p>
-
-                {/* Warning */}
-                <div className="bg-orange-50 border border-orange-200 rounded p-3">
-                  <p className="text-sm text-orange-800">
-                    ⚠️ OA đã <strong>xác thực</strong> và <strong>năng cấp gói</strong> sẽ được sử dụng các API sau:
-                  </p>
-                </div>
-
-                {/* API Permissions */}
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Quyền sử dụng API (7)</h4>
-                  <div className="space-y-1">
-                    {[
-                      'Quyền: Sử dụng ZNS',
-                      'Quyền: Gửi tin nhắn',
-                      'Quyền: Quản lý thông tin OA',
-                      'Quyền: Quản lý tin nhắn người quan tâm',
-                      'Quyền: Quản lý Nhóm Chat - GMF',
-                      'Quyền: Quản lý cửa hàng, đơn hàng',
-                      'Quyền: Quản lý bài viết'
-                    ].map((permission, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <span>{permission}</span>
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Event Permissions */}
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Quyền nhận sự kiện (5)</h4>
-                  <div className="space-y-1">
-                    {[
-                      'Quyền: Nhận sự kiện quản lý gửi ZNS',
-                      'Quyền: Nhận sự kiện quản lý tin nhắn',
-                      'Quyền: Nhận sự kiện quản lý người quan tâm',
-                      'Quyền: Nhận sự kiện Quản lý Nhóm Chat - GMF',
-                      'Quyền: Nhận sự kiện quản lý cửa hàng, đơn hàng'
-                    ].map((permission, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <span>{permission}</span>
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Terms Checkbox */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="terms-checkbox"
-                    className="w-4 h-4 rounded border-gray-300"
-                    defaultChecked
-                  />
-                  <label htmlFor="terms-checkbox" className="text-sm text-gray-700">
-                    Tôi đã đọc và đồng ý với{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Điều khoản sử dụng của Zalo
-                    </a>
-                    {' '}và{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Điều khoản sử dụng Mạng xã hội Zalo
-                    </a>
-                  </label>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowOAPermissionModal(false)}
-                >
-                  Hủy
-                </Button>
-                <Button onClick={handleOAGrantPermission}>
-                  Cấp quyền
-                </Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         )}

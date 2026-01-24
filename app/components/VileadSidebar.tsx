@@ -241,8 +241,8 @@ export default function VileadSidebar({
           </Button>
         </div>
 
-        {/* Role Switcher */}
-        {!isCollapsed && (
+        {/* Role Switcher - Hidden for now */}
+        {/* {!isCollapsed && (
           <div className="px-4 py-3 border-b border-gray-200">
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -262,7 +262,7 @@ export default function VileadSidebar({
               </Select>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">

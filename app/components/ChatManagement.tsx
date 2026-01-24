@@ -50,7 +50,8 @@ import {
   TrendingUp,
   Eye,
   MessageSquare,
-  Settings
+  Settings,
+  Globe
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -198,13 +199,20 @@ interface ZaloAccount {
   avatar?: string
   unreadCount: number
   type: 'personal' | 'oa'
+  platform: 'zalo-personal' | 'zalo-oa' | 'facebook'
 }
 
 const connectedZaloAccounts: ZaloAccount[] = [
-  { id: '1', name: 'Chính Nghĩa', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChinhNghia', unreadCount: 9, type: 'personal' },
-  { id: '2', name: 'Hải Yến Shop', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HaiYen', unreadCount: 25, type: 'personal' },
-  { id: '3', name: 'Tech Support', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSupport', unreadCount: 3, type: 'oa' },
-  { id: '4', name: 'Sale Team', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SaleTeam', unreadCount: 0, type: 'personal' },
+  // Zalo Personal accounts
+  { id: '1', name: 'Chính Nghĩa', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChinhNghia', unreadCount: 9, type: 'personal', platform: 'zalo-personal' },
+  { id: '2', name: 'Hải Yến Shop', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HaiYen', unreadCount: 25, type: 'personal', platform: 'zalo-personal' },
+  { id: '4', name: 'Sale Team', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SaleTeam', unreadCount: 0, type: 'personal', platform: 'zalo-personal' },
+  // Zalo OA accounts
+  { id: '3', name: 'Tech Support OA', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSupport', unreadCount: 3, type: 'oa', platform: 'zalo-oa' },
+  { id: '5', name: 'Vilead CRM Official', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadOA', unreadCount: 1, type: 'oa', platform: 'zalo-oa' },
+  // Facebook accounts
+  { id: '6', name: 'Vilead CRM Fanpage', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadFB', unreadCount: 5, type: 'personal', platform: 'facebook' },
+  { id: '7', name: 'Tech Solutions VN', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSolFB', unreadCount: 2, type: 'personal', platform: 'facebook' },
 ]
 
 // Demo shared files data
@@ -491,6 +499,7 @@ export default function ChatManagement() {
   const [filterUnread, setFilterUnread] = useState(false)
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'contacts'>('all')
   const [contactTab, setContactTab] = useState<'friends' | 'groups' | 'strangers'>('friends')
+  const [selectedChannel, setSelectedChannel] = useState<'zalo-personal' | 'zalo-oa' | 'facebook'>('zalo-personal')
   const [selectedAccount, setSelectedAccount] = useState<ZaloAccount>(connectedZaloAccounts[0])
   const [showAccountDropdown, setShowAccountDropdown] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<'zalo' | 'sync' | 'community' | 'files'>('zalo')
@@ -650,22 +659,74 @@ export default function ChatManagement() {
 
             {/* Channel Icons */}
             <div className="flex gap-2 mb-3">
-              <button className="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
+              <button 
+                onClick={() => {
+                  setSelectedChannel('zalo-personal')
+                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'zalo-personal')
+                  if (firstAccount) setSelectedAccount(firstAccount)
+                }}
+                className={cn(
+                  "relative flex items-center justify-center w-10 h-10 rounded-full transition-colors",
+                  selectedChannel === 'zalo-personal' 
+                    ? "bg-blue-600 ring-2 ring-blue-300 ring-offset-1" 
+                    : "bg-blue-500 hover:bg-blue-600"
+                )}
+              >
                 <span className="text-white font-semibold text-xs">ZL</span>
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </div>
+                {(() => {
+                  const count = connectedZaloAccounts.filter(a => a.platform === 'zalo-personal').reduce((sum, a) => sum + a.unreadCount, 0)
+                  return count > 0 ? (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {count > 99 ? '99+' : count}
+                    </div>
+                  ) : null
+                })()}
               </button>
-              <button className="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
+              <button 
+                onClick={() => {
+                  setSelectedChannel('zalo-oa')
+                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'zalo-oa')
+                  if (firstAccount) setSelectedAccount(firstAccount)
+                }}
+                className={cn(
+                  "relative flex items-center justify-center w-10 h-10 rounded-full transition-colors",
+                  selectedChannel === 'zalo-oa' 
+                    ? "bg-blue-600 ring-2 ring-blue-300 ring-offset-1" 
+                    : "bg-blue-500 hover:bg-blue-600"
+                )}
+              >
                 <span className="text-white font-semibold text-xs">OA</span>
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  1
-                </div>
+                {(() => {
+                  const count = connectedZaloAccounts.filter(a => a.platform === 'zalo-oa').reduce((sum, a) => sum + a.unreadCount, 0)
+                  return count > 0 ? (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {count > 99 ? '99+' : count}
+                    </div>
+                  ) : null
+                })()}
               </button>
-              <button className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2.546 20.2A1 1 0 003.8 21.454l3.032-.892A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 2a8 8 0 110 16 8 8 0 010-16zm-1 5v6h2V9h-2z"/>
-                </svg>
+              <button 
+                onClick={() => {
+                  setSelectedChannel('facebook')
+                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'facebook')
+                  if (firstAccount) setSelectedAccount(firstAccount)
+                }}
+                className={cn(
+                  "relative flex items-center justify-center w-10 h-10 rounded-full transition-colors",
+                  selectedChannel === 'facebook' 
+                    ? "bg-blue-700 ring-2 ring-blue-300 ring-offset-1" 
+                    : "bg-blue-600 hover:bg-blue-700"
+                )}
+              >
+                <span className="text-white font-semibold text-xs">FB</span>
+                {(() => {
+                  const count = connectedZaloAccounts.filter(a => a.platform === 'facebook').reduce((sum, a) => sum + a.unreadCount, 0)
+                  return count > 0 ? (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {count > 99 ? '99+' : count}
+                    </div>
+                  ) : null
+                })()}
               </button>
             </div>
 
@@ -700,7 +761,7 @@ export default function ChatManagement() {
               {/* Dropdown Menu */}
               {showAccountDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1">
-                  {connectedZaloAccounts.map((account) => (
+                  {connectedZaloAccounts.filter(account => account.platform === selectedChannel).map((account) => (
                     <button
                       key={account.id}
                       onClick={() => {
@@ -774,22 +835,24 @@ export default function ChatManagement() {
                 >
                   Chưa đọc
                 </Button>
-                <Button
-                  variant={activeTab === 'contacts' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    setActiveTab('contacts')
-                    setFilterUnread(false)
-                  }}
-                  className={cn(
-                    "text-xs h-8",
-                    activeTab === 'contacts'
-                      ? "bg-blue-500 hover:bg-blue-600 text-white"
-                      : "hover:bg-gray-100 text-gray-700"
-                  )}
-                >
-                  Danh bạ
-                </Button>
+                {selectedChannel !== 'facebook' && (
+                  <Button
+                    variant={activeTab === 'contacts' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => {
+                      setActiveTab('contacts')
+                      setFilterUnread(false)
+                    }}
+                    className={cn(
+                      "text-xs h-8",
+                      activeTab === 'contacts'
+                        ? "bg-blue-500 hover:bg-blue-600 text-white"
+                        : "hover:bg-gray-100 text-gray-700"
+                    )}
+                  >
+                    Danh bạ
+                  </Button>
+                )}
               </div>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
                 <Filter className="w-4 h-4 text-gray-600" />
@@ -1289,7 +1352,7 @@ export default function ChatManagement() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 )}
               >
-                Zalo
+                {selectedChannel === 'facebook' ? 'Facebook' : 'Zalo'}
               </button>
               {selectedConversation.conversationType === 'group' ? (
                 <button
@@ -1441,18 +1504,27 @@ export default function ChatManagement() {
                   <div>
                     <h4 className="font-semibold text-sm mb-3 text-gray-700">Thông tin liên hệ</h4>
                     <div className="space-y-2.5 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="w-4 h-4 text-gray-400" />
-                        <span>{selectedConversation.contact.phone || 'Chưa có'}</span>
-                      </div>
+                      {selectedChannel === 'facebook' ? (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span>{selectedConversation.contact.location || 'Chưa có'}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          <span>{selectedConversation.contact.phone || 'Chưa có'}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-gray-600">
                         <Mail className="w-4 h-4 text-gray-400" />
                         <span className="truncate">{selectedConversation.contact.email || 'Chưa có'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span>{selectedConversation.contact.location || 'Chưa có'}</span>
-                      </div>
+                      {selectedChannel !== 'facebook' && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span>{selectedConversation.contact.location || 'Chưa có'}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
