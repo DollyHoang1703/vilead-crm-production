@@ -2590,21 +2590,17 @@ export default function SalesManagement() {
             {/* Pipeline Cards in horizontal layout */}
             <div className="flex flex-wrap gap-2 justify-between">
               {/* 1. Lead mới - BẮT BUỘC */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'new' 
-                    ? 'border-gray-400 shadow-md ring-2 ring-gray-200' 
-                    : 'border-gray-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'new' ? 'ring-2 ring-purple-700' : ''}`}
                 onClick={() => handlePipelineStageClick('new')}
               >
                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-new')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
                     {showTooltip === 'stage-new' && (
                       <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
                         <div className="max-w-xs">
@@ -2619,11 +2615,11 @@ export default function SalesManagement() {
                   <span className="text-sm">🆕</span>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Lead mới</p>
-                  <p className="text-lg font-bold text-gray-900">{pipelineStats.newLeads}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-gray-500">T.trước: 1</p>
-                    <p className="text-xs text-green-600 font-medium">+200%</p>
+                  <p className="text-base font-semibold text-white mb-2">Lead mới</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.newLeads}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 1</p>
+                    <p className="text-sm text-white/90 font-semibold">+200%</p>
                   </div>
                 </div>
               </div>
@@ -2634,21 +2630,17 @@ export default function SalesManagement() {
               </div>
 
               {/* 2. Đang tư vấn - LINH ĐỘNG */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'contacted' 
-                    ? 'border-blue-400 shadow-md ring-2 ring-blue-200' 
-                    : 'border-blue-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'contacted' ? 'ring-2 ring-blue-700' : ''}`}
                 onClick={() => handlePipelineStageClick('contacted')}
               >
                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-contacted')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-blue-400 hover:text-blue-600 cursor-help" />
+                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
                     {showTooltip === 'stage-contacted' && (
                       <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
                         <div className="max-w-xs">
@@ -2663,11 +2655,11 @@ export default function SalesManagement() {
                   <span className="text-sm">💬</span>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-600 mb-1">Đang tư vấn</p>
-                  <p className="text-lg font-bold text-blue-900">{pipelineStats.contactedLeads}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-blue-500">T.trước: 2</p>
-                    <p className="text-xs text-green-600 font-medium">+50%</p>
+                  <p className="text-base font-semibold text-white mb-2">Đang tư vấn</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.contactedLeads}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 2</p>
+                    <p className="text-sm text-white/90 font-semibold">+50%</p>
                   </div>
                 </div>
               </div>
@@ -2678,27 +2670,23 @@ export default function SalesManagement() {
               </div>
 
               {/* 3. Đã gửi ĐX - LINH ĐỘNG */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'qualified' 
-                    ? 'border-green-400 shadow-md ring-2 ring-green-200' 
-                    : 'border-green-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'qualified' ? 'ring-2 ring-green-700' : ''}`}
                 onClick={() => handlePipelineStageClick('qualified')}
               >
                 <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-qualified')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-green-400 hover:text-green-600 cursor-help" />
+                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
                     {showTooltip === 'stage-qualified' && (
                       <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
                         <div className="max-w-xs">
                           <p className="font-medium mb-1">📄 Đã gửi ĐX [LINH ĐỘNG]</p>
                           <p>Có thể tùy chỉnh tên, màu sắc, xóa hoặc thêm giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Đã gửi đề xuất/báo giá cho khách hàng.</p>
+                          <p className="mt-1 text-gray-300">Đã gửi đề xuất/hợp đồng cho khách.</p>
                         </div>
                         <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
                       </div>
@@ -2707,11 +2695,11 @@ export default function SalesManagement() {
                   <span className="text-sm">📄</span>
                 </div>
                 <div>
-                  <p className="text-xs text-green-600 mb-1">Đã gửi ĐX</p>
-                  <p className="text-lg font-bold text-green-900">{pipelineStats.qualifiedLeads}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-green-500">T.trước: 2</p>
-                    <p className="text-xs text-green-600 font-medium">+100%</p>
+                  <p className="text-base font-semibold text-white mb-2">Đã gửi ĐX</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.qualifiedLeads}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 2</p>
+                    <p className="text-sm text-white/90 font-semibold">+100%</p>
                   </div>
                 </div>
               </div>
@@ -4084,7 +4072,7 @@ export default function SalesManagement() {
 
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       {/* Notification */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${

@@ -1786,7 +1786,7 @@ export default function SettingsManagement() {
   
   // Color picker state
   const [showColorPicker, setShowColorPicker] = useState(false)
-  const [colorPickerTarget, setColorPickerTarget] = useState<'add' | 'edit'>('add')
+  const [colorPickerTarget, setColorPickerTarget] = useState<'add' | 'edit' | 'tag'>('add')
   const [tempColor, setTempColor] = useState({ h: 0, s: 100, l: 50, hex: '#3B82F6' })
   
   // Drag and drop state for stages
@@ -1852,6 +1852,260 @@ export default function SettingsManagement() {
     return true
   })
 
+  // Sales Stage Handlers (moved from WorkflowManagement for Dialog access)
+  const handleAddSalesStage = () => {
+    if (!newStageForm.name.trim()) return
+
+    // Calculate new order based on position
+    let newOrder = 1
+    const nonFixedStages = salesStages.filter(s => !s.isFixed)
+
+    if (newStageForm.position === 'start') {
+      // Insert at beginning of non-fixed stages
+      const firstNonFixedOrder = Math.min(...nonFixedStages.map(s => s.order))
+      newOrder = firstNonFixedOrder - 0.5
+    } else if (newStageForm.position === 'end') {
+      // Insert at end
+      newOrder = Math.max(...salesStages.map(s => s.order)) + 1
+    } else if (newStageForm.position === 'after' && newStageForm.afterStageId) {
+      // Insert after specific stage
+      const afterStage = salesStages.find(s => s.id === newStageForm.afterStageId)
+      if (afterStage) {
+        const nextStages = salesStages.filter(s => s.order > afterStage.order).sort((a, b) => a.order - b.order)
+        if (nextStages.length > 0) {
+          newOrder = (afterStage.order + nextStages[0].order) / 2
+        } else {
+          newOrder = afterStage.order + 1
+        }
+      }
+    }
+
+    const newStage: SalesStage = {
+      id: `custom_${Date.now()}`,
+      name: newStageForm.name,
+      description: newStageForm.description,
+      color: newStageForm.color,
+      order: newOrder,
+      isActive: true,
+      isFixed: false,
+      autoTransition: {
+        enabled: false,
+        days: 0,
+        nextStage: ''
+      }
+    }
+
+    setSalesStages(prev => [...prev, newStage].sort((a, b) => a.order - b.order))
+
+    // Reset form
+    setNewStageForm({
+      name: '',
+      value: '',
+      isAuto: true,
+      description: '',
+      color: '#3B82F6',
+      position: 'end',
+      afterStageId: ''
+    })
+    setShowStageModal(false)
+  }
+
+  // Helper function to convert hex to HSL
+  const hexToHsl = (hex: string) => {
+    let r = parseInt(hex.slice(1, 3), 16) / 255
+    let g = parseInt(hex.slice(3, 5), 16) / 255
+    let b = parseInt(hex.slice(5, 7), 16) / 255
+
+    const max = Math.max(r, g, b), min = Math.min(r, g, b)
+    let h = 0, s = 0, l = (max + min) / 2
+
+    if (max !== min) {
+      const d = max - min
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+        case g: h = ((b - r) / d + 2) / 6; break
+        case b: h = ((r - g) / d + 4) / 6; break
+      }
+    }
+
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+  }
+
+  // Helper function to convert HSL to hex
+  const hslToHex = (h: number, s: number, l: number) => {
+    s /= 100
+    l /= 100
+    const a = s * Math.min(l, 1 - l)
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+      return Math.round(255 * color).toString(16).padStart(2, '0')
+    }
+    return `#${f(0)}${f(8)}${f(4)}`
+  }
+
+  // Open color picker
+  const openColorPicker = (target: 'add' | 'edit' | 'tag') => {
+    setColorPickerTarget(target)
+    const currentColor = target === 'add' ? newStageForm.color :
+                         target === 'edit' ? editStageForm.color :
+                         (selectedTag?.color || newTagForm.color)
+    const hsl = hexToHsl(currentColor)
+    setTempColor({ ...hsl, hex: currentColor })
+    setShowColorPicker(true)
+  }
+
+  // Apply color from picker
+  const applyColor = () => {
+    if (colorPickerTarget === 'add') {
+      setNewStageForm(prev => ({ ...prev, color: tempColor.hex }))
+    } else if (colorPickerTarget === 'edit') {
+      setEditStageForm(prev => ({ ...prev, color: tempColor.hex }))
+    } else if (colorPickerTarget === 'tag') {
+      setNewTagForm(prev => ({ ...prev, color: tempColor.hex }))
+    }
+    setShowColorPicker(false)
+  }
+
+  // Handle color picker change
+  const handleColorPickerChange = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+
+    const s = Math.round(x * 100)
+    const l = Math.round((1 - y) * 100)
+    const hex = hslToHex(tempColor.h, s, l)
+    setTempColor(prev => ({ ...prev, s, l, hex }))
+  }
+
+  // Handle hue slider change
+  const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const h = parseInt(e.target.value)
+    const hex = hslToHex(h, tempColor.s, tempColor.l)
+    setTempColor(prev => ({ ...prev, h, hex }))
+  }
+
+  // Handle hex input change
+  const handleHexInputChange = (hex: string) => {
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+      const hsl = hexToHsl(hex)
+      setTempColor({ ...hsl, hex })
+    } else {
+      setTempColor(prev => ({ ...prev, hex }))
+    }
+  }
+
+  const handleConfirmDeleteStage = () => {
+    if (!stageToDelete || !transferToStageId) return
+
+    // Thực hiện chuyển đổi dữ liệu và xóa giai đoạn
+    setSalesStages(prev => prev.filter(s => s.id !== stageToDelete.id))
+
+    // Reset states
+    setStageToDelete(null)
+    setTransferToStageId('')
+    setShowDeleteStageModal(false)
+
+    alert(`Đã chuyển toàn bộ dữ liệu từ "${stageToDelete.name}" sang giai đoạn khác và xóa giai đoạn thành công!`)
+  }
+
+  const handleMoveStage = (stageId: string, direction: 'up' | 'down') => {
+    const stage = salesStages.find(s => s.id === stageId)
+    if (!stage || stage.isFixed) return
+
+    const nonFixedStages = salesStages.filter(s => !s.isFixed).sort((a, b) => a.order - b.order)
+    const currentIndex = nonFixedStages.findIndex(s => s.id === stageId)
+
+    if (direction === 'up' && currentIndex > 0) {
+      // Swap with previous stage
+      const targetIndex = currentIndex - 1
+      const targetStage = nonFixedStages[targetIndex]
+
+      setSalesStages(prev => prev.map(s => {
+        if (s.id === stage.id) return { ...s, order: targetStage.order }
+        if (s.id === targetStage.id) return { ...s, order: stage.order }
+        return s
+      }))
+    } else if (direction === 'down' && currentIndex < nonFixedStages.length - 1) {
+      // Swap with next stage
+      const targetIndex = currentIndex + 1
+      const targetStage = nonFixedStages[targetIndex]
+
+      setSalesStages(prev => prev.map(s => {
+        if (s.id === stage.id) return { ...s, order: targetStage.order }
+        if (s.id === targetStage.id) return { ...s, order: stage.order }
+        return s
+      }))
+    }
+  }
+
+  // Drag and drop handlers for stages
+  const handleDragStart = (e: React.DragEvent, stageId: string) => {
+    const stage = salesStages.find(s => s.id === stageId)
+    if (stage?.isFixed) {
+      e.preventDefault()
+      return
+    }
+    setDraggedStageId(stageId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, targetStageId: string) => {
+    e.preventDefault()
+    const targetStage = salesStages.find(s => s.id === targetStageId)
+    if (targetStage?.isFixed) {
+      e.dataTransfer.dropEffect = 'none'
+      return
+    }
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent, targetStageId: string) => {
+    e.preventDefault()
+    if (!draggedStageId || draggedStageId === targetStageId) {
+      setDraggedStageId(null)
+      return
+    }
+
+    const draggedStage = salesStages.find(s => s.id === draggedStageId)
+    const targetStage = salesStages.find(s => s.id === targetStageId)
+
+    if (!draggedStage || !targetStage || draggedStage.isFixed || targetStage.isFixed) {
+      setDraggedStageId(null)
+      return
+    }
+
+    // Swap orders
+    setSalesStages(prev => prev.map(s => {
+      if (s.id === draggedStageId) return { ...s, order: targetStage.order }
+      if (s.id === targetStageId) return { ...s, order: draggedStage.order }
+      return s
+    }))
+
+    setDraggedStageId(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedStageId(null)
+  }
+
+  // Tag Handlers (moved from WorkflowManagement for access outside component)
+  const handleCreateTag = () => {
+    setSelectedTag(null)
+    setShowTagModal(true)
+  }
+
+  const handleEditTag = (tag: CustomTag) => {
+    setSelectedTag(tag)
+    setShowTagModal(true)
+  }
+
+  const handleDeleteTag = (tagId: string) => {
+    setTags(prev => prev.filter(t => t.id !== tagId))
+  }
+
   // Component: Workflow Management
   const WorkflowManagement = () => {
     // Distribution Rules state
@@ -1905,19 +2159,7 @@ export default function SettingsManagement() {
       ))
     }
 
-    const handleCreateTag = () => {
-      setSelectedTag(null)
-      setShowTagModal(true)
-    }
-
-    const handleEditTag = (tag: CustomTag) => {
-      setSelectedTag(tag)
-      setShowTagModal(true)
-    }
-
-    const handleDeleteTag = (tagId: string) => {
-      setTags(prev => prev.filter(t => t.id !== tagId))
-    }
+    // Tag handlers moved to root level for access outside component
 
     const handleDeleteSalesStage = (stageId: string) => {
       const stage = salesStages.find(s => s.id === stageId)
@@ -1945,239 +2187,11 @@ export default function SettingsManagement() {
       setShowEditStageModal(true)
     }
 
-    const handleAddSalesStage = () => {
-      if (!newStageForm.name.trim()) return
+    // Sales Stage handlers moved to root level for Dialog access
 
-      // Calculate new order based on position
-      let newOrder = 1
-      const nonFixedStages = salesStages.filter(s => !s.isFixed)
+    // handleMoveStage, drag and drop handlers moved to root level for Dialog access
 
-      if (newStageForm.position === 'start') {
-        // Insert at beginning of non-fixed stages
-        const firstNonFixedOrder = Math.min(...nonFixedStages.map(s => s.order))
-        newOrder = firstNonFixedOrder - 0.5
-      } else if (newStageForm.position === 'end') {
-        // Insert at end
-        newOrder = Math.max(...salesStages.map(s => s.order)) + 1
-      } else if (newStageForm.position === 'after' && newStageForm.afterStageId) {
-        // Insert after specific stage
-        const afterStage = salesStages.find(s => s.id === newStageForm.afterStageId)
-        if (afterStage) {
-          const nextStages = salesStages.filter(s => s.order > afterStage.order).sort((a, b) => a.order - b.order)
-          if (nextStages.length > 0) {
-            newOrder = (afterStage.order + nextStages[0].order) / 2
-          } else {
-            newOrder = afterStage.order + 1
-          }
-        }
-      }
-
-      const newStage: SalesStage = {
-        id: `custom_${Date.now()}`,
-        name: newStageForm.name,
-        description: newStageForm.description,
-        color: newStageForm.color,
-        order: newOrder,
-        isActive: true,
-        isFixed: false,
-        autoTransition: {
-          enabled: false,
-          days: 0,
-          nextStage: ''
-        }
-      }
-
-      setSalesStages(prev => [...prev, newStage].sort((a, b) => a.order - b.order))
-      
-      // Reset form
-      setNewStageForm({
-        name: '',
-        value: '',
-        isAuto: true,
-        description: '',
-        color: '#3B82F6',
-        position: 'end',
-        afterStageId: ''
-      })
-      setShowStageModal(false)
-    }
-
-    const handleMoveStage = (stageId: string, direction: 'up' | 'down') => {
-      const stage = salesStages.find(s => s.id === stageId)
-      if (!stage || stage.isFixed) return
-
-      const nonFixedStages = salesStages.filter(s => !s.isFixed).sort((a, b) => a.order - b.order)
-      const currentIndex = nonFixedStages.findIndex(s => s.id === stageId)
-      
-      if (direction === 'up' && currentIndex > 0) {
-        // Swap with previous stage
-        const targetIndex = currentIndex - 1
-        const targetStage = nonFixedStages[targetIndex]
-        
-        setSalesStages(prev => prev.map(s => {
-          if (s.id === stage.id) return { ...s, order: targetStage.order }
-          if (s.id === targetStage.id) return { ...s, order: stage.order }
-          return s
-        }))
-      } else if (direction === 'down' && currentIndex < nonFixedStages.length - 1) {
-        // Swap with next stage
-        const targetIndex = currentIndex + 1
-        const targetStage = nonFixedStages[targetIndex]
-        
-        setSalesStages(prev => prev.map(s => {
-          if (s.id === stage.id) return { ...s, order: targetStage.order }
-          if (s.id === targetStage.id) return { ...s, order: stage.order }
-          return s
-        }))
-      }
-    }
-
-    // Drag and drop handlers for stages
-    const handleDragStart = (e: React.DragEvent, stageId: string) => {
-      const stage = salesStages.find(s => s.id === stageId)
-      if (stage?.isFixed) {
-        e.preventDefault()
-        return
-      }
-      setDraggedStageId(stageId)
-      e.dataTransfer.effectAllowed = 'move'
-    }
-
-    const handleDragOver = (e: React.DragEvent, targetStageId: string) => {
-      e.preventDefault()
-      const targetStage = salesStages.find(s => s.id === targetStageId)
-      if (targetStage?.isFixed) {
-        e.dataTransfer.dropEffect = 'none'
-        return
-      }
-      e.dataTransfer.dropEffect = 'move'
-    }
-
-    const handleDrop = (e: React.DragEvent, targetStageId: string) => {
-      e.preventDefault()
-      if (!draggedStageId || draggedStageId === targetStageId) {
-        setDraggedStageId(null)
-        return
-      }
-
-      const draggedStage = salesStages.find(s => s.id === draggedStageId)
-      const targetStage = salesStages.find(s => s.id === targetStageId)
-      
-      if (!draggedStage || !targetStage || draggedStage.isFixed || targetStage.isFixed) {
-        setDraggedStageId(null)
-        return
-      }
-
-      // Swap orders
-      setSalesStages(prev => prev.map(s => {
-        if (s.id === draggedStageId) return { ...s, order: targetStage.order }
-        if (s.id === targetStageId) return { ...s, order: draggedStage.order }
-        return s
-      }))
-      
-      setDraggedStageId(null)
-    }
-
-    const handleDragEnd = () => {
-      setDraggedStageId(null)
-    }
-
-    // Helper function to convert hex to HSL
-    const hexToHsl = (hex: string) => {
-      let r = parseInt(hex.slice(1, 3), 16) / 255
-      let g = parseInt(hex.slice(3, 5), 16) / 255
-      let b = parseInt(hex.slice(5, 7), 16) / 255
-
-      const max = Math.max(r, g, b), min = Math.min(r, g, b)
-      let h = 0, s = 0, l = (max + min) / 2
-
-      if (max !== min) {
-        const d = max - min
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-        switch (max) {
-          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
-          case g: h = ((b - r) / d + 2) / 6; break
-          case b: h = ((r - g) / d + 4) / 6; break
-        }
-      }
-
-      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
-    }
-
-    // Helper function to convert HSL to hex
-    const hslToHex = (h: number, s: number, l: number) => {
-      s /= 100
-      l /= 100
-      const a = s * Math.min(l, 1 - l)
-      const f = (n: number) => {
-        const k = (n + h / 30) % 12
-        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
-        return Math.round(255 * color).toString(16).padStart(2, '0')
-      }
-      return `#${f(0)}${f(8)}${f(4)}`
-    }
-
-    // Open color picker
-    const openColorPicker = (target: 'add' | 'edit') => {
-      setColorPickerTarget(target)
-      const currentColor = target === 'add' ? newStageForm.color : editStageForm.color
-      const hsl = hexToHsl(currentColor)
-      setTempColor({ ...hsl, hex: currentColor })
-      setShowColorPicker(true)
-    }
-
-    // Apply color from picker
-    const applyColor = () => {
-      if (colorPickerTarget === 'add') {
-        setNewStageForm(prev => ({ ...prev, color: tempColor.hex }))
-      } else {
-        setEditStageForm(prev => ({ ...prev, color: tempColor.hex }))
-      }
-      setShowColorPicker(false)
-    }
-
-    // Handle color picker change
-    const handleColorPickerChange = (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect()
-      const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-      const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-      
-      const s = Math.round(x * 100)
-      const l = Math.round((1 - y) * 100)
-      const hex = hslToHex(tempColor.h, s, l)
-      setTempColor(prev => ({ ...prev, s, l, hex }))
-    }
-
-    // Handle hue slider change
-    const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const h = parseInt(e.target.value)
-      const hex = hslToHex(h, tempColor.s, tempColor.l)
-      setTempColor(prev => ({ ...prev, h, hex }))
-    }
-
-    // Handle hex input change
-    const handleHexInputChange = (hex: string) => {
-      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-        const hsl = hexToHsl(hex)
-        setTempColor({ ...hsl, hex })
-      } else {
-        setTempColor(prev => ({ ...prev, hex }))
-      }
-    }
-
-    const handleConfirmDeleteStage = () => {
-      if (!stageToDelete || !transferToStageId) return
-      
-      // Thực hiện chuyển đổi dữ liệu và xóa giai đoạn
-      setSalesStages(prev => prev.filter(s => s.id !== stageToDelete.id))
-      
-      // Reset states
-      setStageToDelete(null)
-      setTransferToStageId('')
-      setShowDeleteStageModal(false)
-      
-      alert(`Đã chuyển toàn bộ dữ liệu từ "${stageToDelete.name}" sang giai đoạn khác và xóa giai đoạn thành công!`)
-    }
+    // Color picker and delete handlers moved to root level for Dialog access
 
     const handleAddOrderStatus = (statusData: Omit<OrderStatus, 'id'>) => {
       const newId = (Math.max(...orderStatuses.map(s => parseInt(s.id)), 0) + 1).toString()
@@ -2360,123 +2374,9 @@ export default function SettingsManagement() {
           </Card>
         </div>
 
-        {/* Tag Creation/Edit Modal */}
-        <Dialog open={showTagModal} onOpenChange={setShowTagModal}>
-          <DialogContent className="max-w-md p-0">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
-              <DialogTitle className="text-lg font-semibold text-[#1a3353]">
-                {selectedTag ? 'Chỉnh sửa nhãn' : 'Thêm mới nhãn mới'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-5 px-6 py-4">
-              <div>
-                <Label htmlFor="tag-name" className="text-sm font-medium">
-                  Tên nhãn <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="tag-name"
-                  placeholder="Nhập tên nhãn"
-                  className="mt-1.5"
-                  value={selectedTag?.name || newTagForm.name}
-                  onChange={(e) => setNewTagForm(prev => ({ ...prev, name: e.target.value }))}
-                />
-                {!newTagForm.name && !selectedTag && (
-                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên</p>
-                )}
-              </div>
+        {/* Tag Creation/Edit Modal - moved to root level for better rendering */}
 
-              <div>
-                <Label className="text-sm font-medium">Màu sắc</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {[
-                    '#EF4444', '#F97316', '#10B981', '#3B82F6',
-                    '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6',
-                    '#6B7280', '#22C55E'
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      className={`w-8 h-8 rounded-md transition-all ${
-                        (selectedTag?.color || newTagForm.color) === color 
-                          ? 'ring-2 ring-offset-2 ring-blue-500' 
-                          : 'hover:scale-110'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewTagForm(prev => ({ ...prev, color }))}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">
-                  Phạm vi <span className="text-red-500">*</span>
-                </Label>
-                <Select 
-                  defaultValue={selectedTag?.scope || newTagForm.scope}
-                  onValueChange={(value) => setNewTagForm(prev => ({ ...prev, scope: value }))}
-                >
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="global">Toàn cục</SelectItem>
-                    <SelectItem value="team">Nhóm</SelectItem>
-                    <SelectItem value="user">Cá nhân</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Switch
-                  id="is-active"
-                  checked={selectedTag?.isDefault || newTagForm.isActive}
-                  onCheckedChange={(checked) => setNewTagForm(prev => ({ ...prev, isActive: checked }))}
-                />
-                <Label htmlFor="is-active" className="text-sm">Trạng thái hoạt động</Label>
-              </div>
-            </div>
-
-            <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => {
-                setShowTagModal(false)
-                setNewTagForm({ name: '', color: '#EF4444', scope: 'global', isActive: true })
-              }}>
-                Hủy
-              </Button>
-              <Button disabled={!newTagForm.name && !selectedTag}>
-                {selectedTag ? 'Cập nhật' : 'Tạo mới'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Tag Confirmation Modal */}
-        <Dialog open={showDeleteTagModal} onOpenChange={setShowDeleteTagModal}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-gray-600">Bạn có muốn xóa nhãn này không?</p>
-            </div>
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setShowDeleteTagModal(false)}>
-                Hủy
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={() => {
-                  // TODO: Delete tag logic
-                  setShowDeleteTagModal(false)
-                  setTagToDelete(null)
-                }}
-              >
-                Xóa
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Delete Tag Confirmation Modal - moved to root level for better rendering */}
 
         {/* Delete Distribution Rule Confirmation Modal */}
         <Dialog open={showDeleteDistributionRuleModal} onOpenChange={setShowDeleteDistributionRuleModal}>
@@ -2505,439 +2405,7 @@ export default function SettingsManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Add Sales Stage Modal */}
-        <Dialog open={showStageModal} onOpenChange={setShowStageModal}>
-          <DialogContent className="max-w-md p-0">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
-              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm mới giai đoạn</DialogTitle>
-              <DialogDescription className="text-sm text-[#455560]">Tạo giai đoạn mới trong quy trình bán hàng</DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 px-6 py-4">
-              <div>
-                <Label htmlFor="stage-name" className="text-sm font-medium">
-                  Tên giai đoạn <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="stage-name"
-                  placeholder="Nhập giai đoạn"
-                  className="mt-1.5"
-                  value={newStageForm.name}
-                  onChange={(e) => setNewStageForm(prev => ({ ...prev, name: e.target.value }))}
-                />
-                {!newStageForm.name && (
-                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="stage-value" className="text-sm font-medium">
-                  Value <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="stage-value"
-                  placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
-                  className="mt-1.5"
-                  value={newStageForm.value}
-                  onChange={(e) => setNewStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
-                  disabled={newStageForm.isAuto}
-                />
-                <div className="flex items-center space-x-2 mt-2">
-                  <input
-                    type="checkbox"
-                    id="stage-auto"
-                    checked={newStageForm.isAuto}
-                    onChange={(e) => {
-                      const isAuto = e.target.checked
-                      setNewStageForm(prev => ({ 
-                        ...prev, 
-                        isAuto,
-                        value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
-                      }))
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <Label htmlFor="stage-auto" className="text-sm cursor-pointer">Tự động</Label>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">
-                  Màu sắc <span className="text-red-500">*</span>
-                </Label>
-                <div 
-                  className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
-                  style={{ backgroundColor: newStageForm.color }}
-                  onClick={() => openColorPicker('add')}
-                />
-                {!newStageForm.color && (
-                  <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="stage-description" className="text-sm font-medium">Mô tả</Label>
-                <Textarea
-                  id="stage-description"
-                  placeholder="Nhập mô tả"
-                  className="mt-1.5 min-h-[80px] resize-none"
-                  value={newStageForm.description}
-                  onChange={(e) => setNewStageForm(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => {
-                setShowStageModal(false)
-                setNewStageForm({
-                  name: '',
-                  value: '',
-                  isAuto: true,
-                  description: '',
-                  color: '#3B82F6',
-                  position: 'end',
-                  afterStageId: ''
-                })
-              }}>
-                Hủy
-              </Button>
-              <Button 
-                onClick={handleAddSalesStage}
-                disabled={!newStageForm.name.trim()}
-              >
-                Đồng ý
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Sales Stage Modal */}
-        <Dialog open={showEditStageModal} onOpenChange={setShowEditStageModal}>
-          <DialogContent className="max-w-md p-0">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
-              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Chỉnh sửa giai đoạn</DialogTitle>
-              <DialogDescription className="text-sm text-[#455560]">Cập nhật thông tin giai đoạn bán hàng</DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 px-6 py-4">
-              <div>
-                <Label htmlFor="edit-stage-name" className="text-sm font-medium">
-                  Tên giai đoạn <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="edit-stage-name"
-                  placeholder="Nhập giai đoạn"
-                  className="mt-1.5"
-                  value={editStageForm.name}
-                  onChange={(e) => setEditStageForm(prev => ({ ...prev, name: e.target.value }))}
-                />
-                {!editStageForm.name && (
-                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="edit-stage-value" className="text-sm font-medium">
-                  Value <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="edit-stage-value"
-                  placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
-                  className="mt-1.5"
-                  value={editStageForm.value}
-                  onChange={(e) => setEditStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
-                  disabled={editStageForm.isAuto}
-                />
-                <div className="flex items-center space-x-2 mt-2">
-                  <input
-                    type="checkbox"
-                    id="edit-stage-auto"
-                    checked={editStageForm.isAuto}
-                    onChange={(e) => {
-                      const isAuto = e.target.checked
-                      setEditStageForm(prev => ({ 
-                        ...prev, 
-                        isAuto,
-                        value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
-                      }))
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <Label htmlFor="edit-stage-auto" className="text-sm cursor-pointer">Tự động</Label>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">
-                  Màu sắc <span className="text-red-500">*</span>
-                </Label>
-                <div 
-                  className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
-                  style={{ backgroundColor: editStageForm.color }}
-                  onClick={() => openColorPicker('edit')}
-                />
-                {!editStageForm.color && (
-                  <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="edit-stage-description" className="text-sm font-medium">Mô tả</Label>
-                <Textarea
-                  id="edit-stage-description"
-                  placeholder="Nhập mô tả"
-                  className="mt-1.5 min-h-[80px] resize-none"
-                  value={editStageForm.description}
-                  onChange={(e) => setEditStageForm(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => setShowEditStageModal(false)}>
-                Hủy
-              </Button>
-              <Button 
-                onClick={() => {
-                  if (!selectedStage || !editStageForm.name.trim()) return
-                  
-                  setSalesStages(prev => prev.map(stage => 
-                    stage.id === selectedStage.id 
-                      ? { ...stage, name: editStageForm.name, description: editStageForm.description, color: editStageForm.color }
-                      : stage
-                  ))
-                  setShowEditStageModal(false)
-                  setSelectedStage(null)
-                }}
-                disabled={!editStageForm.name.trim()}
-              >
-                Đồng ý
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Color Picker Modal */}
-        <Dialog open={showColorPicker} onOpenChange={setShowColorPicker}>
-          <DialogContent className="max-w-xs p-4">
-            <div className="space-y-3">
-              {/* Color gradient picker */}
-              <div 
-                className="w-full h-36 rounded-md cursor-crosshair relative"
-                style={{
-                  background: `linear-gradient(to bottom, white, transparent), linear-gradient(to right, transparent, hsl(${tempColor.h}, 100%, 50%))`,
-                  backgroundColor: `hsl(${tempColor.h}, 100%, 50%)`
-                }}
-                onClick={handleColorPickerChange}
-                onMouseMove={(e) => {
-                  if (e.buttons === 1) handleColorPickerChange(e)
-                }}
-              >
-                {/* Indicator */}
-                <div 
-                  className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2"
-                  style={{ 
-                    left: `${tempColor.s}%`, 
-                    top: `${100 - tempColor.l}%`,
-                    backgroundColor: tempColor.hex 
-                  }}
-                />
-              </div>
-              
-              {/* Hue slider */}
-              <input
-                type="range"
-                min="0"
-                max="360"
-                value={tempColor.h}
-                onChange={handleHueChange}
-                className="w-full h-3 rounded-md cursor-pointer"
-                style={{
-                  background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
-                }}
-              />
-              
-              {/* Color values */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1">
-                  <Input
-                    value={tempColor.hex}
-                    onChange={(e) => handleHexInputChange(e.target.value)}
-                    className="text-xs h-8 font-mono"
-                    maxLength={7}
-                  />
-                  <p className="text-xs text-center text-gray-500 mt-0.5">Hex</p>
-                </div>
-                <div className="w-12">
-                  <Input
-                    value={Math.round(parseInt(tempColor.hex.slice(1, 3), 16))}
-                    className="text-xs h-8 text-center"
-                    readOnly
-                  />
-                  <p className="text-xs text-center text-gray-500 mt-0.5">R</p>
-                </div>
-                <div className="w-12">
-                  <Input
-                    value={Math.round(parseInt(tempColor.hex.slice(3, 5), 16))}
-                    className="text-xs h-8 text-center"
-                    readOnly
-                  />
-                  <p className="text-xs text-center text-gray-500 mt-0.5">G</p>
-                </div>
-                <div className="w-12">
-                  <Input
-                    value={Math.round(parseInt(tempColor.hex.slice(5, 7), 16))}
-                    className="text-xs h-8 text-center"
-                    readOnly
-                  />
-                  <p className="text-xs text-center text-gray-500 mt-0.5">B</p>
-                </div>
-                <div className="w-12">
-                  <Input
-                    value="100"
-                    className="text-xs h-8 text-center"
-                    readOnly
-                  />
-                  <p className="text-xs text-center text-gray-500 mt-0.5">A</p>
-                </div>
-              </div>
-              
-              {/* Preset colors */}
-              <div className="grid grid-cols-8 gap-1.5">
-                {[
-                  '#EF4444', '#F97316', '#F59E0B', '#EAB308',
-                  '#84CC16', '#22C55E', '#10B981', '#14B8A6',
-                  '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-                  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
-                  '#F43F5E', '#FFFFFF', '#9CA3AF', '#000000'
-                ].map((color) => (
-                  <button
-                    key={color}
-                    className={`w-6 h-6 rounded border ${
-                      tempColor.hex.toUpperCase() === color.toUpperCase() 
-                        ? 'border-gray-900 ring-1 ring-gray-900' 
-                        : 'border-gray-200 hover:border-gray-400'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => {
-                      const hsl = hexToHsl(color)
-                      setTempColor({ ...hsl, hex: color })
-                    }}
-                  />
-                ))}
-              </div>
-              
-              {/* Preview and apply */}
-              <div className="flex items-center gap-2 pt-2">
-                <div 
-                  className="flex-1 h-8 rounded border"
-                  style={{ backgroundColor: tempColor.hex }}
-                />
-                <Button size="sm" onClick={applyColor}>
-                  Chọn
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Simple Delete Stage Confirmation Modal */}
-        <Dialog open={showSimpleDeleteStageModal} onOpenChange={setShowSimpleDeleteStageModal}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <p className="text-sm text-gray-600">Bạn có muốn xóa giai đoạn này không?</p>
-            </div>
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" onClick={() => {
-                setShowSimpleDeleteStageModal(false)
-                setStageToDelete(null)
-              }}>
-                Hủy
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={() => {
-                  if (stageToDelete) {
-                    setSalesStages(prev => prev.filter(s => s.id !== stageToDelete.id))
-                  }
-                  setShowSimpleDeleteStageModal(false)
-                  setStageToDelete(null)
-                }}
-              >
-                Xóa
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Stage with Data Transfer Modal */}
-        <Dialog open={showDeleteStageModal} onOpenChange={setShowDeleteStageModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2 text-red-600">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Xóa giai đoạn có dữ liệu</span>
-              </DialogTitle>
-              <DialogDescription>
-                Giai đoạn "{stageToDelete?.name}" đang chứa dữ liệu. 
-                Vui lòng chọn giai đoạn để chuyển toàn bộ dữ liệu trước khi xóa.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 px-6">
-              <div>
-                <Label htmlFor="transfer-stage">Chuyển dữ liệu sang giai đoạn</Label>
-                <select
-                  id="transfer-stage"
-                  className="w-full mt-1 p-2 border rounded"
-                  value={transferToStageId}
-                  onChange={(e) => setTransferToStageId(e.target.value)}
-                >
-                  <option value="">-- Chọn giai đoạn đích --</option>
-                  {salesStages
-                    .filter(s => s.id !== stageToDelete?.id)
-                    .map(stage => (
-                      <option key={stage.id} value={stage.id}>
-                        {stage.name} {stage.isFixed ? '(Cố định)' : ''}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-                <div className="flex items-center space-x-2 text-yellow-800">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span className="font-medium">Cảnh báo</span>
-                </div>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Hành động này sẽ chuyển toàn bộ leads/deals trong giai đoạn 
-                  "{stageToDelete?.name}" sang giai đoạn được chọn và không thể hoàn tác.
-                </p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowDeleteStageModal(false)
-                setStageToDelete(null)
-                setTransferToStageId('')
-              }}>
-                Hủy
-              </Button>
-              <Button 
-                variant="destructive"
-                disabled={!transferToStageId}
-                onClick={handleConfirmDeleteStage}
-              >
-                Chuyển dữ liệu và xóa
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Sales Stage Modals have been moved to root level for better rendering - see bottom of SettingsManagement component */}
 
         {/* Add Order Status Modal */}
         <Dialog open={showStatusModal} onOpenChange={setShowStatusModal}>
@@ -5856,7 +5324,10 @@ export default function SettingsManagement() {
     const [filterCategory, setFilterCategory] = useState('all')
     const [filterPerformer, setFilterPerformer] = useState('all')
     const [filterDateRange, setFilterDateRange] = useState('')
+    const [filterStartDate, setFilterStartDate] = useState('')
+    const [filterEndDate, setFilterEndDate] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
+    const [historyTab, setHistoryTab] = useState('process')
 
     const categories = [
       { value: 'all', label: 'Tất cả danh mục', icon: Settings },
@@ -5874,15 +5345,29 @@ export default function SettingsManagement() {
     const filteredHistory = systemHistory.filter(item => {
       const categoryMatch = filterCategory === 'all' || item.category === filterCategory
       const performerMatch = filterPerformer === 'all' || item.performedBy === filterPerformer
-      const dateMatch = !filterDateRange || new Date(item.timestamp).toDateString() === new Date(filterDateRange).toDateString()
-      
+
+      // Date range filter
+      const itemDate = new Date(item.timestamp)
+      let dateMatch = true
+      if (filterStartDate && filterEndDate) {
+        const startDate = new Date(filterStartDate)
+        const endDate = new Date(filterEndDate)
+        dateMatch = itemDate >= startDate && itemDate <= endDate
+      } else if (filterStartDate) {
+        const startDate = new Date(filterStartDate)
+        dateMatch = itemDate >= startDate
+      } else if (filterEndDate) {
+        const endDate = new Date(filterEndDate)
+        dateMatch = itemDate <= endDate
+      }
+
       // Search trong details, performedBy, action
-      const searchMatch = !searchQuery || 
+      const searchMatch = !searchQuery ||
         item.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.performedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.affectedEntities.some(entity => entity.toLowerCase().includes(searchQuery.toLowerCase()))
-      
+
       return categoryMatch && performerMatch && dateMatch && searchMatch
     })
 
@@ -5912,286 +5397,202 @@ export default function SettingsManagement() {
         {/* Header */}
         <div className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Lịch sử Hệ thống</h2>
-              <p className="text-gray-600">Theo dõi tất cả thay đổi cấu hình và cài đặt hệ thống</p>
+            <div className="flex items-center border-b border-[#e6ebf1] w-full -ml-6">
+              <div className="inline-flex items-center justify-center whitespace-nowrap px-4 py-3 text-sm font-semibold leading-6 text-[#3e79f7] border-b-2 border-[#3e79f7] transition-all duration-300 uppercase">
+                Lịch sử
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Xuất lịch sử
-              </Button>
-              <Button variant="outline">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Làm mới
-              </Button>
-            </div>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Tìm kiếm trong lịch sử..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </div>
 
-        {/* System Overview */}
+        {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Tổng thay đổi</p>
-                  <p className="text-2xl font-bold text-blue-600">{systemHistory.length}</p>
-                </div>
-                <History className="w-6 h-6 text-blue-500" />
+          {/* Hôm nay */}
+          <Card className="bg-gradient-to-br from-purple-400 to-purple-600 border border-gray-300 text-white rounded-lg shadow-md">
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium opacity-90">Hôm nay</p>
+                <p className="text-5xl font-bold">0</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Hôm nay</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {systemHistory.filter(item => 
-                      new Date(item.timestamp).toDateString() === new Date().toDateString()
-                    ).length}
-                  </p>
-                </div>
-                <Calendar className="w-6 h-6 text-green-500" />
+
+          {/* Tuần này */}
+          <Card className="bg-gradient-to-br from-blue-400 to-blue-600 border border-gray-300 text-white rounded-lg shadow-md">
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium opacity-90">Tuần này</p>
+                <p className="text-5xl font-bold">0</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Admin thực hiện</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {systemHistory.filter(item => item.performedByRole === 'admin').length}
-                  </p>
-                </div>
-                <Shield className="w-6 h-6 text-purple-500" />
+
+          {/* Tháng này */}
+          <Card className="bg-gradient-to-br from-green-400 to-green-600 border border-gray-300 text-white rounded-lg shadow-md">
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium opacity-90">Tháng này</p>
+                <p className="text-5xl font-bold">0</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Thành công</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {systemHistory.filter(item => item.status === 'success').length}
-                  </p>
-                </div>
-                <CheckCircle className="w-6 h-6 text-orange-500" />
+
+          {/* Admin */}
+          <Card className="bg-gradient-to-br from-orange-400 to-orange-600 border border-gray-300 text-white rounded-lg shadow-md">
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium opacity-90">Admin</p>
+                <p className="text-5xl font-bold">0</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="border border-gray-300 rounded-lg shadow-md">
           <CardHeader>
             <CardTitle>Bộ lọc & Tìm kiếm</CardTitle>
             <CardDescription>
               Lọc lịch sử theo danh mục, người thực hiện và tìm kiếm trong nội dung
-              {searchQuery && (
-                <span className="block mt-1 text-blue-600 font-medium">
-                  Tìm kiếm: "{searchQuery}" - {filteredHistory.length} kết quả
-                </span>
-              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label>Danh mục</Label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
+            <div className="flex items-center space-x-4">
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Tất cả danh mục" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterPerformer} onValueChange={setFilterPerformer}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Chọn người phân công" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả người dùng</SelectItem>
+                  {Array.from(new Set(systemHistory.map(item => item.performedBy)))
+                    .map((performer) => (
+                      <SelectItem key={performer} value={performer}>
+                        {performer}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Người thực hiện</Label>
-                <Select value={filterPerformer} onValueChange={setFilterPerformer}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả người dùng</SelectItem>
-                    {Array.from(new Set(systemHistory.map(item => item.performedBy)))
-                      .map((performer) => (
-                        <SelectItem key={performer} value={performer}>
-                          {performer}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Ngày</Label>
-                <Input
-                  type="date"
-                  value={filterDateRange}
-                  onChange={(e) => setFilterDateRange(e.target.value)}
-                />
-              </div>
+                </SelectContent>
+              </Select>
+
+              <Input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                placeholder="Chọn ngày bắt đầu"
+                className="w-[180px]"
+              />
+
+              <Input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                placeholder="Chọn ngày kết thúc"
+                className="w-[180px]"
+              />
             </div>
-            
-            {/* Clear Filters Button */}
-            {(searchQuery || filterCategory !== 'all' || filterPerformer !== 'all' || filterDateRange) && (
-              <div className="mt-4 pt-4 border-t">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setSearchQuery('')
-                    setFilterCategory('all')
-                    setFilterPerformer('all')
-                    setFilterDateRange('')
-                  }}
-                  className="text-gray-600"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Xóa tất cả bộ lọc
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 
         {/* History Table */}
-        <Card>
+        <Card className="border border-gray-300 rounded-lg shadow-md">
           <CardHeader>
-            <CardTitle>Lịch sử Hệ thống ({filteredHistory.length})</CardTitle>
+            <CardTitle>Lịch sử Hệ thống</CardTitle>
             <CardDescription>Theo dõi chi tiết các thay đổi hệ thống theo thời gian</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left p-3 font-medium text-gray-700">Thời gian</th>
-                    <th className="text-left p-3 font-medium text-gray-700">Danh mục</th>
-                    <th className="text-left p-3 font-medium text-gray-700">Hành động</th>
-                    <th className="text-left p-3 font-medium text-gray-700">Người thực hiện</th>
-                    <th className="text-left p-3 font-medium text-gray-700">Chi tiết</th>
-                    <th className="text-left p-3 font-medium text-gray-700">Trạng thái</th>
-                    <th className="text-left p-3 font-medium text-gray-700">IP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredHistory.map((item, index) => (
-                    <tr key={item.id} className={`border-b hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                      <td className="p-3 text-sm">
-                        <div className="font-medium text-gray-900">
-                          {new Date(item.timestamp).toLocaleDateString('vi-VN')}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getCategoryColor(item.category)}`}>
-                            {getCategoryIcon(item.category)}
-                          </div>
-                          <span className="text-sm font-medium">
-                            {categories.find(c => c.value === item.category)?.label || item.category}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-sm">
-                        <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                          {item.action.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="p-3 text-sm">
-                        <div className="font-medium text-gray-900">{item.performedBy}</div>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {item.performedByRole}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-sm max-w-md">
-                        <div className="text-gray-900 line-clamp-2" title={item.details}>
-                          {item.details}
-                        </div>
-                        {item.affectedEntities.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {item.affectedEntities.slice(0, 2).map((entity, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {entity}
-                              </Badge>
-                            ))}
-                            {item.affectedEntities.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{item.affectedEntities.length - 2}
-                              </Badge>
-                            )}
-                          </div>
+            <Table>
+              <TableHeader>
+              <TableRow>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Danh mục</TableHead>
+                <TableHead>Hành động</TableHead>
+                <TableHead>Người thực hiện</TableHead>
+                <TableHead>Chi tiết</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>IP</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredHistory.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div className="font-medium text-gray-900">
+                      {new Date(item.timestamp).toLocaleDateString('vi-VN')}
+                    </div>
+                    <div className="text-gray-500 text-xs">
+                      {new Date(item.timestamp).toLocaleTimeString('vi-VN')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getCategoryColor(item.category)}`}>
+                        {getCategoryIcon(item.category)}
+                      </div>
+                      <span className="text-sm font-medium">
+                        {categories.find(c => c.value === item.category)?.label || item.category}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                      {item.action.replace(/_/g, ' ')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-gray-900">{item.performedBy}</div>
+                    <Badge variant="secondary" className="text-xs mt-1">
+                      {item.performedByRole}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-md">
+                    <div className="text-gray-900 line-clamp-2" title={item.details}>
+                      {item.details}
+                    </div>
+                    {item.affectedEntities.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {item.affectedEntities.slice(0, 2).map((entity, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {entity}
+                          </Badge>
+                        ))}
+                        {item.affectedEntities.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{item.affectedEntities.length - 2}
+                          </Badge>
                         )}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={item.status === 'success' ? 'default' : 'destructive'} className="text-xs">
-                          {item.status === 'success' ? 'Thành công' : 'Thất bại'}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-sm text-gray-500">
-                        {item.ip}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.status === 'success' ? 'default' : 'destructive'} className="text-xs">
+                      {item.status === 'success' ? 'Thành công' : 'Thất bại'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-gray-500">
+                    {item.ip}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            </Table>
 
             {filteredHistory.length === 0 && (
               <div className="text-center py-12">
                 <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Không có lịch sử</h3>
                 <p className="text-gray-500">Không tìm thấy thay đổi nào phù hợp với bộ lọc.</p>
-              </div>
-            )}
-
-            {/* Pagination */}
-            {filteredHistory.length > 0 && (
-              <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                <div className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{Math.min(filteredHistory.length, 20)}</span> trong tổng số{' '}
-                  <span className="font-medium">{filteredHistory.length}</span> kết quả
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Trước
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    Sau
-                  </Button>
-                </div>
               </div>
             )}
           </CardContent>
@@ -7006,11 +6407,12 @@ export default function SettingsManagement() {
           {/* 5. Thông báo */}
           <button
             onClick={() => setActiveTab('notifications')}
+            disabled
             className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
               activeTab === 'notifications'
                 ? 'text-[#3e79f7] bg-[#f0f7ff]'
                 : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#455560]`}
           >
             <Bell className="w-4 h-4" />
             Thông báo
@@ -7231,10 +6633,24 @@ export default function SettingsManagement() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTag({
+                              id: 'vip',
+                              name: 'VIP',
+                              color: '#F59E0B',
+                              scope: 'global',
+                              isActive: true,
+                              isDefault: false,
+                              category: 'customer'
+                            })}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setTagToDelete('vip')
@@ -7261,10 +6677,24 @@ export default function SettingsManagement() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTag({
+                              id: 'tiem-nang-cao',
+                              name: 'Tiềm năng cao',
+                              color: '#10B981',
+                              scope: 'global',
+                              isActive: true,
+                              isDefault: true,
+                              category: 'lead'
+                            })}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setTagToDelete('tiem-nang-cao')
@@ -7290,10 +6720,24 @@ export default function SettingsManagement() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTag({
+                              id: 'deal-lon',
+                              name: 'Deal lớn',
+                              color: '#EF4444',
+                              scope: 'global',
+                              isActive: true,
+                              isDefault: false,
+                              category: 'deal'
+                            })}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setTagToDelete('deal-lon')
@@ -7319,10 +6763,24 @@ export default function SettingsManagement() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTag({
+                              id: 'khan-cap',
+                              name: 'Khẩn cấp',
+                              color: '#DC2626',
+                              scope: 'global',
+                              isActive: true,
+                              isDefault: false,
+                              category: 'task'
+                            })}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setTagToDelete('khan-cap')
@@ -8033,6 +7491,548 @@ export default function SettingsManagement() {
                 // TODO: Delete rule logic
                 setShowDeleteDistributionRuleModal(false)
                 setRuleToDelete(null)
+              }}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sales Stage Modals - rendered at root level */}
+      {/* Add Sales Stage Modal */}
+      <Dialog open={showStageModal} onOpenChange={setShowStageModal}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm mới giai đoạn</DialogTitle>
+            <DialogDescription className="text-sm text-[#455560]">Tạo giai đoạn mới trong quy trình bán hàng</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6 py-4">
+            <div>
+              <Label htmlFor="stage-name" className="text-sm font-medium">
+                Tên giai đoạn <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="stage-name"
+                placeholder="Nhập giai đoạn"
+                className="mt-1.5"
+                value={newStageForm.name}
+                onChange={(e) => setNewStageForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+              {!newStageForm.name && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="stage-value" className="text-sm font-medium">
+                Value <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="stage-value"
+                placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
+                className="mt-1.5"
+                value={newStageForm.value}
+                onChange={(e) => setNewStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
+                disabled={newStageForm.isAuto}
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="stage-auto"
+                  checked={newStageForm.isAuto}
+                  onChange={(e) => {
+                    const isAuto = e.target.checked
+                    setNewStageForm(prev => ({
+                      ...prev,
+                      isAuto,
+                      value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
+                    }))
+                  }}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <Label htmlFor="stage-auto" className="text-sm cursor-pointer">Tự động</Label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Màu sắc <span className="text-red-500">*</span>
+              </Label>
+              <div
+                className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+                style={{ backgroundColor: newStageForm.color }}
+                onClick={() => openColorPicker('add')}
+              />
+              {!newStageForm.color && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="stage-description" className="text-sm font-medium">Mô tả</Label>
+              <Textarea
+                id="stage-description"
+                placeholder="Nhập mô tả"
+                className="mt-1.5 min-h-[80px] resize-none"
+                value={newStageForm.description}
+                onChange={(e) => setNewStageForm(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setShowStageModal(false)
+              setNewStageForm({
+                name: '',
+                value: '',
+                isAuto: true,
+                description: '',
+                color: '#3B82F6',
+                position: 'end',
+                afterStageId: ''
+              })
+            }}>
+              Hủy
+            </Button>
+            <Button
+              onClick={handleAddSalesStage}
+              disabled={!newStageForm.name.trim()}
+            >
+              Đồng ý
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Sales Stage Modal */}
+      <Dialog open={showEditStageModal} onOpenChange={setShowEditStageModal}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Chỉnh sửa giai đoạn</DialogTitle>
+            <DialogDescription className="text-sm text-[#455560]">Cập nhật thông tin giai đoạn bán hàng</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6 py-4">
+            <div>
+              <Label htmlFor="edit-stage-name" className="text-sm font-medium">
+                Tên giai đoạn <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-stage-name"
+                placeholder="Nhập giai đoạn"
+                className="mt-1.5"
+                value={editStageForm.name}
+                onChange={(e) => setEditStageForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+              {!editStageForm.name && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="edit-stage-value" className="text-sm font-medium">
+                Value <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-stage-value"
+                placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
+                className="mt-1.5"
+                value={editStageForm.value}
+                onChange={(e) => setEditStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
+                disabled={editStageForm.isAuto}
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <input
+                  type="checkbox"
+                  id="edit-stage-auto"
+                  checked={editStageForm.isAuto}
+                  onChange={(e) => {
+                    const isAuto = e.target.checked
+                    setEditStageForm(prev => ({
+                      ...prev,
+                      isAuto,
+                      value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
+                    }))
+                  }}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <Label htmlFor="edit-stage-auto" className="text-sm cursor-pointer">Tự động</Label>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Màu sắc <span className="text-red-500">*</span>
+              </Label>
+              <div
+                className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+                style={{ backgroundColor: editStageForm.color }}
+                onClick={() => openColorPicker('edit')}
+              />
+              {!editStageForm.color && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="edit-stage-description" className="text-sm font-medium">Mô tả</Label>
+              <Textarea
+                id="edit-stage-description"
+                placeholder="Nhập mô tả"
+                className="mt-1.5 min-h-[80px] resize-none"
+                value={editStageForm.description}
+                onChange={(e) => setEditStageForm(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowEditStageModal(false)}>
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedStage || !editStageForm.name.trim()) return
+
+                setSalesStages(prev => prev.map(stage =>
+                  stage.id === selectedStage.id
+                    ? { ...stage, name: editStageForm.name, description: editStageForm.description, color: editStageForm.color }
+                    : stage
+                ))
+                setShowEditStageModal(false)
+                setSelectedStage(null)
+              }}
+              disabled={!editStageForm.name.trim()}
+            >
+              Đồng ý
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Color Picker Modal */}
+      <Dialog open={showColorPicker} onOpenChange={setShowColorPicker}>
+        <DialogContent className="max-w-xs p-4">
+          <div className="space-y-3">
+            {/* Color gradient picker */}
+            <div
+              className="w-full h-36 rounded-md cursor-crosshair relative"
+              style={{
+                background: `linear-gradient(to bottom, white, transparent), linear-gradient(to right, transparent, hsl(${tempColor.h}, 100%, 50%))`,
+                backgroundColor: `hsl(${tempColor.h}, 100%, 50%)`
+              }}
+              onClick={handleColorPickerChange}
+              onMouseMove={(e) => {
+                if (e.buttons === 1) handleColorPickerChange(e)
+              }}
+            >
+              {/* Indicator */}
+              <div
+                className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  left: `${tempColor.s}%`,
+                  top: `${100 - tempColor.l}%`,
+                  backgroundColor: tempColor.hex
+                }}
+              />
+            </div>
+
+            {/* Hue slider */}
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={tempColor.h}
+              onChange={handleHueChange}
+              className="w-full h-3 rounded-md cursor-pointer"
+              style={{
+                background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+              }}
+            />
+
+            {/* Color values */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Input
+                  value={tempColor.hex}
+                  onChange={(e) => handleHexInputChange(e.target.value)}
+                  className="text-xs h-8 font-mono"
+                  maxLength={7}
+                />
+                <p className="text-xs text-center text-gray-500 mt-0.5">Hex</p>
+              </div>
+              <div className="w-12">
+                <Input
+                  value={Math.round(parseInt(tempColor.hex.slice(1, 3), 16))}
+                  className="text-xs h-8 text-center"
+                  readOnly
+                />
+                <p className="text-xs text-center text-gray-500 mt-0.5">R</p>
+              </div>
+              <div className="w-12">
+                <Input
+                  value={Math.round(parseInt(tempColor.hex.slice(3, 5), 16))}
+                  className="text-xs h-8 text-center"
+                  readOnly
+                />
+                <p className="text-xs text-center text-gray-500 mt-0.5">G</p>
+              </div>
+              <div className="w-12">
+                <Input
+                  value={Math.round(parseInt(tempColor.hex.slice(5, 7), 16))}
+                  className="text-xs h-8 text-center"
+                  readOnly
+                />
+                <p className="text-xs text-center text-gray-500 mt-0.5">B</p>
+              </div>
+              <div className="w-12">
+                <Input
+                  value="100"
+                  className="text-xs h-8 text-center"
+                  readOnly
+                />
+                <p className="text-xs text-center text-gray-500 mt-0.5">A</p>
+              </div>
+            </div>
+
+            {/* Preset colors */}
+            <div className="grid grid-cols-8 gap-1.5">
+              {[
+                '#EF4444', '#F97316', '#F59E0B', '#EAB308',
+                '#84CC16', '#22C55E', '#10B981', '#14B8A6',
+                '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+                '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
+                '#F43F5E', '#FFFFFF', '#9CA3AF', '#000000'
+              ].map((color) => (
+                <button
+                  key={color}
+                  className={`w-6 h-6 rounded border ${
+                    tempColor.hex.toUpperCase() === color.toUpperCase()
+                      ? 'border-gray-900 ring-1 ring-gray-900'
+                      : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => {
+                    const hsl = hexToHsl(color)
+                    setTempColor({ ...hsl, hex: color })
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Preview and apply */}
+            <div className="flex items-center gap-2 pt-2">
+              <div
+                className="flex-1 h-8 rounded border"
+                style={{ backgroundColor: tempColor.hex }}
+              />
+              <Button size="sm" onClick={applyColor}>
+                Chọn
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Simple Delete Stage Confirmation Modal */}
+      <Dialog open={showSimpleDeleteStageModal} onOpenChange={setShowSimpleDeleteStageModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">Bạn có muốn xóa giai đoạn này không?</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setShowSimpleDeleteStageModal(false)
+              setStageToDelete(null)
+            }}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (stageToDelete) {
+                  setSalesStages(prev => prev.filter(s => s.id !== stageToDelete.id))
+                }
+                setShowSimpleDeleteStageModal(false)
+                setStageToDelete(null)
+              }}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Stage with Data Transfer Modal */}
+      <Dialog open={showDeleteStageModal} onOpenChange={setShowDeleteStageModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              <span>Xóa giai đoạn có dữ liệu</span>
+            </DialogTitle>
+            <DialogDescription>
+              Giai đoạn "{stageToDelete?.name}" đang chứa dữ liệu.
+              Vui lòng chọn giai đoạn để chuyển toàn bộ dữ liệu trước khi xóa.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6">
+            <div>
+              <Label htmlFor="transfer-stage">Chuyển dữ liệu sang giai đoạn</Label>
+              <select
+                id="transfer-stage"
+                className="w-full mt-1 p-2 border rounded"
+                value={transferToStageId}
+                onChange={(e) => setTransferToStageId(e.target.value)}
+              >
+                <option value="">-- Chọn giai đoạn đích --</option>
+                {salesStages
+                  .filter(s => s.id !== stageToDelete?.id)
+                  .map(stage => (
+                    <option key={stage.id} value={stage.id}>
+                      {stage.name} {stage.isFixed ? '(Cố định)' : ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+              <div className="flex items-center space-x-2 text-yellow-800">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-medium">Cảnh báo</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-1">
+                Hành động này sẽ chuyển toàn bộ leads/deals trong giai đoạn
+                "{stageToDelete?.name}" sang giai đoạn được chọn và không thể hoàn tác.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowDeleteStageModal(false)
+              setStageToDelete(null)
+              setTransferToStageId('')
+            }}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!transferToStageId}
+              onClick={handleConfirmDeleteStage}
+            >
+              Chuyển dữ liệu và xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tag Creation/Edit Modal */}
+      <Dialog open={showTagModal} onOpenChange={setShowTagModal}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">
+              {selectedTag ? 'Chỉnh sửa nhãn' : 'Thêm mới nhãn mới'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 px-6 py-4">
+            <div>
+              <Label htmlFor="tag-name" className="text-sm font-medium">
+                Tên nhãn <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="tag-name"
+                placeholder="Nhập tên nhãn"
+                className="mt-1.5"
+                value={selectedTag?.name || newTagForm.name}
+                onChange={(e) => setNewTagForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+              {!newTagForm.name && !selectedTag && (
+                <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên</p>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Màu sắc <span className="text-red-500">*</span>
+              </Label>
+              <div
+                className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+                style={{ backgroundColor: selectedTag?.color || newTagForm.color }}
+                onClick={() => openColorPicker('tag')}
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Phạm vi <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                defaultValue={selectedTag?.scope || newTagForm.scope}
+                onValueChange={(value) => setNewTagForm(prev => ({ ...prev, scope: value }))}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Toàn cục</SelectItem>
+                  <SelectItem value="team">Nhóm</SelectItem>
+                  <SelectItem value="user">Cá nhân</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Switch
+                id="is-active"
+                checked={selectedTag?.isDefault || newTagForm.isActive}
+                onCheckedChange={(checked) => setNewTagForm(prev => ({ ...prev, isActive: checked }))}
+              />
+              <Label htmlFor="is-active" className="text-sm">Trạng thái hoạt động</Label>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowTagModal(false)
+              setNewTagForm({ name: '', color: '#EF4444', scope: 'global', isActive: true })
+            }}>
+              Hủy
+            </Button>
+            <Button disabled={!newTagForm.name && !selectedTag}>
+              {selectedTag ? 'Cập nhật' : 'Tạo mới'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Tag Confirmation Modal */}
+      <Dialog open={showDeleteTagModal} onOpenChange={setShowDeleteTagModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 py-4">
+            <p className="text-sm text-gray-600">Bạn có muốn xóa nhãn này không?</p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteTagModal(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                // TODO: Delete tag logic
+                setShowDeleteTagModal(false)
+                setTagToDelete(null)
               }}
             >
               Xóa
