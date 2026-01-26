@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import {
   Settings,
@@ -49,6 +49,7 @@ import {
   Key,
   ArrowUp,
   ArrowDown,
+  GripVertical,
   RefreshCw,
   ExternalLink,
   Copy,
@@ -1033,7 +1034,7 @@ const AssignPermissionContent = () => {
                   <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Tên đăng n...</th>
                   <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Phòng ban</th>
                   <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Vai trò</th>
-                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Trạng thái làm ...</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Trạng thái</th>
                 </tr>
               </thead>
               <tbody>
@@ -1724,10 +1725,27 @@ export default function SettingsManagement() {
   const [showStageModal, setShowStageModal] = useState(false)
   const [showEditStageModal, setShowEditStageModal] = useState(false)
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false)
+  const [showSimpleDeleteStageModal, setShowSimpleDeleteStageModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showEditStatusModal, setShowEditStatusModal] = useState(false)
   const [showDeleteStatusModal, setShowDeleteStatusModal] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)
+  const [newTagForm, setNewTagForm] = useState({
+    name: '',
+    color: '#EF4444',
+    scope: 'global',
+    isActive: true
+  })
+  const [showDeleteTagModal, setShowDeleteTagModal] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null)
+  const [showDeleteDistributionRuleModal, setShowDeleteDistributionRuleModal] = useState(false)
+  const [showAddDistributionRule, setShowAddDistributionRule] = useState(false)
+  const [showEditDistributionRule, setShowEditDistributionRule] = useState(false)
+  const [ruleToDelete, setRuleToDelete] = useState<string | null>(null)
+  const [selectedAssignmentType, setSelectedAssignmentType] = useState<string>('')
+  const [individualSearchTerm, setIndividualSearchTerm] = useState<string>('')
+  const [individualFilterTeam, setIndividualFilterTeam] = useState<string>('all')
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all')
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showIntegrationModal, setShowIntegrationModal] = useState(false)
   const [selectedIntegrationType, setSelectedIntegrationType] = useState<'zalo-personal' | 'zalo-oa' | 'facebook' | ''>('')
@@ -1749,11 +1767,30 @@ export default function SettingsManagement() {
   // New stage form state
   const [newStageForm, setNewStageForm] = useState({
     name: '',
+    value: '',
+    isAuto: true,
     description: '',
     color: '#3B82F6',
     position: 'end' as 'start' | 'end' | 'after',
     afterStageId: ''
   })
+  
+  // Edit stage form state
+  const [editStageForm, setEditStageForm] = useState({
+    name: '',
+    value: '',
+    isAuto: true,
+    description: '',
+    color: '#3B82F6'
+  })
+  
+  // Color picker state
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [colorPickerTarget, setColorPickerTarget] = useState<'add' | 'edit'>('add')
+  const [tempColor, setTempColor] = useState({ h: 0, s: 100, l: 50, hex: '#3B82F6' })
+  
+  // Drag and drop state for stages
+  const [draggedStageId, setDraggedStageId] = useState<string | null>(null)
   
   // Edit status form state
   const [editStatusForm, setEditStatusForm] = useState({
@@ -1819,14 +1856,8 @@ export default function SettingsManagement() {
   const WorkflowManagement = () => {
     // Distribution Rules state
     const [distributionRules, setDistributionRules] = useState<DistributionRule[]>(sampleDistributionRules)
-    const [showAddDistributionRule, setShowAddDistributionRule] = useState(false)
-    const [showEditDistributionRule, setShowEditDistributionRule] = useState(false)
     const [selectedDistributionRule, setSelectedDistributionRule] = useState<DistributionRule | null>(null)
-    const [selectedAssignmentType, setSelectedAssignmentType] = useState<string>('')
-    const [individualSearchTerm, setIndividualSearchTerm] = useState<string>('')
-    const [individualFilterTeam, setIndividualFilterTeam] = useState<string>('all')
     const [distributionRuleToDelete, setDistributionRuleToDelete] = useState<DistributionRule | null>(null)
-    const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all')
     const [editTimeRange, setEditTimeRange] = useState<string>('all')
 
     const getCategoryColor = (category: string) => {
@@ -1897,21 +1928,20 @@ export default function SettingsManagement() {
         return
       }
       
-      // Giả định có dữ liệu trong giai đoạn này (thực tế sẽ check từ database)
-      const hasData = Math.random() > 0.5 // Mô phỏng có data ngẫu nhiên
-      
-      if (hasData) {
-        setStageToDelete(stage)
-        setShowDeleteStageModal(true)
-      } else {
-        if (confirm('Bạn có chắc chắn muốn xóa giai đoạn này?')) {
-          setSalesStages(prev => prev.filter(s => s.id !== stageId))
-        }
-      }
+      // Luôn hiển thị modal xác nhận xóa với lựa chọn chuyển dữ liệu
+      setStageToDelete(stage)
+      setShowDeleteStageModal(true)
     }
 
     const handleEditSalesStage = (stage: SalesStage) => {
       setSelectedStage(stage)
+      setEditStageForm({
+        name: stage.name,
+        value: stage.id.toUpperCase().replace(/[^A-Z0-9_]/g, '_'),
+        isAuto: false,
+        description: stage.description,
+        color: stage.color
+      })
       setShowEditStageModal(true)
     }
 
@@ -1962,6 +1992,8 @@ export default function SettingsManagement() {
       // Reset form
       setNewStageForm({
         name: '',
+        value: '',
+        isAuto: true,
         description: '',
         color: '#3B82F6',
         position: 'end',
@@ -1997,6 +2029,139 @@ export default function SettingsManagement() {
           if (s.id === targetStage.id) return { ...s, order: stage.order }
           return s
         }))
+      }
+    }
+
+    // Drag and drop handlers for stages
+    const handleDragStart = (e: React.DragEvent, stageId: string) => {
+      const stage = salesStages.find(s => s.id === stageId)
+      if (stage?.isFixed) {
+        e.preventDefault()
+        return
+      }
+      setDraggedStageId(stageId)
+      e.dataTransfer.effectAllowed = 'move'
+    }
+
+    const handleDragOver = (e: React.DragEvent, targetStageId: string) => {
+      e.preventDefault()
+      const targetStage = salesStages.find(s => s.id === targetStageId)
+      if (targetStage?.isFixed) {
+        e.dataTransfer.dropEffect = 'none'
+        return
+      }
+      e.dataTransfer.dropEffect = 'move'
+    }
+
+    const handleDrop = (e: React.DragEvent, targetStageId: string) => {
+      e.preventDefault()
+      if (!draggedStageId || draggedStageId === targetStageId) {
+        setDraggedStageId(null)
+        return
+      }
+
+      const draggedStage = salesStages.find(s => s.id === draggedStageId)
+      const targetStage = salesStages.find(s => s.id === targetStageId)
+      
+      if (!draggedStage || !targetStage || draggedStage.isFixed || targetStage.isFixed) {
+        setDraggedStageId(null)
+        return
+      }
+
+      // Swap orders
+      setSalesStages(prev => prev.map(s => {
+        if (s.id === draggedStageId) return { ...s, order: targetStage.order }
+        if (s.id === targetStageId) return { ...s, order: draggedStage.order }
+        return s
+      }))
+      
+      setDraggedStageId(null)
+    }
+
+    const handleDragEnd = () => {
+      setDraggedStageId(null)
+    }
+
+    // Helper function to convert hex to HSL
+    const hexToHsl = (hex: string) => {
+      let r = parseInt(hex.slice(1, 3), 16) / 255
+      let g = parseInt(hex.slice(3, 5), 16) / 255
+      let b = parseInt(hex.slice(5, 7), 16) / 255
+
+      const max = Math.max(r, g, b), min = Math.min(r, g, b)
+      let h = 0, s = 0, l = (max + min) / 2
+
+      if (max !== min) {
+        const d = max - min
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+          case g: h = ((b - r) / d + 2) / 6; break
+          case b: h = ((r - g) / d + 4) / 6; break
+        }
+      }
+
+      return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+    }
+
+    // Helper function to convert HSL to hex
+    const hslToHex = (h: number, s: number, l: number) => {
+      s /= 100
+      l /= 100
+      const a = s * Math.min(l, 1 - l)
+      const f = (n: number) => {
+        const k = (n + h / 30) % 12
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+        return Math.round(255 * color).toString(16).padStart(2, '0')
+      }
+      return `#${f(0)}${f(8)}${f(4)}`
+    }
+
+    // Open color picker
+    const openColorPicker = (target: 'add' | 'edit') => {
+      setColorPickerTarget(target)
+      const currentColor = target === 'add' ? newStageForm.color : editStageForm.color
+      const hsl = hexToHsl(currentColor)
+      setTempColor({ ...hsl, hex: currentColor })
+      setShowColorPicker(true)
+    }
+
+    // Apply color from picker
+    const applyColor = () => {
+      if (colorPickerTarget === 'add') {
+        setNewStageForm(prev => ({ ...prev, color: tempColor.hex }))
+      } else {
+        setEditStageForm(prev => ({ ...prev, color: tempColor.hex }))
+      }
+      setShowColorPicker(false)
+    }
+
+    // Handle color picker change
+    const handleColorPickerChange = (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect()
+      const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+      const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+      
+      const s = Math.round(x * 100)
+      const l = Math.round((1 - y) * 100)
+      const hex = hslToHex(tempColor.h, s, l)
+      setTempColor(prev => ({ ...prev, s, l, hex }))
+    }
+
+    // Handle hue slider change
+    const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const h = parseInt(e.target.value)
+      const hex = hslToHex(h, tempColor.s, tempColor.l)
+      setTempColor(prev => ({ ...prev, h, hex }))
+    }
+
+    // Handle hex input change
+    const handleHexInputChange = (hex: string) => {
+      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        const hsl = hexToHsl(hex)
+        setTempColor({ ...hsl, hex })
+      } else {
+        setTempColor(prev => ({ ...prev, hex }))
       }
     }
 
@@ -2110,83 +2275,66 @@ export default function SettingsManagement() {
         case 'not_contains': return 'không chứa'
         default: return operator
       }
-    }
+    };
 
     return (
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Quản lý Quy trình & Nhãn</h2>
-            <p className="text-gray-600">Tùy chỉnh giai đoạn bán hàng, trạng thái đơn hàng và nhãn tự động</p>
+            <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý Quy trình bán hàng</h2>
+            <p className="text-sm text-[#455560]">Tùy chỉnh giai đoạn bán hàng của hệ thống</p>
           </div>
+          <Button onClick={() => setShowStageModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm giai đoạn
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Sales Stages */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Giai đoạn bán hàng</CardTitle>
-                  <CardDescription>
-                    Các giai đoạn cố định tương ứng với quy trình bán hàng hiện tại. 
-                    Bạn có thể thêm các giai đoạn tùy chỉnh để mở rộng quy trình.
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setShowStageModal(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm giai đoạn
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {salesStages.map((stage, index) => (
-                <div key={stage.id} className={`flex items-center justify-between p-3 border rounded-lg ${stage.isFixed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'}`}>
+            <CardContent className="space-y-2 pt-6">
+              {salesStages.sort((a, b) => a.order - b.order).map((stage, index) => (
+                <div 
+                  key={stage.id} 
+                  className={`flex items-center justify-between p-3 border rounded-lg transition-all ${
+                    stage.isFixed 
+                      ? 'bg-white border-gray-200' 
+                      : draggedStageId === stage.id 
+                        ? 'bg-blue-50 border-blue-300 opacity-50' 
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                  }`}
+                  draggable={!stage.isFixed}
+                  onDragStart={(e) => handleDragStart(e, stage.id)}
+                  onDragOver={(e) => handleDragOver(e, stage.id)}
+                  onDrop={(e) => handleDrop(e, stage.id)}
+                  onDragEnd={handleDragEnd}
+                >
                   <div className="flex items-center space-x-3">
+                    {/* Drag handle - only for non-fixed stages */}
+                    {!stage.isFixed ? (
+                      <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 flex items-center justify-center text-gray-300">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                    )}
                     <div
-                      className="w-4 h-4 rounded-full"
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: stage.color }}
                     />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{stage.name}</span>
-                        {stage.isFixed && (
-                          <Badge variant="secondary" className="text-xs">Cố định</Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500">{stage.description}</div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-900">{stage.name}</span>
+                      {stage.isFixed && (
+                        <Badge className="text-xs bg-[#f5f0fa] text-[#a461d8] hover:bg-[#f5f0fa]">Cố định</Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge variant="outline">{stage.order}</Badge>
-                    
-                    {/* Move buttons for non-fixed stages */}
-                    {!stage.isFixed && (
-                      <div className="flex flex-col">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="h-6 px-1"
-                          onClick={() => handleMoveStage(stage.id, 'up')}
-                          disabled={salesStages.filter(s => !s.isFixed && s.order < stage.order).length === 0}
-                          title="Di chuyển lên"
-                        >
-                          <ArrowUp className="w-3 h-3" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="h-6 px-1"
-                          onClick={() => handleMoveStage(stage.id, 'down')}
-                          disabled={salesStages.filter(s => !s.isFixed && s.order > stage.order).length === 0}
-                          title="Di chuyển xuống"
-                        >
-                          <ArrowDown className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-                    
+                    <Badge variant="outline" className="text-xs min-w-[32px] justify-center">{stage.order}</Badge>
                     <Button 
                       variant="ghost" 
                       size="sm"
@@ -2196,10 +2344,10 @@ export default function SettingsManagement() {
                       <Edit2 className="w-4 h-4" />
                     </Button>
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="sm" 
                       disabled={stage.isFixed}
-                      className={stage.isFixed ? 'cursor-not-allowed opacity-50' : ''}
+                      className={stage.isFixed ? 'cursor-not-allowed opacity-50' : 'text-red-600 hover:text-red-700'}
                       title={stage.isFixed ? 'Giai đoạn cố định không thể xóa' : 'Xóa giai đoạn'}
                       onClick={() => !stage.isFixed && handleDeleteSalesStage(stage.id)}
                     >
@@ -2210,220 +2358,65 @@ export default function SettingsManagement() {
               ))}
             </CardContent>
           </Card>
-
-          {/* Order Statuses */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Trạng thái đơn hàng</CardTitle>
-                  <CardDescription>Quản lý trạng thái và thông báo</CardDescription>
-                </div>
-                <Button onClick={() => setShowStatusModal(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm trạng thái
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {orderStatuses.map((status) => (
-                <div key={status.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <div>
-                      <div className="font-medium">{status.name}</div>
-                      <div className="text-sm text-gray-500">{status.description}</div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {status.category === 'payment' ? 'Thanh toán' :
-                           status.category === 'delivery' ? 'Giao hàng' :
-                           status.category === 'contract' ? 'Hợp đồng' : 'Khác'}
-                        </Badge>
-                        {status.timeout.enabled && (
-                          <Badge variant="outline" className="text-xs">
-                            Hết hạn: {status.timeout.days} ngày
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      {status.notifications.zalo && (
-                        <MessageSquare className="w-3 h-3 text-blue-500" />
-                      )}
-                      {status.notifications.email && (
-                        <Mail className="w-3 h-3 text-green-500" />
-                      )}
-                      {status.notifications.app && (
-                        <Bell className="w-3 h-3 text-purple-500" />
-                      )}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleEditOrderStatus(status)}
-                      title="Chỉnh sửa trạng thái"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleDeleteOrderStatus(status.id)}
-                      title="Xóa trạng thái"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tags Management Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Quản lý nhãn</h3>
-              <p className="text-gray-600">Tạo và quản lý nhãn trong hệ thống</p>
-            </div>
-            <Button onClick={handleCreateTag}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo nhãn mới
-            </Button>
-          </div>
-
-          {/* Tags List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách Nhãn</CardTitle>
-              <CardDescription>Quản lý tất cả nhãn trong hệ thống</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {tags.map((tag) => (
-                  <div key={tag.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium">{tag.name}</h4>
-                          {tag.isDefault && (
-                            <Badge variant="outline" className="text-xs">
-                              <Star className="w-3 h-3 mr-1" />
-                              Mặc định
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge className={getCategoryColor(tag.category)}>
-                            {tag.category === 'lead' && 'Lead'}
-                            {tag.category === 'customer' && 'Khách hàng'}
-                            {tag.category === 'deal' && 'Deal'}
-                            {tag.category === 'task' && 'Công việc'}
-                          </Badge>
-                          <Badge className={getScopeColor(tag.scope)}>
-                            {tag.scope === 'global' && 'Toàn cục'}
-                            {tag.scope === 'team' && 'Nhóm'}
-                            {tag.scope === 'user' && 'Cá nhân'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditTag(tag)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteTag(tag.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tag Creation/Edit Modal */}
         <Dialog open={showTagModal} onOpenChange={setShowTagModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedTag ? 'Chỉnh sửa nhãn' : 'Tạo nhãn mới'}
+          <DialogContent className="max-w-md p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">
+                {selectedTag ? 'Chỉnh sửa nhãn' : 'Thêm mới nhãn mới'}
               </DialogTitle>
-              <DialogDescription>
-                {selectedTag 
-                  ? 'Cập nhật thông tin nhãn và quy tắc tự động gán'
-                  : 'Tạo nhãn mới để phân loại dữ liệu'
-                }
-              </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-5 px-6 py-4">
               <div>
-                <Label htmlFor="tag-name">Tên nhãn</Label>
+                <Label htmlFor="tag-name" className="text-sm font-medium">
+                  Tên nhãn <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="tag-name"
                   placeholder="Nhập tên nhãn"
-                  defaultValue={selectedTag?.name || ''}
+                  className="mt-1.5"
+                  value={selectedTag?.name || newTagForm.name}
+                  onChange={(e) => setNewTagForm(prev => ({ ...prev, name: e.target.value }))}
                 />
+                {!newTagForm.name && !selectedTag && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên</p>
+                )}
               </div>
 
               <div>
-                <Label>Màu sắc</Label>
-                <div className="grid grid-cols-8 gap-2 mt-2">
+                <Label className="text-sm font-medium">Màu sắc</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
                   {[
-                    '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
-                    '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'
+                    '#EF4444', '#F97316', '#10B981', '#3B82F6',
+                    '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6',
+                    '#6B7280', '#22C55E'
                   ].map((color) => (
                     <button
                       key={color}
-                      className={`w-8 h-8 rounded border-2 ${
-                        selectedTag?.color === color ? 'border-gray-900' : 'border-gray-200'
+                      className={`w-8 h-8 rounded-md transition-all ${
+                        (selectedTag?.color || newTagForm.color) === color 
+                          ? 'ring-2 ring-offset-2 ring-blue-500' 
+                          : 'hover:scale-110'
                       }`}
                       style={{ backgroundColor: color }}
+                      onClick={() => setNewTagForm(prev => ({ ...prev, color }))}
                     />
                   ))}
                 </div>
               </div>
 
               <div>
-                <Label>Loại</Label>
-                <Select defaultValue={selectedTag?.category || 'lead'}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lead">Lead</SelectItem>
-                    <SelectItem value="customer">Khách hàng</SelectItem>
-                    <SelectItem value="deal">Deal</SelectItem>
-                    <SelectItem value="task">Công việc</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Phạm vi</Label>
-                <Select defaultValue={selectedTag?.scope || 'global'}>
-                  <SelectTrigger className="mt-2">
+                <Label className="text-sm font-medium">
+                  Phạm vi <span className="text-red-500">*</span>
+                </Label>
+                <Select 
+                  defaultValue={selectedTag?.scope || newTagForm.scope}
+                  onValueChange={(value) => setNewTagForm(prev => ({ ...prev, scope: value }))}
+                >
+                  <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -2434,21 +2427,79 @@ export default function SettingsManagement() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="is-default">Nhãn mặc định</Label>
+              <div className="flex items-center space-x-3">
                 <Switch
-                  id="is-default"
-                  defaultChecked={selectedTag?.isDefault || false}
+                  id="is-active"
+                  checked={selectedTag?.isDefault || newTagForm.isActive}
+                  onCheckedChange={(checked) => setNewTagForm(prev => ({ ...prev, isActive: checked }))}
                 />
+                <Label htmlFor="is-active" className="text-sm">Trạng thái hoạt động</Label>
               </div>
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowTagModal(false)}>
+            <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => {
+                setShowTagModal(false)
+                setNewTagForm({ name: '', color: '#EF4444', scope: 'global', isActive: true })
+              }}>
                 Hủy
               </Button>
-              <Button>
+              <Button disabled={!newTagForm.name && !selectedTag}>
                 {selectedTag ? 'Cập nhật' : 'Tạo mới'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Tag Confirmation Modal */}
+        <Dialog open={showDeleteTagModal} onOpenChange={setShowDeleteTagModal}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600">Bạn có muốn xóa nhãn này không?</p>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowDeleteTagModal(false)}>
+                Hủy
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  // TODO: Delete tag logic
+                  setShowDeleteTagModal(false)
+                  setTagToDelete(null)
+                }}
+              >
+                Xóa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Distribution Rule Confirmation Modal */}
+        <Dialog open={showDeleteDistributionRuleModal} onOpenChange={setShowDeleteDistributionRuleModal}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600">Bạn có muốn xóa quy tắc phân bổ này không?</p>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowDeleteDistributionRuleModal(false)}>
+                Hủy
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  // TODO: Delete rule logic
+                  setShowDeleteDistributionRuleModal(false)
+                  setRuleToDelete(null)
+                }}
+              >
+                Xóa
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2456,105 +2507,93 @@ export default function SettingsManagement() {
 
         {/* Add Sales Stage Modal */}
         <Dialog open={showStageModal} onOpenChange={setShowStageModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Thêm giai đoạn bán hàng mới</DialogTitle>
-              <DialogDescription>
-                Tạo giai đoạn tùy chỉnh cho quy trình bán hàng của bạn
-              </DialogDescription>
+          <DialogContent className="max-w-md p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm mới giai đoạn</DialogTitle>
+              <DialogDescription className="text-sm text-[#455560]">Tạo giai đoạn mới trong quy trình bán hàng</DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 py-4">
               <div>
-                <Label htmlFor="stage-name">Tên giai đoạn</Label>
+                <Label htmlFor="stage-name" className="text-sm font-medium">
+                  Tên giai đoạn <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="stage-name"
-                  placeholder="Nhập tên giai đoạn"
+                  placeholder="Nhập giai đoạn"
+                  className="mt-1.5"
                   value={newStageForm.name}
                   onChange={(e) => setNewStageForm(prev => ({ ...prev, name: e.target.value }))}
                 />
+                {!newStageForm.name && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="stage-description">Mô tả</Label>
+                <Label htmlFor="stage-value" className="text-sm font-medium">
+                  Value <span className="text-red-500">*</span>
+                </Label>
                 <Input
+                  id="stage-value"
+                  placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
+                  className="mt-1.5"
+                  value={newStageForm.value}
+                  onChange={(e) => setNewStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
+                  disabled={newStageForm.isAuto}
+                />
+                <div className="flex items-center space-x-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="stage-auto"
+                    checked={newStageForm.isAuto}
+                    onChange={(e) => {
+                      const isAuto = e.target.checked
+                      setNewStageForm(prev => ({ 
+                        ...prev, 
+                        isAuto,
+                        value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
+                      }))
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="stage-auto" className="text-sm cursor-pointer">Tự động</Label>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium">
+                  Màu sắc <span className="text-red-500">*</span>
+                </Label>
+                <div 
+                  className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+                  style={{ backgroundColor: newStageForm.color }}
+                  onClick={() => openColorPicker('add')}
+                />
+                {!newStageForm.color && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="stage-description" className="text-sm font-medium">Mô tả</Label>
+                <Textarea
                   id="stage-description"
-                  placeholder="Mô tả chi tiết về giai đoạn"
+                  placeholder="Nhập mô tả"
+                  className="mt-1.5 min-h-[80px] resize-none"
                   value={newStageForm.description}
                   onChange={(e) => setNewStageForm(prev => ({ ...prev, description: e.target.value }))}
                 />
               </div>
-
-              <div>
-                <Label>Vị trí giai đoạn</Label>
-                <Select
-                  value={newStageForm.position}
-                  onValueChange={(value) => setNewStageForm(prev => ({ 
-                    ...prev, 
-                    position: value as 'start' | 'end' | 'after',
-                    afterStageId: value !== 'after' ? '' : prev.afterStageId
-                  }))}
-                >
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="start">Đầu quy trình (sau các giai đoạn cố định đầu)</SelectItem>
-                    <SelectItem value="end">Cuối quy trình</SelectItem>
-                    <SelectItem value="after">Sau giai đoạn cụ thể</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {newStageForm.position === 'after' && (
-                <div>
-                  <Label>Chọn giai đoạn</Label>
-                  <Select
-                    value={newStageForm.afterStageId}
-                    onValueChange={(value) => setNewStageForm(prev => ({ ...prev, afterStageId: value }))}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Chọn giai đoạn để chèn sau" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {salesStages
-                        .filter(stage => !stage.isFixed || ['new', 'qualified'].includes(stage.id))
-                        .sort((a, b) => a.order - b.order)
-                        .map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name} {stage.isFixed ? '(Cố định)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div>
-                <Label>Màu sắc</Label>
-                <div className="grid grid-cols-8 gap-2 mt-2">
-                  {[
-                    '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
-                    '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      className={`w-8 h-8 rounded border-2 transition-colors ${
-                        newStageForm.color === color ? 'border-gray-800' : 'border-gray-200 hover:border-gray-400'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewStageForm(prev => ({ ...prev, color }))}
-                    />
-                  ))}
-                </div>
-              </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => {
                 setShowStageModal(false)
                 setNewStageForm({
                   name: '',
+                  value: '',
+                  isAuto: true,
                   description: '',
                   color: '#3B82F6',
                   position: 'end',
@@ -2565,9 +2604,9 @@ export default function SettingsManagement() {
               </Button>
               <Button 
                 onClick={handleAddSalesStage}
-                disabled={!newStageForm.name.trim() || (newStageForm.position === 'after' && !newStageForm.afterStageId)}
+                disabled={!newStageForm.name.trim()}
               >
-                Thêm giai đoạn
+                Đồng ý
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2575,61 +2614,261 @@ export default function SettingsManagement() {
 
         {/* Edit Sales Stage Modal */}
         <Dialog open={showEditStageModal} onOpenChange={setShowEditStageModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Chỉnh sửa giai đoạn bán hàng</DialogTitle>
-              <DialogDescription>
-                Cập nhật thông tin giai đoạn "{selectedStage?.name}"
-              </DialogDescription>
+          <DialogContent className="max-w-md p-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Chỉnh sửa giai đoạn</DialogTitle>
+              <DialogDescription className="text-sm text-[#455560]">Cập nhật thông tin giai đoạn bán hàng</DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 py-4">
               <div>
-                <Label htmlFor="edit-stage-name">Tên giai đoạn</Label>
+                <Label htmlFor="edit-stage-name" className="text-sm font-medium">
+                  Tên giai đoạn <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="edit-stage-name"
-                  defaultValue={selectedStage?.name}
-                  placeholder="Nhập tên giai đoạn"
+                  placeholder="Nhập giai đoạn"
+                  className="mt-1.5"
+                  value={editStageForm.name}
+                  onChange={(e) => setEditStageForm(prev => ({ ...prev, name: e.target.value }))}
                 />
+                {!editStageForm.name && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên giai đoạn</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="edit-stage-description">Mô tả</Label>
+                <Label htmlFor="edit-stage-value" className="text-sm font-medium">
+                  Value <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  id="edit-stage-description"
-                  defaultValue={selectedStage?.description}
-                  placeholder="Mô tả chi tiết về giai đoạn"
+                  id="edit-stage-value"
+                  placeholder="Nhập giá trị (VD: QUALIFIED, NEGOTIATION...)"
+                  className="mt-1.5"
+                  value={editStageForm.value}
+                  onChange={(e) => setEditStageForm(prev => ({ ...prev, value: e.target.value.toUpperCase() }))}
+                  disabled={editStageForm.isAuto}
                 />
+                <div className="flex items-center space-x-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="edit-stage-auto"
+                    checked={editStageForm.isAuto}
+                    onChange={(e) => {
+                      const isAuto = e.target.checked
+                      setEditStageForm(prev => ({ 
+                        ...prev, 
+                        isAuto,
+                        value: isAuto ? prev.name.toUpperCase().replace(/\s+/g, '_') : prev.value
+                      }))
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="edit-stage-auto" className="text-sm cursor-pointer">Tự động</Label>
+                </div>
               </div>
 
               <div>
-                <Label>Màu sắc</Label>
-                <div className="grid grid-cols-8 gap-2 mt-2">
-                  {[
-                    '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
-                    '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      className={`w-8 h-8 rounded border-2 ${
-                        selectedStage?.color === color ? 'border-gray-900' : 'border-gray-200'
-                      } hover:border-gray-400`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
+                <Label className="text-sm font-medium">
+                  Màu sắc <span className="text-red-500">*</span>
+                </Label>
+                <div 
+                  className="mt-1.5 h-10 rounded-md border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors"
+                  style={{ backgroundColor: editStageForm.color }}
+                  onClick={() => openColorPicker('edit')}
+                />
+                {!editStageForm.color && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng chọn màu sắc</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="edit-stage-description" className="text-sm font-medium">Mô tả</Label>
+                <Textarea
+                  id="edit-stage-description"
+                  placeholder="Nhập mô tả"
+                  className="mt-1.5 min-h-[80px] resize-none"
+                  value={editStageForm.description}
+                  onChange={(e) => setEditStageForm(prev => ({ ...prev, description: e.target.value }))}
+                />
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setShowEditStageModal(false)}>
                 Hủy
               </Button>
-              <Button onClick={() => {
-                // TODO: Implement edit stage logic
-                setShowEditStageModal(false)
+              <Button 
+                onClick={() => {
+                  if (!selectedStage || !editStageForm.name.trim()) return
+                  
+                  setSalesStages(prev => prev.map(stage => 
+                    stage.id === selectedStage.id 
+                      ? { ...stage, name: editStageForm.name, description: editStageForm.description, color: editStageForm.color }
+                      : stage
+                  ))
+                  setShowEditStageModal(false)
+                  setSelectedStage(null)
+                }}
+                disabled={!editStageForm.name.trim()}
+              >
+                Đồng ý
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Color Picker Modal */}
+        <Dialog open={showColorPicker} onOpenChange={setShowColorPicker}>
+          <DialogContent className="max-w-xs p-4">
+            <div className="space-y-3">
+              {/* Color gradient picker */}
+              <div 
+                className="w-full h-36 rounded-md cursor-crosshair relative"
+                style={{
+                  background: `linear-gradient(to bottom, white, transparent), linear-gradient(to right, transparent, hsl(${tempColor.h}, 100%, 50%))`,
+                  backgroundColor: `hsl(${tempColor.h}, 100%, 50%)`
+                }}
+                onClick={handleColorPickerChange}
+                onMouseMove={(e) => {
+                  if (e.buttons === 1) handleColorPickerChange(e)
+                }}
+              >
+                {/* Indicator */}
+                <div 
+                  className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md transform -translate-x-1/2 -translate-y-1/2"
+                  style={{ 
+                    left: `${tempColor.s}%`, 
+                    top: `${100 - tempColor.l}%`,
+                    backgroundColor: tempColor.hex 
+                  }}
+                />
+              </div>
+              
+              {/* Hue slider */}
+              <input
+                type="range"
+                min="0"
+                max="360"
+                value={tempColor.h}
+                onChange={handleHueChange}
+                className="w-full h-3 rounded-md cursor-pointer"
+                style={{
+                  background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+                }}
+              />
+              
+              {/* Color values */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
+                    value={tempColor.hex}
+                    onChange={(e) => handleHexInputChange(e.target.value)}
+                    className="text-xs h-8 font-mono"
+                    maxLength={7}
+                  />
+                  <p className="text-xs text-center text-gray-500 mt-0.5">Hex</p>
+                </div>
+                <div className="w-12">
+                  <Input
+                    value={Math.round(parseInt(tempColor.hex.slice(1, 3), 16))}
+                    className="text-xs h-8 text-center"
+                    readOnly
+                  />
+                  <p className="text-xs text-center text-gray-500 mt-0.5">R</p>
+                </div>
+                <div className="w-12">
+                  <Input
+                    value={Math.round(parseInt(tempColor.hex.slice(3, 5), 16))}
+                    className="text-xs h-8 text-center"
+                    readOnly
+                  />
+                  <p className="text-xs text-center text-gray-500 mt-0.5">G</p>
+                </div>
+                <div className="w-12">
+                  <Input
+                    value={Math.round(parseInt(tempColor.hex.slice(5, 7), 16))}
+                    className="text-xs h-8 text-center"
+                    readOnly
+                  />
+                  <p className="text-xs text-center text-gray-500 mt-0.5">B</p>
+                </div>
+                <div className="w-12">
+                  <Input
+                    value="100"
+                    className="text-xs h-8 text-center"
+                    readOnly
+                  />
+                  <p className="text-xs text-center text-gray-500 mt-0.5">A</p>
+                </div>
+              </div>
+              
+              {/* Preset colors */}
+              <div className="grid grid-cols-8 gap-1.5">
+                {[
+                  '#EF4444', '#F97316', '#F59E0B', '#EAB308',
+                  '#84CC16', '#22C55E', '#10B981', '#14B8A6',
+                  '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+                  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
+                  '#F43F5E', '#FFFFFF', '#9CA3AF', '#000000'
+                ].map((color) => (
+                  <button
+                    key={color}
+                    className={`w-6 h-6 rounded border ${
+                      tempColor.hex.toUpperCase() === color.toUpperCase() 
+                        ? 'border-gray-900 ring-1 ring-gray-900' 
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                      const hsl = hexToHsl(color)
+                      setTempColor({ ...hsl, hex: color })
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {/* Preview and apply */}
+              <div className="flex items-center gap-2 pt-2">
+                <div 
+                  className="flex-1 h-8 rounded border"
+                  style={{ backgroundColor: tempColor.hex }}
+                />
+                <Button size="sm" onClick={applyColor}>
+                  Chọn
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Simple Delete Stage Confirmation Modal */}
+        <Dialog open={showSimpleDeleteStageModal} onOpenChange={setShowSimpleDeleteStageModal}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600">Bạn có muốn xóa giai đoạn này không?</p>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => {
+                setShowSimpleDeleteStageModal(false)
+                setStageToDelete(null)
               }}>
-                Cập nhật
+                Hủy
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  if (stageToDelete) {
+                    setSalesStages(prev => prev.filter(s => s.id !== stageToDelete.id))
+                  }
+                  setShowSimpleDeleteStageModal(false)
+                  setStageToDelete(null)
+                }}
+              >
+                Xóa
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2649,7 +2888,7 @@ export default function SettingsManagement() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-4 px-6">
               <div>
                 <Label htmlFor="transfer-stage">Chuyển dữ liệu sang giai đoạn</Label>
                 <select
@@ -3010,119 +3249,36 @@ export default function SettingsManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Lead Distribution Section */}
-        <div className="space-y-6 mt-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">Phân bổ Leads</h3>
-              <p className="text-gray-600">Cài đặt quy tắc phân bổ leads tự động cho nhóm bán hàng</p>
-            </div>
-            <Button onClick={() => setShowAddDistributionRule(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm quy tắc
-            </Button>
-          </div>
-
-          {/* Distribution Rules List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quy tắc phân bổ</CardTitle>
-              <CardDescription>Danh sách các quy tắc phân bổ leads hiện tại</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {distributionRules.map((rule) => (
-                  <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-3 h-3 rounded-full ${rule.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{rule.name}</h4>
-                        <p className="text-sm text-gray-500">{rule.description}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {rule.method === 'round_robin' ? 'Xoay vòng' : 
-                             rule.method === 'load_based' ? 'Theo tải' : 'Ngẫu nhiên'}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {rule.assignedTargets.join(', ')}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {rule.assignmentType === 'department' ? 'Phòng ban' : 
-                             rule.assignmentType === 'team' ? 'Team' : 'Cá nhân'}
-                          </Badge>
-                          {rule.assignedTargets.length > 1 && (
-                            <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">
-                              {rule.assignedTargets.length} đối tượng
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-right text-sm">
-                        <p className="font-medium">{rule.leadsAssigned}</p>
-                        <p className="text-gray-500">leads được phân</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditDistributionRule(rule)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteDistributionRule(rule.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Switch
-                        checked={rule.isActive}
-                        onCheckedChange={(checked) => handleToggleDistributionRule(rule.id, checked)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {distributionRules.length === 0 && (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có quy tắc phân bổ</h3>
-                  <p className="text-gray-500">Tạo quy tắc đầu tiên để bắt đầu phân bổ leads tự động.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Add Distribution Rule Modal */}
         <Dialog open={showAddDistributionRule} onOpenChange={setShowAddDistributionRule}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Thêm quy tắc phân bổ leads</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1] shrink-0">
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm quy tắc phân bổ leads</DialogTitle>
+              <DialogDescription className="text-sm text-[#455560]">
                 Tạo quy tắc mới để phân bổ leads tự động cho nhóm bán hàng
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-5 px-6 py-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="rule-name">Tên quy tắc</Label>
+                  <Label htmlFor="rule-name" className="text-sm font-medium">
+                    Tên quy tắc <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="rule-name"
-                    placeholder="VD: Phân bổ leads mới"
-                    className="mt-2"
+                    placeholder="Nhập tên quy tắc"
+                    className="mt-1.5"
                   />
+                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên quy tắc</p>
                 </div>
                 <div>
-                  <Label htmlFor="assignment-type">Loại phân bổ</Label>
-                  <Select onValueChange={(value) => setSelectedAssignmentType(value)}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Chọn loại phân bổ" />
+                  <Label htmlFor="assignment-type" className="text-sm font-medium">
+                    Loại phân bổ <span className="text-red-500">*</span>
+                  </Label>
+                  <Select onValueChange={(value) => setSelectedAssignmentType(value)} defaultValue="department">
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Theo phòng ban" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="department">Theo phòng ban</SelectItem>
@@ -3133,57 +3289,49 @@ export default function SettingsManagement() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="assigned-targets">
-                  {selectedAssignmentType === 'department' ? 'Phòng ban được phân' :
-                   selectedAssignmentType === 'team' ? 'Team được phân' : 'Cá nhân được phân'}
-                </Label>
-                <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
-                  {selectedAssignmentType === 'department' && (
-                    <>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="dept-sales" value="dept-sales" />
-                        <label htmlFor="dept-sales" className="text-sm">Phòng Sales</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="dept-marketing" value="dept-marketing" />
-                        <label htmlFor="dept-marketing" className="text-sm">Phòng Marketing</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="dept-telesales" value="dept-telesales" />
-                        <label htmlFor="dept-telesales" className="text-sm">Phòng Telesales</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="dept-customer-service" value="dept-customer-service" />
-                        <label htmlFor="dept-customer-service" className="text-sm">Phòng Chăm sóc khách hàng</label>
-                      </div>
-                    </>
-                  )}
+              {/* Department/Team/Individual selection */}
+              <div className="space-y-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+                {(selectedAssignmentType === 'department' || !selectedAssignmentType) && (
+                  <>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="dept-support" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="dept-support" className="text-sm">Phòng support</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="dept-qa" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="dept-qa" className="text-sm">Phòng kiểm tra chất lượng</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="dept-dev" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="dept-dev" className="text-sm">Phòng Dev CRM</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="dept-sales" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="dept-sales" className="text-sm">Phòng sale</label>
+                    </div>
+                  </>
+                )}
                   
-                  {selectedAssignmentType === 'team' && (
-                    <>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="team-sales-a" value="team-sales-a" />
-                        <label htmlFor="team-sales-a" className="text-sm">Team Sales A</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="team-sales-b" value="team-sales-b" />
-                        <label htmlFor="team-sales-b" className="text-sm">Team Sales B</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="team-telesales-1" value="team-telesales-1" />
-                        <label htmlFor="team-telesales-1" className="text-sm">Team Telesales 1</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="team-telesales-2" value="team-telesales-2" />
-                        <label htmlFor="team-telesales-2" className="text-sm">Team Telesales 2</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input type="checkbox" id="team-marketing" value="team-marketing" />
-                        <label htmlFor="team-marketing" className="text-sm">Team Marketing</label>
-                      </div>
-                    </>
-                  )}
+                {selectedAssignmentType === 'team' && (
+                  <>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="team-sales-a" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="team-sales-a" className="text-sm">Team Sales A</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="team-sales-b" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="team-sales-b" className="text-sm">Team Sales B</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="team-telesales-1" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="team-telesales-1" className="text-sm">Team Telesales 1</label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="checkbox" id="team-telesales-2" className="w-4 h-4 rounded border-gray-300" />
+                      <label htmlFor="team-telesales-2" className="text-sm">Team Telesales 2</label>
+                    </div>
+                  </>
+                )}
 
                   {selectedAssignmentType === 'individual' && (
                     <div className="space-y-3">
@@ -3288,194 +3436,102 @@ export default function SettingsManagement() {
               </div>
 
               <div>
-                <Label htmlFor="rule-description">Mô tả</Label>
+                <Label htmlFor="rule-description" className="text-sm font-medium">Mô tả</Label>
                 <Input
                   id="rule-description"
                   placeholder="Mô tả ngắn về quy tắc này"
-                  className="mt-2"
+                  className="mt-1.5"
                 />
               </div>
 
               <div>
-                <Label>Phương thức phân bổ</Label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  <div className="border rounded-lg p-4 cursor-pointer hover:bg-blue-50 hover:border-blue-300">
-                    <div className="flex items-center space-x-2">
-                      <input type="radio" name="distribution-method" value="round_robin" />
-                      <div>
-                        <h4 className="font-medium">Xoay vòng</h4>
-                        <p className="text-sm text-gray-500">Phân đều cho từng thành viên</p>
-                      </div>
+                <Label className="text-sm font-medium">Phương thức phân bổ</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <div className="border-2 border-blue-500 rounded-lg p-3 cursor-pointer bg-blue-50">
+                    <div className="flex flex-col items-center text-center">
+                      <input type="radio" name="distribution-method" value="round_robin" defaultChecked className="mb-2" />
+                      <h4 className="font-medium text-sm">Xoay vòng</h4>
+                      <p className="text-xs text-gray-500 mt-1">Phân đều cho từng thành viên</p>
                     </div>
                   </div>
-                  <div className="border rounded-lg p-4 cursor-pointer hover:bg-blue-50 hover:border-blue-300">
-                    <div className="flex items-center space-x-2">
-                      <input type="radio" name="distribution-method" value="load_based" />
-                      <div>
-                        <h4 className="font-medium">Theo tải</h4>
-                        <p className="text-sm text-gray-500">Dựa trên khối lượng công việc</p>
-                      </div>
+                  <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                    <div className="flex flex-col items-center text-center">
+                      <input type="radio" name="distribution-method" value="load_based" className="mb-2" />
+                      <h4 className="font-medium text-sm">Theo tải</h4>
+                      <p className="text-xs text-gray-500 mt-1">Dựa trên khối lượng công việc</p>
                     </div>
                   </div>
-                  <div className="border rounded-lg p-4 cursor-pointer hover:bg-blue-50 hover:border-blue-300">
-                    <div className="flex items-center space-x-2">
-                      <input type="radio" name="distribution-method" value="random" />
-                      <div>
-                        <h4 className="font-medium">Ngẫu nhiên</h4>
-                        <p className="text-sm text-gray-500">Phân bổ hoàn toàn ngẫu nhiên</p>
-                      </div>
+                  <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                    <div className="flex flex-col items-center text-center">
+                      <input type="radio" name="distribution-method" value="random" className="mb-2" />
+                      <h4 className="font-medium text-sm">Ngẫu nhiên</h4>
+                      <p className="text-xs text-gray-500 mt-1">Phân bổ hoàn toàn ngẫu nhiên</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <Label>Điều kiện áp dụng</Label>
-                <div className="space-y-3 mt-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="lead-source">Nguồn leads</Label>
-                      <Select>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Tất cả nguồn" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tất cả nguồn</SelectItem>
-                          <SelectItem value="website">Website</SelectItem>
-                          <SelectItem value="zalo">Zalo OA</SelectItem>
-                          <SelectItem value="facebook">Facebook</SelectItem>
-                          <SelectItem value="phone">Điện thoại</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="max-leads">Leads phân tối đa cho từng người</Label>
-                      <Input
-                        id="max-leads"
-                        type="number"
-                        placeholder="Không giới hạn"
-                        className="mt-1"
-                      />
-                    </div>
+                <Label className="text-sm font-medium">Điều kiện áp dụng</Label>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <Label htmlFor="lead-source" className="text-xs text-gray-600">Nguồn leads</Label>
+                    <Select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn nguồn" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả nguồn</SelectItem>
+                        <SelectItem value="website">Website</SelectItem>
+                        <SelectItem value="zalo">Zalo OA</SelectItem>
+                        <SelectItem value="facebook">Facebook</SelectItem>
+                        <SelectItem value="phone">Điện thoại</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="time-range">Thời gian áp dụng</Label>
-                      <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="24/7" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">24/7</SelectItem>
-                          <SelectItem value="business">Giờ hành chính</SelectItem>
-                          <SelectItem value="custom">Tùy chỉnh</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      {selectedTimeRange === 'custom' && (
-                        <div className="mt-3 p-3 border rounded-lg bg-gray-50">
-                          <Label className="text-sm font-medium mb-2 block">Chọn khung giờ</Label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="start-time" className="text-xs text-gray-600">Từ giờ</Label>
-                              <Select>
-                                <SelectTrigger className="mt-1">
-                                  <SelectValue placeholder="08:00" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="06:00">06:00</SelectItem>
-                                  <SelectItem value="07:00">07:00</SelectItem>
-                                  <SelectItem value="08:00">08:00</SelectItem>
-                                  <SelectItem value="09:00">09:00</SelectItem>
-                                  <SelectItem value="10:00">10:00</SelectItem>
-                                  <SelectItem value="11:00">11:00</SelectItem>
-                                  <SelectItem value="12:00">12:00</SelectItem>
-                                  <SelectItem value="13:00">13:00</SelectItem>
-                                  <SelectItem value="14:00">14:00</SelectItem>
-                                  <SelectItem value="15:00">15:00</SelectItem>
-                                  <SelectItem value="16:00">16:00</SelectItem>
-                                  <SelectItem value="17:00">17:00</SelectItem>
-                                  <SelectItem value="18:00">18:00</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="end-time" className="text-xs text-gray-600">Đến giờ</Label>
-                              <Select>
-                                <SelectTrigger className="mt-1">
-                                  <SelectValue placeholder="17:00" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="12:00">12:00</SelectItem>
-                                  <SelectItem value="13:00">13:00</SelectItem>
-                                  <SelectItem value="14:00">14:00</SelectItem>
-                                  <SelectItem value="15:00">15:00</SelectItem>
-                                  <SelectItem value="16:00">16:00</SelectItem>
-                                  <SelectItem value="17:00">17:00</SelectItem>
-                                  <SelectItem value="18:00">18:00</SelectItem>
-                                  <SelectItem value="19:00">19:00</SelectItem>
-                                  <SelectItem value="20:00">20:00</SelectItem>
-                                  <SelectItem value="21:00">21:00</SelectItem>
-                                  <SelectItem value="22:00">22:00</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div className="mt-3">
-                            <Label className="text-xs text-gray-600 mb-2 block">Ngày trong tuần</Label>
-                            <div className="flex flex-wrap gap-2">
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="mon" defaultChecked />
-                                <label htmlFor="mon" className="text-xs">T2</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="tue" defaultChecked />
-                                <label htmlFor="tue" className="text-xs">T3</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="wed" defaultChecked />
-                                <label htmlFor="wed" className="text-xs">T4</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="thu" defaultChecked />
-                                <label htmlFor="thu" className="text-xs">T5</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="fri" defaultChecked />
-                                <label htmlFor="fri" className="text-xs">T6</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="sat" />
-                                <label htmlFor="sat" className="text-xs">T7</label>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input type="checkbox" id="sun" />
-                                <label htmlFor="sun" className="text-xs">CN</label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="priority">Độ ưu tiên</Label>
-                      <Select>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Trung bình" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">Cao</SelectItem>
-                          <SelectItem value="medium">Trung bình</SelectItem>
-                          <SelectItem value="low">Thấp</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="region" className="text-xs text-gray-600">Khu vực</Label>
+                    <Select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn khu vực" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="north">Miền Bắc</SelectItem>
+                        <SelectItem value="central">Miền Trung</SelectItem>
+                        <SelectItem value="south">Miền Nam</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div>
+                    <Label htmlFor="time-range" className="text-xs text-gray-600">Thời gian áp dụng</Label>
+                    <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="24/7" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">24/7</SelectItem>
+                        <SelectItem value="business">Giờ hành chính</SelectItem>
+                        <SelectItem value="custom">Tùy chỉnh</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="priority" className="text-xs text-gray-600">Độ ưu tiên</Label>
+                    <Input
+                      id="priority"
+                      type="number"
+                      placeholder="0"
+                      defaultValue="0"
+                      className="mt-1"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0 shrink-0">
               <Button variant="outline" onClick={() => setShowAddDistributionRule(false)}>
                 Hủy
               </Button>
@@ -3483,7 +3539,7 @@ export default function SettingsManagement() {
                 // TODO: Implement add distribution rule logic
                 setShowAddDistributionRule(false)
               }}>
-                Tạo quy tắc
+                Đồng ý
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -6147,9 +6203,19 @@ export default function SettingsManagement() {
   // Component: Product Management (Sản phẩm & Gói sản phẩm)
   const ProductManagement = () => {
     const [products, setProducts] = useState<any[]>([
-      { id: 'p1', name: 'Sản phẩm A', code: 'PROD-A', price: 1000000, description: 'Mô tả sản phẩm A' },
-      { id: 'p2', name: 'Sản phẩm B', code: 'PROD-B', price: 2000000, description: 'Mô tả sản phẩm B' }
+      { id: 'p1', name: 'Sản phẩm A', code: 'PROD-A', price: 1000000, description: 'Mô tả sản phẩm A', image: '', category: 'Phần mềm', type: 'Gói cơ bản', classification: 'Dịch vụ', quantity: 100, status: 'active' },
+      { id: 'p2', name: 'Sản phẩm B', code: 'PROD-B', price: 2000000, description: 'Mô tả sản phẩm B', image: '', category: 'Phần cứng', type: 'Gói nâng cao', classification: 'Sản phẩm', quantity: 50, status: 'active' },
+      { id: 'p3', name: 'Sản phẩm C', code: 'PROD-C', price: 3000000, description: 'Mô tả sản phẩm C', image: '', category: 'Phần mềm', type: 'Gói premium', classification: 'Dịch vụ', quantity: 0, status: 'inactive' }
     ])
+
+    const [categories, setCategories] = useState<any[]>([
+      { id: 'cat1', name: 'Phần mềm' },
+      { id: 'cat2', name: 'Phần cứng' },
+      { id: 'cat3', name: 'Dịch vụ' },
+      { id: 'cat4', name: 'Combo' }
+    ])
+
+    const [selectedCategory, setSelectedCategory] = useState<string>('cat1')
 
     const [packages, setPackages] = useState<any[]>([
       { id: 'pkg1', name: 'Gói Cơ bản', productIds: ['p1'], price: 900000, description: 'Gói cơ bản chứa 1 sản phẩm' }
@@ -6157,21 +6223,209 @@ export default function SettingsManagement() {
 
     const [showProductModal, setShowProductModal] = useState(false)
     const [showPackageModal, setShowPackageModal] = useState(false)
-    const [productForm, setProductForm] = useState({ name: '', code: '', price: '', description: '' })
+    const [showCategoryModal, setShowCategoryModal] = useState(false)
+    const [showDeleteCategoryConfirm, setShowDeleteCategoryConfirm] = useState(false)
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
+    const [editingCategory, setEditingCategory] = useState<any>(null)
+    const [editingProduct, setEditingProduct] = useState<any>(null)
+    const [categoryForm, setCategoryForm] = useState({ name: '' })
+    const [productForm, setProductForm] = useState({ 
+      name: '', 
+      code: '', 
+      price: '0', 
+      description: '',
+      productType: 'simple', // 'simple' | 'configurable'
+      quantity: '0',
+      status: 'active',
+      categoryId: '',
+      classification: 'physical' // 'physical' | 'non-physical'
+    })
+    const [productFormErrors, setProductFormErrors] = useState<any>({})
+    const [variants, setVariants] = useState<any[]>([
+      { id: 'v1', name: '', hasImage: false, options: [{ id: 'o1', value: '' }] }
+    ])
+    const [variantCombinations, setVariantCombinations] = useState<any[]>([])
     const [packageForm, setPackageForm] = useState({ name: '', price: '', productIds: [] as string[], description: '' })
 
-    const handleAddProduct = () => {
-      const newProduct = {
-        id: 'p' + (products.length + 1),
-        name: productForm.name || `Sản phẩm ${products.length + 1}`,
-        code: productForm.code || `PROD-${products.length + 1}`,
-        price: Number(productForm.price) || 0,
-        description: productForm.description || ''
+    const handleSaveProduct = () => {
+      // Validate
+      const errors: any = {}
+      if (!productForm.name.trim()) errors.name = 'Tên sản phẩm không được để trống'
+      if (!productForm.categoryId) errors.categoryId = 'Phải chọn ít nhất một thể loại'
+      
+      if (Object.keys(errors).length > 0) {
+        setProductFormErrors(errors)
+        return
       }
-      setProducts(prev => [newProduct, ...prev])
-      setProductForm({ name: '', code: '', price: '', description: '' })
+
+      if (editingProduct) {
+        // Update existing product
+        setProducts(prev => prev.map(p => {
+          if (p.id === editingProduct.id) {
+            return {
+              ...p,
+              name: productForm.name,
+              code: productForm.code,
+              price: Number(productForm.price) || 0,
+              description: productForm.description || '',
+              category: categories.find(c => c.id === productForm.categoryId)?.name || 'Phần mềm',
+              type: productForm.productType === 'configurable' ? 'Có thể cấu hình' : 'Đơn giản',
+              classification: productForm.classification === 'physical' ? 'Sản phẩm vật lý' : 'Sản phẩm phi vật lý',
+              quantity: Number(productForm.quantity) || 0,
+              status: productForm.status,
+              variants: productForm.productType === 'configurable' ? variantCombinations : []
+            }
+          }
+          return p
+        }))
+      } else {
+        // Add new product
+        const newProduct = {
+          id: 'p' + (products.length + 1),
+          name: productForm.name || `Sản phẩm ${products.length + 1}`,
+          code: productForm.code || `PROD-${products.length + 1}`,
+          price: Number(productForm.price) || 0,
+          description: productForm.description || '',
+          image: '',
+          category: categories.find(c => c.id === productForm.categoryId)?.name || 'Phần mềm',
+          type: productForm.productType === 'configurable' ? 'Có thể cấu hình' : 'Đơn giản',
+          classification: productForm.classification === 'physical' ? 'Sản phẩm vật lý' : 'Sản phẩm phi vật lý',
+          quantity: Number(productForm.quantity) || 0,
+          status: productForm.status,
+          variants: productForm.productType === 'configurable' ? variantCombinations : []
+        }
+        setProducts(prev => [newProduct, ...prev])
+      }
+      resetProductForm()
       setShowProductModal(false)
     }
+
+    const handleOpenEditProduct = (product: any) => {
+      setEditingProduct(product)
+      // Find category id from category name
+      const categoryId = categories.find(c => c.name === product.category)?.id || ''
+      setProductForm({
+        name: product.name || '',
+        code: product.code || '',
+        price: String(product.price || 0),
+        description: product.description || '',
+        productType: product.type === 'Có thể cấu hình' ? 'configurable' : 'simple',
+        quantity: String(product.quantity || 0),
+        status: product.status || 'active',
+        categoryId: categoryId,
+        classification: product.classification === 'Sản phẩm vật lý' ? 'physical' : 'non-physical'
+      })
+      if (product.variants && product.variants.length > 0) {
+        setVariantCombinations(product.variants)
+      }
+      setShowProductModal(true)
+    }
+
+    const resetProductForm = () => {
+      setEditingProduct(null)
+      setProductForm({ 
+        name: '', 
+        code: '', 
+        price: '0', 
+        description: '',
+        productType: 'simple',
+        quantity: '0',
+        status: 'active',
+        categoryId: '',
+        classification: 'physical'
+      })
+      setProductFormErrors({})
+      setVariants([{ id: 'v1', name: '', hasImage: false, options: [{ id: 'o1', value: '' }] }])
+      setVariantCombinations([])
+    }
+
+    const handleAddVariant = () => {
+      setVariants(prev => [...prev, { 
+        id: 'v' + (prev.length + 1), 
+        name: '', 
+        hasImage: false, 
+        options: [{ id: 'o1', value: '' }] 
+      }])
+    }
+
+    const handleRemoveVariant = (variantId: string) => {
+      setVariants(prev => prev.filter(v => v.id !== variantId))
+    }
+
+    const handleAddOption = (variantId: string) => {
+      setVariants(prev => prev.map(v => {
+        if (v.id === variantId) {
+          return {
+            ...v,
+            options: [...v.options, { id: 'o' + (v.options.length + 1), value: '' }]
+          }
+        }
+        return v
+      }))
+    }
+
+    const handleRemoveOption = (variantId: string, optionId: string) => {
+      setVariants(prev => prev.map(v => {
+        if (v.id === variantId) {
+          return {
+            ...v,
+            options: v.options.filter((o: any) => o.id !== optionId)
+          }
+        }
+        return v
+      }))
+    }
+
+    const handleUpdateVariantName = (variantId: string, name: string) => {
+      setVariants(prev => prev.map(v => v.id === variantId ? { ...v, name } : v))
+    }
+
+    const handleUpdateVariantHasImage = (variantId: string, hasImage: boolean) => {
+      setVariants(prev => prev.map(v => v.id === variantId ? { ...v, hasImage } : v))
+    }
+
+    const handleUpdateOptionValue = (variantId: string, optionId: string, value: string) => {
+      setVariants(prev => prev.map(v => {
+        if (v.id === variantId) {
+          return {
+            ...v,
+            options: v.options.map((o: any) => o.id === optionId ? { ...o, value } : o)
+          }
+        }
+        return v
+      }))
+    }
+
+    const generateVariantCombinations = () => {
+      // Generate combinations from variants
+      const validVariants = variants.filter(v => v.name && v.options.some((o: any) => o.value))
+      if (validVariants.length === 0) {
+        setVariantCombinations([])
+        return
+      }
+
+      // Simple combination for single variant
+      const combinations: any[] = []
+      validVariants.forEach(v => {
+        v.options.filter((o: any) => o.value).forEach((o: any) => {
+          combinations.push({
+            id: `combo_${v.id}_${o.id}`,
+            variantName: v.name,
+            optionValue: o.value,
+            price: '0',
+            quantity: '0'
+          })
+        })
+      })
+      setVariantCombinations(combinations)
+    }
+
+    // Auto generate combinations when variants change
+    useEffect(() => {
+      if (productForm.productType === 'configurable') {
+        generateVariantCombinations()
+      }
+    }, [variants, productForm.productType])
 
     const handleAddPackage = () => {
       const newPkg = {
@@ -6186,157 +6440,513 @@ export default function SettingsManagement() {
       setShowPackageModal(false)
     }
 
+    const handleOpenAddCategory = () => {
+      setEditingCategory(null)
+      setCategoryForm({ name: '' })
+      setShowCategoryModal(true)
+    }
+
+    const handleOpenEditCategory = (cat: any) => {
+      setEditingCategory(cat)
+      setCategoryForm({ name: cat.name })
+      setShowCategoryModal(true)
+    }
+
+    const handleSaveCategory = () => {
+      if (editingCategory) {
+        // Edit existing
+        setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: categoryForm.name } : c))
+      } else {
+        // Add new
+        const newCat = {
+          id: 'cat' + (categories.length + 1),
+          name: categoryForm.name || `Thể loại ${categories.length + 1}`
+        }
+        setCategories(prev => [...prev, newCat])
+      }
+      setCategoryForm({ name: '' })
+      setEditingCategory(null)
+      setShowCategoryModal(false)
+    }
+
+    const handleDeleteCategory = (catId: string) => {
+      setCategoryToDelete(catId)
+      setShowDeleteCategoryConfirm(true)
+    }
+
+    const confirmDeleteCategory = () => {
+      if (categoryToDelete) {
+        setCategories(prev => prev.filter(c => c.id !== categoryToDelete))
+        // Also remove products in this category
+        const catName = categories.find(c => c.id === categoryToDelete)?.name
+        setProducts(prev => prev.filter(p => p.category !== catName))
+        if (selectedCategory === categoryToDelete && categories.length > 1) {
+          setSelectedCategory(categories.find(c => c.id !== categoryToDelete)?.id || '')
+        }
+      }
+      setCategoryToDelete(null)
+      setShowDeleteCategoryConfirm(false)
+    }
+
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Sản phẩm & Gói sản phẩm</h2>
-            <p className="text-gray-600">Quản lý danh sách sản phẩm và các gói sản phẩm</p>
+      <>
+      <Tabs defaultValue="products" className="space-y-6">
+        <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+          <TabsTrigger value="products" className="uppercase">Sản phẩm</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="products" className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[#1a3353]">Sản phẩm & Thể loại sản phẩm</h2>
+              <p className="text-sm text-[#455560]">Quản lý danh sách sản phẩm và các thể loại sản phẩm</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button size="sm" onClick={() => setShowProductModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm sản phẩm
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button onClick={() => setShowPackageModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm gói sản phẩm
-            </Button>
-            <Button onClick={() => setShowProductModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm sản phẩm
-            </Button>
+
+          {/* Main Content - Left sidebar + Right table */}
+          <div className="flex gap-4">
+          {/* Left Sidebar - Category List */}
+          <div className="w-56 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="p-2">
+              {categories.map(cat => (
+                <div
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`relative flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
+                    selectedCategory === cat.id
+                      ? 'bg-[#3e79f7] text-white'
+                      : 'text-[#455560] hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    <span className="text-sm font-medium">{cat.name}</span>
+                  </div>
+                  {selectedCategory === cat.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div className="relative">
+                          <MoreHorizontal className="w-4 h-4 cursor-pointer hover:opacity-80" />
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleOpenEditCategory(cat)}>
+                          <Edit2 className="w-4 h-4 mr-2" />
+                          Chỉnh sửa
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCategory(cat.id)}>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Xóa
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              ))}
+              <div
+                onClick={handleOpenAddCategory}
+                className="flex items-center gap-2 px-3 py-2 mt-2 text-[#455560] hover:text-[#3e79f7] cursor-pointer transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">Thêm thể loại sản phẩm</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Content - Products Table */}
+          <div className="flex-1 overflow-hidden">
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">STT</TableHead>
+                      <TableHead className="w-16">Ảnh</TableHead>
+                      <TableHead className="whitespace-nowrap">Tên sản phẩm</TableHead>
+                      <TableHead>Mô tả</TableHead>
+                      <TableHead className="whitespace-nowrap">Loại sản phẩm</TableHead>
+                      <TableHead className="whitespace-nowrap">Thể loại</TableHead>
+                      <TableHead className="whitespace-nowrap">Phân loại</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Số lượng còn</TableHead>
+                      <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
+                      <TableHead className="w-24">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((p, index) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-center">{index + 1}</TableCell>
+                        <TableCell>
+                          <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                            <Package className="w-5 h-5 text-gray-400" />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{p.name}</div>
+                          <div className="text-xs text-gray-400">{p.code}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-gray-500 max-w-[150px] truncate">{p.description}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{p.type}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{p.category}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{p.classification}</div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="font-medium">{p.quantity}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                            {p.status === 'active' ? 'Hoạt động' : 'Ngừng bán'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenEditProduct(p)}>
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         </div>
+        </TabsContent>
+      </Tabs>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+      {/* Add/Edit Product Modal */}
+      <Dialog open={showProductModal} onOpenChange={(open) => {
+        setShowProductModal(open)
+        if (!open) resetProductForm()
+      }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm mới sản phẩm'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 px-6">
+              {/* Tên sản phẩm */}
+              <div>
+                <Label className="text-sm">Tên sản phẩm <span className="text-red-500">*</span></Label>
+                <Input 
+                  value={productForm.name} 
+                  onChange={(e:any)=>{
+                    setProductForm(prev=>({...prev,name:e.target.value}))
+                    if (productFormErrors.name) setProductFormErrors((prev: any)=>({...prev,name:''}))
+                  }}
+                  placeholder="Nhập tên sản phẩm"
+                  className={productFormErrors.name ? 'border-red-500' : ''}
+                />
+                {productFormErrors.name && <p className="text-xs text-red-500 mt-1">{productFormErrors.name}</p>}
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <div className="w-16 h-16 border border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <ImageIcon className="w-6 h-6 text-gray-400" />
+                </div>
+                <Button variant="outline" size="sm" className="mt-2">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Images
+                </Button>
+              </div>
+
+              {/* Row: Loại sản phẩm & Giá gốc */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <CardTitle>Danh sách Sản phẩm</CardTitle>
-                  <CardDescription>Quản lý các sản phẩm có trong hệ thống</CardDescription>
+                  <Label className="text-sm">Loại sản phẩm <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={productForm.productType} 
+                    onValueChange={(v)=>setProductForm(prev=>({...prev,productType:v}))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại sản phẩm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="simple">Đơn giản</SelectItem>
+                      <SelectItem value="configurable">Có thể cấu hình</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm">Giá gốc (VND) <span className="text-red-500">*</span></Label>
+                  <Input 
+                    type="number"
+                    value={productForm.price} 
+                    onChange={(e:any)=>setProductForm(prev=>({...prev,price:e.target.value}))}
+                    placeholder="0"
+                  />
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {products.map(p => (
-                  <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{p.name} <span className="text-xs text-gray-400">({p.code})</span></div>
-                      <div className="text-sm text-gray-500">{p.description}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{p.price?.toLocaleString?.('vi-VN') || p.price} ₫</div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Button variant="ghost" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm"><Trash2 className="w-4 h-4" /></Button>
+
+              {/* Row: Số lượng & Trạng thái */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm">Số lượng <span className="text-red-500">*</span></Label>
+                  <Input 
+                    type="number"
+                    value={productForm.quantity} 
+                    onChange={(e:any)=>setProductForm(prev=>({...prev,quantity:e.target.value}))}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Trạng thái <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={productForm.status} 
+                    onValueChange={(v)=>setProductForm(prev=>({...prev,status:v}))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Đang hoạt động</SelectItem>
+                      <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row: Thể loại & Phân loại sản phẩm */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm">Thể loại <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={productForm.categoryId} 
+                    onValueChange={(v)=>{
+                      setProductForm(prev=>({...prev,categoryId:v}))
+                      if (productFormErrors.categoryId) setProductFormErrors((prev: any)=>({...prev,categoryId:''}))
+                    }}
+                  >
+                    <SelectTrigger className={productFormErrors.categoryId ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Chọn thể loại" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {productFormErrors.categoryId && <p className="text-xs text-red-500 mt-1">{productFormErrors.categoryId}</p>}
+                </div>
+                <div>
+                  <Label className="text-sm">Phân loại sản phẩm <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={productForm.classification} 
+                    onValueChange={(v)=>setProductForm(prev=>({...prev,classification:v}))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn phân loại" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="physical">Sản phẩm vật lý</SelectItem>
+                      <SelectItem value="non-physical">Sản phẩm phi vật lý</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Mô tả */}
+              <div>
+                <Label className="text-sm">Mô tả</Label>
+                <Textarea 
+                  value={productForm.description} 
+                  onChange={(e:any)=>setProductForm(prev=>({...prev,description:e.target.value}))}
+                  placeholder="Nhập mô tả..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Biến thể - chỉ hiển thị khi chọn "Có thể cấu hình" */}
+              {productForm.productType === 'configurable' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <Label className="text-sm font-semibold">Biến thể <span className="text-red-500">*</span></Label>
+                  
+                  {variants.map((variant, vIndex) => (
+                    <div key={variant.id} className="border rounded-lg p-4 space-y-3 relative">
+                      {variants.length > 1 && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="absolute right-2 top-2 text-gray-400 hover:text-red-500"
+                          onClick={() => handleRemoveVariant(variant.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
+                      <div>
+                        <Label className="text-sm">Tên biến thể <span className="text-red-500">*</span></Label>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-xs text-gray-500">Thêm hình ảnh</span>
+                          <Switch 
+                            checked={variant.hasImage}
+                            onCheckedChange={(checked) => handleUpdateVariantHasImage(variant.id, checked)}
+                          />
+                        </div>
+                        <Input 
+                          value={variant.name}
+                          onChange={(e) => handleUpdateVariantName(variant.id, e.target.value)}
+                          placeholder="Ví dụ: MKT-PAGE 1 năm"
+                          className="mt-2"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Tùy chọn <span className="text-red-500">*</span></Label>
+                        {variant.options.map((option: any, oIndex: number) => (
+                          <div key={option.id} className="flex items-center gap-2 mt-2">
+                            <Input 
+                              value={option.value}
+                              onChange={(e) => handleUpdateOptionValue(variant.id, option.id, e.target.value)}
+                              placeholder="Ví dụ: Gói hỗ trợ 1 năm"
+                              className="flex-1"
+                            />
+                            {variant.options.length > 1 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleRemoveOption(variant.id, option.id)}
+                              >
+                                <X className="w-4 h-4 text-gray-400" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <button 
+                          type="button"
+                          onClick={() => handleAddOption(variant.id)}
+                          className="text-sm text-[#3e79f7] hover:underline mt-2"
+                        >
+                          + Thêm giá trị
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Danh sách Gói sản phẩm</CardTitle>
-              <CardDescription>Gói sản phẩm là tập hợp các sản phẩm với mức giá gộp</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {packages.map(pkg => (
-                  <div key={pkg.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{pkg.name}</div>
-                      <div className="text-sm text-gray-500">{pkg.description}</div>
-                      <div className="text-xs text-gray-500 mt-1">Sản phẩm: {pkg.productIds.map((id:any) => products.find(p=>p.id===id)?.name || id).join(', ')}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{pkg.price?.toLocaleString?.('vi-VN') || pkg.price} ₫</div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Button variant="ghost" size="sm"><Edit2 className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm"><Trash2 className="w-4 h-4" /></Button>
+                  <button 
+                    type="button"
+                    onClick={handleAddVariant}
+                    className="text-sm text-[#3e79f7] hover:underline"
+                  >
+                    + Thêm biến thể
+                  </button>
+
+                  {/* Danh sách biến thể */}
+                  {variantCombinations.length > 0 && (
+                    <div className="mt-4">
+                      <Label className="text-sm font-semibold">Danh sách biến thể <span className="text-red-500">*</span></Label>
+                      <div className="border rounded-lg mt-2 overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-50">
+                              <TableHead className="text-xs">{variants[0]?.name || 'Biến thể'}</TableHead>
+                              <TableHead className="text-xs">Giá bán lẻ</TableHead>
+                              <TableHead className="text-xs">Số lượng</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {variantCombinations.map((combo) => (
+                              <TableRow key={combo.id}>
+                                <TableCell className="text-sm">{combo.optionValue}</TableCell>
+                                <TableCell>
+                                  <Input 
+                                    type="number"
+                                    value={combo.price}
+                                    onChange={(e) => {
+                                      setVariantCombinations(prev => prev.map(c => 
+                                        c.id === combo.id ? { ...c, price: e.target.value } : c
+                                      ))
+                                    }}
+                                    className="h-8 text-sm"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input 
+                                    type="number"
+                                    value={combo.quantity}
+                                    onChange={(e) => {
+                                      setVariantCombinations(prev => prev.map(c => 
+                                        c.id === combo.id ? { ...c, quantity: e.target.value } : c
+                                      ))
+                                    }}
+                                    className="h-8 text-sm"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Add Product Modal */}
-        <Dialog open={showProductModal} onOpenChange={setShowProductModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Thêm sản phẩm</DialogTitle>
-              <DialogDescription>Nhập thông tin sản phẩm mới</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Tên sản phẩm</Label>
-                <Input value={productForm.name} onChange={(e:any)=>setProductForm(prev=>({...prev,name:e.target.value}))} />
-              </div>
-              <div>
-                <Label>Mã sản phẩm</Label>
-                <Input value={productForm.code} onChange={(e:any)=>setProductForm(prev=>({...prev,code:e.target.value}))} />
-              </div>
-              <div>
-                <Label>Giá</Label>
-                <Input value={productForm.price} onChange={(e:any)=>setProductForm(prev=>({...prev,price:e.target.value}))} />
-              </div>
-              <div>
-                <Label>Mô tả</Label>
-                <Textarea value={productForm.description} onChange={(e:any)=>setProductForm(prev=>({...prev,description:e.target.value}))} />
-              </div>
+                  )}
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={()=>setShowProductModal(false)}>Hủy</Button>
-              <Button onClick={handleAddProduct}>Thêm</Button>
+              <Button variant="outline" onClick={()=>{setShowProductModal(false); resetProductForm()}}>Hủy</Button>
+              <Button onClick={handleSaveProduct}>Đồng ý</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Add Package Modal */}
-        <Dialog open={showPackageModal} onOpenChange={setShowPackageModal}>
+        {/* Add/Edit Category Modal */}
+        <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Thêm gói sản phẩm</DialogTitle>
-              <DialogDescription>Tạo một gói sản phẩm mới gồm nhiều sản phẩm</DialogDescription>
+              <DialogTitle>{editingCategory ? 'Sửa thể loại' : 'Thêm thể loại'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
+            <div className="space-y-3 px-6">
               <div>
-                <Label>Tên gói</Label>
-                <Input value={packageForm.name} onChange={(e:any)=>setPackageForm(prev=>({...prev,name:e.target.value}))} />
-              </div>
-              <div>
-                <Label>Giá gói</Label>
-                <Input value={packageForm.price} onChange={(e:any)=>setPackageForm(prev=>({...prev,price:e.target.value}))} />
-              </div>
-              <div>
-                <Label>Sản phẩm trong gói</Label>
-                <Select onValueChange={(v:any)=>setPackageForm(prev=>({...prev,productIds: v ? v.split(',') : []}))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn sản phẩm (vài sản phẩm bằng dấu phẩy)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map(p=> (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Mô tả</Label>
-                <Textarea value={packageForm.description} onChange={(e:any)=>setPackageForm(prev=>({...prev,description:e.target.value}))} />
+                <Label>Tên thể loại</Label>
+                <Input 
+                  value={categoryForm.name} 
+                  onChange={(e:any)=>setCategoryForm(prev=>({...prev,name:e.target.value}))} 
+                  placeholder="Nhập tên thể loại..."
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={()=>setShowPackageModal(false)}>Hủy</Button>
-              <Button onClick={handleAddPackage}>Thêm gói</Button>
+              <Button variant="outline" onClick={()=>setShowCategoryModal(false)}>Hủy</Button>
+              <Button onClick={handleSaveCategory}>Đồng ý</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+
+        {/* Delete Category Confirm Dialog */}
+        <Dialog open={showDeleteCategoryConfirm} onOpenChange={setShowDeleteCategoryConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Xác nhận xóa</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 px-6">
+              <p className="text-sm text-gray-600">Bạn có muốn xóa thể loại sản phẩm này? Các sản phẩm thuộc thể loại sản phẩm này sẽ bị xóa theo?</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=>setShowDeleteCategoryConfirm(false)}>Hủy</Button>
+              <Button variant="destructive" onClick={confirmDeleteCategory}>Xóa</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     )
   }
 
@@ -6379,7 +6989,7 @@ export default function SettingsManagement() {
             }`}
           >
             <Package className="w-4 h-4" />
-            Dịch vụ
+            Sản phẩm
           </button>
           {/* 4. Bán hàng (Quy trình) */}
           <button
@@ -6444,76 +7054,10 @@ export default function SettingsManagement() {
           </div>
         )}
         
-        {/* Dịch vụ - 2 tabs: Dịch vụ (Gói sản phẩm), Sản phẩm */}
+        {/* Sản phẩm - hiển thị ProductManagement */}
         {activeTab === 'products' && (
           <div>
-            <Tabs defaultValue="services" className="space-y-6">
-              <TabsList className="inline-flex w-auto -mt-6 -ml-6">
-                <TabsTrigger value="services" className="uppercase">Dịch vụ</TabsTrigger>
-                <TabsTrigger value="products" className="uppercase">Sản phẩm</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="services" className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-[#1a3353]">Gói dịch vụ</h2>
-                    <p className="text-sm text-[#455560]">Quản lý các gói dịch vụ và sản phẩm combo</p>
-                  </div>
-                  <Button size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Thêm gói dịch vụ
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gói cơ bản</CardTitle>
-                      <CardDescription>Dành cho doanh nghiệp nhỏ</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-[#3e79f7]">500.000đ<span className="text-sm font-normal text-[#455560]">/tháng</span></div>
-                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
-                        <li>• 100 leads/tháng</li>
-                        <li>• 5 người dùng</li>
-                        <li>• Báo cáo cơ bản</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gói chuyên nghiệp</CardTitle>
-                      <CardDescription>Dành cho doanh nghiệp vừa</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-[#3e79f7]">1.500.000đ<span className="text-sm font-normal text-[#455560]">/tháng</span></div>
-                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
-                        <li>• Không giới hạn leads</li>
-                        <li>• 20 người dùng</li>
-                        <li>• Báo cáo nâng cao</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gói doanh nghiệp</CardTitle>
-                      <CardDescription>Dành cho doanh nghiệp lớn</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-[#3e79f7]">Liên hệ</div>
-                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
-                        <li>• Tùy chỉnh theo yêu cầu</li>
-                        <li>• Không giới hạn người dùng</li>
-                        <li>• Hỗ trợ 24/7</li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="products" className="space-y-4">
-                <ProductManagement />
-              </TabsContent>
-            </Tabs>
+            <ProductManagement />
           </div>
         )}
         
@@ -6534,10 +7078,10 @@ export default function SettingsManagement() {
               <TabsContent value="distribution" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-[#1a3353]">Phân bố Leads</h2>
-                    <p className="text-sm text-[#455560]">Cấu hình quy tắc phân bố leads tự động</p>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Phân bổ Leads</h2>
+                    <p className="text-sm text-[#455560]">Cài đặt quy tắc phân bổ leads tự động cho nhóm bán hàng</p>
                   </div>
-                  <Button size="sm">
+                  <Button onClick={() => setShowAddDistributionRule(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Thêm quy tắc
                   </Button>
@@ -6545,26 +7089,109 @@ export default function SettingsManagement() {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Phân bố theo vòng tròn</h4>
-                          <p className="text-sm text-[#455560]">Leads được phân bố đều cho các nhân viên</p>
+                      {/* Rule 1 */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Phân bổ leads website</h4>
+                            <p className="text-sm text-gray-500">Tự động phân bổ leads từ website cho team sales</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="text-xs">Xoay vòng</Badge>
+                              <Badge variant="secondary" className="text-xs">Phòng Sales</Badge>
+                              <Badge variant="outline" className="text-xs">Phòng ban</Badge>
+                            </div>
+                          </div>
                         </div>
-                        <Switch defaultChecked />
+                        <div className="flex items-center space-x-2">
+                          <div className="text-right text-sm">
+                            <p className="font-medium">145</p>
+                            <p className="text-gray-500">leads được phân</p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setShowEditDistributionRule(true)}><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setRuleToDelete('rule-1')
+                              setShowDeleteDistributionRuleModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Switch defaultChecked />
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Phân bố theo nguồn</h4>
-                          <p className="text-sm text-[#455560]">Leads từ Facebook → Team A, Zalo → Team B</p>
+                      {/* Rule 2 */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Leads VIP tự động</h4>
+                            <p className="text-sm text-gray-500">Phân bổ leads có điểm cao cho Team Sales A và B</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="text-xs">Theo tải</Badge>
+                              <Badge variant="secondary" className="text-xs">Team Sales A, Team Sales B</Badge>
+                              <Badge variant="outline" className="text-xs">Team</Badge>
+                              <Badge className="text-xs bg-blue-100 text-blue-800">2 đối tượng</Badge>
+                            </div>
+                          </div>
                         </div>
-                        <Switch />
+                        <div className="flex items-center space-x-2">
+                          <div className="text-right text-sm">
+                            <p className="font-medium">78</p>
+                            <p className="text-gray-500">leads được phân</p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setShowEditDistributionRule(true)}><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setRuleToDelete('rule-2')
+                              setShowDeleteDistributionRuleModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Switch defaultChecked />
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">Phân bố theo khu vực</h4>
-                          <p className="text-sm text-[#455560]">Leads phân theo địa lý khách hàng</p>
+                      {/* Rule 3 */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-3 h-3 rounded-full bg-gray-400" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Leads Zalo OA</h4>
+                            <p className="text-sm text-gray-500">Phân bổ leads từ Zalo OA cho telesales</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge variant="outline" className="text-xs">Ngẫu nhiên</Badge>
+                              <Badge variant="secondary" className="text-xs">Nguyễn Văn A, Trần Thị B</Badge>
+                              <Badge variant="outline" className="text-xs">Cá nhân</Badge>
+                              <Badge className="text-xs bg-blue-100 text-blue-800">2 đối tượng</Badge>
+                            </div>
+                          </div>
                         </div>
-                        <Switch />
+                        <div className="flex items-center space-x-2">
+                          <div className="text-right text-sm">
+                            <p className="font-medium">234</p>
+                            <p className="text-gray-500">leads được phân</p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setShowEditDistributionRule(true)}><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setRuleToDelete('rule-3')
+                              setShowDeleteDistributionRuleModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Switch />
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -6574,52 +7201,170 @@ export default function SettingsManagement() {
               <TabsContent value="labels" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý Nhãn</h2>
-                    <p className="text-sm text-[#455560]">Tạo và quản lý nhãn cho leads và deals</p>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý nhãn</h2>
+                    <p className="text-sm text-[#455560]">Tạo và quản lý nhãn trong hệ thống</p>
                   </div>
-                  <Button size="sm">
+                  <Button onClick={() => {
+                    setSelectedTag(null)
+                    setNewTagForm({ name: '', color: '#EF4444', scope: 'global', isActive: true })
+                    setShowTagModal(true)
+                  }}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Thêm nhãn
+                    Tạo nhãn mới
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                      <div>
-                        <h4 className="font-medium">Hot Lead</h4>
-                        <p className="text-xs text-[#455560]">25 leads</p>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      {/* Tag: VIP */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#F59E0B' }} />
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">VIP</h4>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-green-100 text-green-800 text-xs">Khách hàng</Badge>
+                              <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setTagToDelete('vip')
+                              setShowDeleteTagModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Tag: Tiềm năng cao */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10B981' }} />
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">Tiềm năng cao</h4>
+                              <Badge variant="outline" className="text-xs"><Star className="w-3 h-3 mr-1" />Mặc định</Badge>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">Lead</Badge>
+                              <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setTagToDelete('tiem-nang-cao')
+                              setShowDeleteTagModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Tag: Deal lớn */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#EF4444' }} />
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">Deal lớn</h4>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-purple-100 text-purple-800 text-xs">Deal</Badge>
+                              <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setTagToDelete('deal-lon')
+                              setShowDeleteTagModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Tag: Khẩn cấp */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#DC2626' }} />
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">Khẩn cấp</h4>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-orange-100 text-orange-800 text-xs">Công việc</Badge>
+                              <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setTagToDelete('khan-cap')
+                              setShowDeleteTagModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Tag: Team A */}
+                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#3B82F6' }} />
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">Team A</h4>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">Lead</Badge>
+                              <Badge className="bg-cyan-100 text-cyan-800 text-xs">Nhóm</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button variant="outline" size="sm"><Edit2 className="w-4 h-4" /></Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setTagToDelete('team-a')
+                              setShowDeleteTagModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                      <div>
-                        <h4 className="font-medium">Warm Lead</h4>
-                        <p className="text-xs text-[#455560]">48 leads</p>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                      <div>
-                        <h4 className="font-medium">Cold Lead</h4>
-                        <p className="text-xs text-[#455560]">120 leads</p>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                      <div>
-                        <h4 className="font-medium">VIP</h4>
-                        <p className="text-xs text-[#455560]">15 leads</p>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
@@ -6757,6 +7502,544 @@ export default function SettingsManagement() {
         {activeTab === 'templates' && <DataTemplateManagement />}
         {activeTab === 'history' && <SystemHistoryManagement />}
       </div>
+
+      {/* Add Distribution Rule Modal - rendered at root level */}
+      <Dialog open={showAddDistributionRule} onOpenChange={setShowAddDistributionRule}>
+        <DialogContent className="max-w-xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1] shrink-0">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm quy tắc phân bổ leads</DialogTitle>
+            <DialogDescription className="text-sm text-[#455560]">
+              Tạo quy tắc mới để phân bổ leads tự động cho nhóm bán hàng
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-5 px-6 py-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="rule-name-main" className="text-sm font-medium">
+                  Tên quy tắc <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="rule-name-main"
+                  placeholder="Nhập tên quy tắc"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="assignment-type-main" className="text-sm font-medium">
+                  Loại phân bổ <span className="text-red-500">*</span>
+                </Label>
+                <Select onValueChange={(value) => setSelectedAssignmentType(value)} value={selectedAssignmentType || 'department'}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Theo phòng ban" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="department">Theo phòng ban</SelectItem>
+                    <SelectItem value="team">Theo team</SelectItem>
+                    <SelectItem value="individual">Cá nhân</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Department/Team/Individual selection */}
+            <div className="space-y-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+              {(selectedAssignmentType === 'department' || !selectedAssignmentType) && (
+                <>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="dept-support-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="dept-support-main" className="text-sm">Phòng support</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="dept-qa-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="dept-qa-main" className="text-sm">Phòng kiểm tra chất lượng</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="dept-dev-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="dept-dev-main" className="text-sm">Phòng Dev CRM</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="dept-sales-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="dept-sales-main" className="text-sm">Phòng sale</label>
+                  </div>
+                </>
+              )}
+                
+              {selectedAssignmentType === 'team' && (
+                <>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="team-sales-a-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="team-sales-a-main" className="text-sm">Team Sales A</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="team-sales-b-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="team-sales-b-main" className="text-sm">Team Sales B</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="team-telesales-1-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="team-telesales-1-main" className="text-sm">Team Telesales 1</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="team-telesales-2-main" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="team-telesales-2-main" className="text-sm">Team Telesales 2</label>
+                  </div>
+                </>
+              )}
+
+              {selectedAssignmentType === 'individual' && (
+                <div className="space-y-3">
+                  {/* Search and Filter Controls */}
+                  <div className="flex space-x-2 pb-3 border-b">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Tìm kiếm nhân viên..."
+                        value={individualSearchTerm}
+                        onChange={(e) => setIndividualSearchTerm(e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                    <Select value={individualFilterTeam} onValueChange={setIndividualFilterTeam}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Lọc theo team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả team</SelectItem>
+                        <SelectItem value="sales-a">Team Sales A</SelectItem>
+                        <SelectItem value="sales-b">Team Sales B</SelectItem>
+                        <SelectItem value="telesales-1">Team Telesales 1</SelectItem>
+                        <SelectItem value="telesales-2">Team Telesales 2</SelectItem>
+                        <SelectItem value="customer-success">Team Customer Success</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Individual List */}
+                  <div className="space-y-2">
+                    {[
+                      { id: 'user-nguyen-van-a-main', name: 'Nguyễn Văn A', team: 'sales-a', title: 'Sales Manager', teamName: 'Team Sales A' },
+                      { id: 'user-tran-thi-b-main', name: 'Trần Thị B', team: 'sales-a', title: 'Sales Executive', teamName: 'Team Sales A' },
+                      { id: 'user-le-van-c-main', name: 'Lê Văn C', team: 'telesales-1', title: 'Telesales Specialist', teamName: 'Team Telesales 1' },
+                      { id: 'user-pham-thi-d-main', name: 'Phạm Thị D', team: 'sales-b', title: 'Account Manager', teamName: 'Team Sales B' },
+                      { id: 'user-hoang-van-e-main', name: 'Hoàng Văn E', team: 'sales-a', title: 'Senior Sales', teamName: 'Team Sales A' },
+                      { id: 'user-vo-thi-f-main', name: 'Võ Thị F', team: 'customer-success', title: 'Customer Success', teamName: 'Team Customer Success' },
+                    ]
+                    .filter(person => {
+                      const matchesSearch = person.name.toLowerCase().includes(individualSearchTerm.toLowerCase()) ||
+                                          person.title.toLowerCase().includes(individualSearchTerm.toLowerCase()) ||
+                                          person.teamName.toLowerCase().includes(individualSearchTerm.toLowerCase())
+                      const matchesTeam = individualFilterTeam === 'all' || person.team === individualFilterTeam
+                      return matchesSearch && matchesTeam
+                    })
+                    .map(person => (
+                      <div key={person.id} className="flex items-center space-x-2 hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" id={person.id} value={person.id} />
+                        <label htmlFor={person.id} className="text-sm flex-1 cursor-pointer flex items-center justify-between">
+                          <span>{person.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">{person.title}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {person.teamName}
+                            </Badge>
+                          </div>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="rule-description-main" className="text-sm font-medium">Mô tả</Label>
+              <Input
+                id="rule-description-main"
+                placeholder="Mô tả ngắn về quy tắc này"
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Phương thức phân bổ</Label>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <div className="border-2 border-blue-500 rounded-lg p-3 cursor-pointer bg-blue-50">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="distribution-method-main" value="round_robin" defaultChecked className="mb-2" />
+                    <h4 className="font-medium text-sm">Xoay vòng</h4>
+                    <p className="text-xs text-gray-500 mt-1">Phân đều cho từng thành viên</p>
+                  </div>
+                </div>
+                <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="distribution-method-main" value="load_based" className="mb-2" />
+                    <h4 className="font-medium text-sm">Theo tải</h4>
+                    <p className="text-xs text-gray-500 mt-1">Dựa trên khối lượng công việc</p>
+                  </div>
+                </div>
+                <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="distribution-method-main" value="random" className="mb-2" />
+                    <h4 className="font-medium text-sm">Ngẫu nhiên</h4>
+                    <p className="text-xs text-gray-500 mt-1">Phân bổ hoàn toàn ngẫu nhiên</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Điều kiện áp dụng</Label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Label htmlFor="lead-source-main" className="text-xs text-gray-600">Nguồn leads</Label>
+                  <Select>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn nguồn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả nguồn</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="zalo">Zalo OA</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="phone">Điện thoại</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="region-main" className="text-xs text-gray-600">Khu vực</Label>
+                  <Select>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn khu vực" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="north">Miền Bắc</SelectItem>
+                      <SelectItem value="central">Miền Trung</SelectItem>
+                      <SelectItem value="south">Miền Nam</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <Label htmlFor="time-range-main" className="text-xs text-gray-600">Thời gian áp dụng</Label>
+                  <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="24/7" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">24/7</SelectItem>
+                      <SelectItem value="business">Giờ hành chính</SelectItem>
+                      <SelectItem value="custom">Tùy chỉnh</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="priority-main" className="text-xs text-gray-600">Độ ưu tiên</Label>
+                  <Input
+                    id="priority-main"
+                    type="number"
+                    placeholder="0"
+                    defaultValue="0"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0 shrink-0">
+            <Button variant="outline" onClick={() => setShowAddDistributionRule(false)}>
+              Hủy
+            </Button>
+            <Button onClick={() => {
+              // TODO: Implement add distribution rule logic
+              setShowAddDistributionRule(false)
+            }}>
+              Đồng ý
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Distribution Rule Modal - rendered at root level */}
+      <Dialog open={showEditDistributionRule} onOpenChange={setShowEditDistributionRule}>
+        <DialogContent className="max-w-xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1] shrink-0">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Chỉnh sửa quy tắc phân bổ leads</DialogTitle>
+            <DialogDescription className="text-sm text-[#455560]">
+              Cập nhật thông tin quy tắc phân bổ leads
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-5 px-6 py-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-rule-name" className="text-sm font-medium">
+                  Tên quy tắc <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="edit-rule-name"
+                  placeholder="Nhập tên quy tắc"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-assignment-type" className="text-sm font-medium">
+                  Loại phân bổ <span className="text-red-500">*</span>
+                </Label>
+                <Select onValueChange={(value) => setSelectedAssignmentType(value)} value={selectedAssignmentType || 'department'}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Theo phòng ban" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="department">Theo phòng ban</SelectItem>
+                    <SelectItem value="team">Theo team</SelectItem>
+                    <SelectItem value="individual">Cá nhân</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Department/Team/Individual selection */}
+            <div className="space-y-2 max-h-32 overflow-y-auto border rounded-lg p-3">
+              {(selectedAssignmentType === 'department' || !selectedAssignmentType) && (
+                <>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-dept-support" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-dept-support" className="text-sm">Phòng support</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-dept-qa" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-dept-qa" className="text-sm">Phòng kiểm tra chất lượng</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-dept-dev" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-dept-dev" className="text-sm">Phòng Dev CRM</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-dept-sales" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-dept-sales" className="text-sm">Phòng sale</label>
+                  </div>
+                </>
+              )}
+                
+              {selectedAssignmentType === 'team' && (
+                <>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-team-sales-a" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-team-sales-a" className="text-sm">Team Sales A</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-team-sales-b" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-team-sales-b" className="text-sm">Team Sales B</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-team-telesales-1" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-team-telesales-1" className="text-sm">Team Telesales 1</label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input type="checkbox" id="edit-team-telesales-2" className="w-4 h-4 rounded border-gray-300" />
+                    <label htmlFor="edit-team-telesales-2" className="text-sm">Team Telesales 2</label>
+                  </div>
+                </>
+              )}
+
+              {selectedAssignmentType === 'individual' && (
+                <div className="space-y-3">
+                  <div className="flex space-x-2 pb-3 border-b">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Tìm kiếm nhân viên..."
+                        value={individualSearchTerm}
+                        onChange={(e) => setIndividualSearchTerm(e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                    <Select value={individualFilterTeam} onValueChange={setIndividualFilterTeam}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Lọc theo team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả team</SelectItem>
+                        <SelectItem value="sales-a">Team Sales A</SelectItem>
+                        <SelectItem value="sales-b">Team Sales B</SelectItem>
+                        <SelectItem value="telesales-1">Team Telesales 1</SelectItem>
+                        <SelectItem value="telesales-2">Team Telesales 2</SelectItem>
+                        <SelectItem value="customer-success">Team Customer Success</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'edit-user-nguyen-van-a', name: 'Nguyễn Văn A', team: 'sales-a', title: 'Sales Manager', teamName: 'Team Sales A' },
+                      { id: 'edit-user-tran-thi-b', name: 'Trần Thị B', team: 'sales-a', title: 'Sales Executive', teamName: 'Team Sales A' },
+                      { id: 'edit-user-le-van-c', name: 'Lê Văn C', team: 'telesales-1', title: 'Telesales Specialist', teamName: 'Team Telesales 1' },
+                      { id: 'edit-user-pham-thi-d', name: 'Phạm Thị D', team: 'sales-b', title: 'Account Manager', teamName: 'Team Sales B' },
+                      { id: 'edit-user-hoang-van-e', name: 'Hoàng Văn E', team: 'sales-a', title: 'Senior Sales', teamName: 'Team Sales A' },
+                      { id: 'edit-user-vo-thi-f', name: 'Võ Thị F', team: 'customer-success', title: 'Customer Success', teamName: 'Team Customer Success' },
+                    ]
+                    .filter(person => {
+                      const matchesSearch = person.name.toLowerCase().includes(individualSearchTerm.toLowerCase()) ||
+                                          person.title.toLowerCase().includes(individualSearchTerm.toLowerCase()) ||
+                                          person.teamName.toLowerCase().includes(individualSearchTerm.toLowerCase())
+                      const matchesTeam = individualFilterTeam === 'all' || person.team === individualFilterTeam
+                      return matchesSearch && matchesTeam
+                    })
+                    .map(person => (
+                      <div key={person.id} className="flex items-center space-x-2 hover:bg-gray-50 p-1 rounded">
+                        <input type="checkbox" id={person.id} value={person.id} />
+                        <label htmlFor={person.id} className="text-sm flex-1 cursor-pointer flex items-center justify-between">
+                          <span>{person.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">{person.title}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {person.teamName}
+                            </Badge>
+                          </div>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="edit-rule-description" className="text-sm font-medium">Mô tả</Label>
+              <Input
+                id="edit-rule-description"
+                placeholder="Mô tả ngắn về quy tắc này"
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Phương thức phân bổ</Label>
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <div className="border-2 border-blue-500 rounded-lg p-3 cursor-pointer bg-blue-50">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="edit-distribution-method" value="round_robin" defaultChecked className="mb-2" />
+                    <h4 className="font-medium text-sm">Xoay vòng</h4>
+                    <p className="text-xs text-gray-500 mt-1">Phân đều cho từng thành viên</p>
+                  </div>
+                </div>
+                <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="edit-distribution-method" value="load_based" className="mb-2" />
+                    <h4 className="font-medium text-sm">Theo tải</h4>
+                    <p className="text-xs text-gray-500 mt-1">Dựa trên khối lượng công việc</p>
+                  </div>
+                </div>
+                <div className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 hover:border-gray-300">
+                  <div className="flex flex-col items-center text-center">
+                    <input type="radio" name="edit-distribution-method" value="random" className="mb-2" />
+                    <h4 className="font-medium text-sm">Ngẫu nhiên</h4>
+                    <p className="text-xs text-gray-500 mt-1">Phân bổ hoàn toàn ngẫu nhiên</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Điều kiện áp dụng</Label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Label htmlFor="edit-lead-source" className="text-xs text-gray-600">Nguồn leads</Label>
+                  <Select>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn nguồn" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả nguồn</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="zalo">Zalo OA</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="phone">Điện thoại</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-region" className="text-xs text-gray-600">Khu vực</Label>
+                  <Select>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Chọn khu vực" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="north">Miền Bắc</SelectItem>
+                      <SelectItem value="central">Miền Trung</SelectItem>
+                      <SelectItem value="south">Miền Nam</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <Label htmlFor="edit-time-range" className="text-xs text-gray-600">Thời gian áp dụng</Label>
+                  <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="24/7" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">24/7</SelectItem>
+                      <SelectItem value="business">Giờ hành chính</SelectItem>
+                      <SelectItem value="custom">Tùy chỉnh</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-priority" className="text-xs text-gray-600">Độ ưu tiên</Label>
+                  <Input
+                    id="edit-priority"
+                    type="number"
+                    placeholder="0"
+                    defaultValue="0"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-[#e6ebf1] gap-2 sm:gap-0 shrink-0">
+            <Button variant="outline" onClick={() => setShowEditDistributionRule(false)}>
+              Hủy
+            </Button>
+            <Button onClick={() => {
+              // TODO: Implement edit distribution rule logic
+              setShowEditDistributionRule(false)
+            }}>
+              Đồng ý
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Distribution Rule Confirmation Modal - rendered at root level */}
+      <Dialog open={showDeleteDistributionRuleModal} onOpenChange={setShowDeleteDistributionRuleModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 py-4">
+            <p className="text-sm text-gray-600">Bạn có muốn xóa quy tắc phân bổ này không?</p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDistributionRuleModal(false)}>
+              Hủy
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                // TODO: Delete rule logic
+                setShowDeleteDistributionRuleModal(false)
+                setRuleToDelete(null)
+              }}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

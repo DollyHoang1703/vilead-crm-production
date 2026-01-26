@@ -1895,7 +1895,7 @@ export default function CompanyManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý Nhân viên</h2>
-          <p className="text-sm text-[#455560]">Quản lý thông tin và hiệu suất nhân viên</p>
+          <p className="text-sm text-[#455560]">Quản lý thông tin chi tiết nhân viên</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
