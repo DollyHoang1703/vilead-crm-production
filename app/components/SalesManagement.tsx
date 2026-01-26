@@ -47,6 +47,8 @@ import {
   Download as DownloadIcon,
   Paperclip
 } from 'lucide-react'
+import { SalesTable } from './sales/components/SalesTable'
+import type { Lead as LeadType, ColumnVisibility } from './sales/types/lead.types'
 
 interface Lead {
   id: number
@@ -3371,16 +3373,17 @@ export default function SalesManagement() {
               </div>
             )}
             
-            <div className="overflow-x-auto relative">
-              <table className="min-w-full divide-y divide-gray-200 relative">
-              <thead className="bg-gray-50 sticky top-0 z-10">
+            <div className="omi-table-container">
+              <div className="overflow-x-auto">
+                <table className="omi-table">
+                <thead>
                 <tr>
                   {/* 1. Checkbox */}
                   {visibleColumns.checkbox && (
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300"
+                    <th className="omi-table-sticky-left text-center" style={{ width: '48px' }}>
+                      <input
+                        type="checkbox"
+                        className="omi-checkbox"
                         checked={selectAllChecked}
                         onChange={(e) => handleToggleSelectAll(e.target.checked)}
                       />
@@ -3389,246 +3392,241 @@ export default function SalesManagement() {
                   
                   {/* 2. STT */}
                   {visibleColumns.stt && (
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-16 border-r border-gray-200">
+                    <th className="text-center" style={{ width: '60px' }}>
                       STT
                     </th>
                   )}
                   
                   {/* 3. Tên khách hàng */}
                   {visibleColumns.customerName && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px] border-r border-gray-200">
-                      👤 Tên khách hàng
+                    <th style={{ minWidth: '200px' }}>
+                      Tên khách hàng
                     </th>
                   )}
                   
                   {/* 4. Số điện thoại */}
                   {visibleColumns.phone && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32 border-r border-gray-200">
-                      📱 Số điện thoại
+                    <th style={{ width: '140px' }}>
+                      Số điện thoại
                     </th>
                   )}
-                  
+
                   {/* 5. Email */}
                   {visibleColumns.email && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px] border-r border-gray-200">
-                      ✉️ Email
+                    <th style={{ minWidth: '200px' }}>
+                      Email
                     </th>
                   )}
-                  
+
                   {/* 6. Công ty */}
                   {visibleColumns.company && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-44 border-r border-gray-200">
-                      🏢 Công ty
+                    <th style={{ width: '180px' }}>
+                      Công ty
                     </th>
                   )}
-                  
+
                   {/* 7. Địa chỉ */}
                   {visibleColumns.address && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px] border-r border-gray-200">
-                      📍 Địa chỉ
+                    <th style={{ minWidth: '200px' }}>
+                      Địa chỉ
                     </th>
                   )}
-                  
+
                   {/* 8. Nguồn */}
                   {visibleColumns.source && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32 border-r border-gray-200">
-                      🌐 Nguồn
+                    <th style={{ width: '130px' }}>
+                      Nguồn
                     </th>
                   )}
-                  
+
                   {/* 9. Khu vực */}
                   {visibleColumns.region && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32 border-r border-gray-200">
-                      🗺️ Tỉnh thành
+                    <th style={{ width: '130px' }}>
+                      Tỉnh thành
                     </th>
                   )}
-                  
+
                   {/* 10. Giai đoạn */}
                   {visibleColumns.stage && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-36 border-r border-gray-200">
-                      🎯 Giai đoạn
+                    <th style={{ width: '150px' }}>
+                      Giai đoạn
                     </th>
                   )}
                   
-                  
+
                   {/* 14. Sản phẩm quan tâm */}
                   {visibleColumns.product && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40 border-r border-gray-200">
-                      🛍️ Sản phẩm quan tâm
+                    <th style={{ width: '160px' }}>
+                      Sản phẩm quan tâm
                     </th>
                   )}
-                  
+
                   {/* 15. Loại khách hàng */}
                   {visibleColumns.customerType && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32 border-r border-gray-200">
-                      👥 Loại KH
+                    <th style={{ width: '130px' }}>
+                      Loại KH
                     </th>
                   )}
-                  
+
                   {/* 16. Sales phụ trách */}
                   {visibleColumns.salesOwner && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40 border-r border-gray-200">
-                      👨‍💼 Sales phụ trách
+                    <th style={{ width: '160px' }}>
+                      Sales phụ trách
                     </th>
                   )}
-                  
+
                   {/* 17. Tags/Nhãn */}
                   {visibleColumns.tags && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40 border-r border-gray-200">
-                      🏷️ Tags
+                    <th style={{ width: '160px' }}>
+                      Tags
                     </th>
                   )}
-                  
+
                   {/* 18. Ghi chú */}
                   {visibleColumns.notes && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider min-w-[200px] border-r border-gray-200">
-                      📝 Ghi chú
+                    <th style={{ minWidth: '200px' }}>
+                      Ghi chú
                     </th>
                   )}
-                  
+
                   {/* 19. Tệp đính kèm */}
                   {visibleColumns.files && (
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-32 border-r border-gray-200">
-                      📎 Tệp
+                    <th className="text-center" style={{ width: '80px' }}>
+                      Tệp
                     </th>
                   )}
-                  
+
                   {/* 20. Ngày tạo */}
                   {visibleColumns.createdDate && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-28 border-r border-gray-200">
-                      📅 Ngày tạo
+                    <th style={{ width: '120px' }}>
+                      Ngày tạo
                     </th>
                   )}
-                  
+
                   {/* 21. Ngày cập nhật */}
                   {visibleColumns.lastModified && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40 border-r border-gray-200">
-                      🕐 Cập nhật cuối
+                    <th style={{ width: '140px' }}>
+                      Cập nhật cuối
                     </th>
                   )}
-                  
+
                   {/* 22. Số lần tương tác */}
                   {visibleColumns.interactionCount && (
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24 border-r border-gray-200">
-                      🔄 Tương tác
+                    <th className="text-center" style={{ width: '100px' }}>
+                      Tương tác
                     </th>
                   )}
-                  
+
                   {/* 23. Lần tương tác cuối */}
                   {visibleColumns.lastInteraction && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40 border-r border-gray-200">
-                      ⏰ TT cuối cùng
+                    <th style={{ width: '140px' }}>
+                      TT cuối cùng
                     </th>
                   )}
-                  
+
                   {/* 24. Hành động */}
                   {visibleColumns.actions && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider sticky right-0 bg-gray-50 shadow-lg z-20 w-28">
-                      ⚙️ Hành động
+                    <th className="omi-table-sticky-right text-center" style={{ width: '140px' }}>
+                      Hành động
                     </th>
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {filteredLeads.map((lead, index) => (
-                  <tr key={lead.id} className="group hover:bg-gray-50">
+                  <tr key={lead.id}>
                     {/* 1. Checkbox */}
                     {visibleColumns.checkbox && (
-                      <td className="px-3 py-4 whitespace-nowrap border-r border-gray-200">
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-gray-300"
+                      <td className="omi-table-sticky-left text-center">
+                        <input
+                          type="checkbox"
+                          className="omi-checkbox"
                           checked={selectedLeadIds.includes(lead.id)}
                           onChange={() => handleToggleSelectLead(lead.id)}
                         />
                       </td>
                     )}
-                    
+
                     {/* 2. STT */}
                     {visibleColumns.stt && (
-                      <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-200 text-center">
+                      <td className="text-center">
                         {index + 1}
                       </td>
                     )}
                     
                     {/* 3. Tên khách hàng */}
                     {visibleColumns.customerName && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="cursor-pointer" onClick={() => handleViewLeadDetail(lead)}>
-                          <div className="text-sm font-bold text-blue-600 hover:text-blue-800 hover:underline">
-                            {lead.name}
-                          </div>
-                        </div>
+                      <td>
+                        <span className="omi-link font-semibold" onClick={() => handleViewLeadDetail(lead)}>
+                          {lead.name}
+                        </span>
                       </td>
                     )}
                     
                     {/* 4. Số điện thoại */}
                     {visibleColumns.phone && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900">{lead.phone}</div>
+                      <td>
+                        <span className="omi-truncate block" style={{ maxWidth: '130px' }}>{lead.phone}</span>
                       </td>
                     )}
-                    
+
                     {/* 5. Email */}
                     {visibleColumns.email && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900 truncate max-w-48" title={lead.email}>
+                      <td>
+                        <span className="omi-truncate block" style={{ maxWidth: '190px' }} title={lead.email}>
                           {lead.email}
-                        </div>
+                        </span>
                       </td>
                     )}
-                    
+
                     {/* 6. Công ty */}
                     {visibleColumns.company && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900 truncate max-w-44" title={lead.company}>
+                      <td>
+                        <span className="omi-truncate block" style={{ maxWidth: '170px' }} title={lead.company}>
                           {lead.company || '-'}
-                        </div>
+                        </span>
                       </td>
                     )}
-                    
+
                     {/* 7. Địa chỉ */}
                     {visibleColumns.address && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900 truncate max-w-48" title={lead.address}>
+                      <td>
+                        <span className="omi-truncate block" style={{ maxWidth: '190px' }} title={lead.address}>
                           {lead.address || '-'}
-                        </div>
+                        </span>
                       </td>
                     )}
                     
                     {/* 8. Nguồn */}
                     {visibleColumns.source && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                          lead.source === 'facebook' ? 'bg-blue-100 text-blue-800' :
-                          lead.source === 'google' ? 'bg-red-100 text-red-800' :
-                          lead.source === 'website' ? 'bg-green-100 text-green-800' :
-                          lead.source === 'zalo' ? 'bg-blue-100 text-blue-800' :
-                          lead.source === 'linkedin' ? 'bg-blue-100 text-blue-800' :
-                          lead.source === 'referral' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
+                      <td>
+                        <span className={`omi-badge ${
+                          lead.source === 'facebook' ? 'bg-blue-50 text-blue-600' :
+                          lead.source === 'google' ? 'bg-red-50 text-red-600' :
+                          lead.source === 'website' ? 'bg-green-50 text-green-600' :
+                          lead.source === 'zalo' ? 'bg-blue-50 text-blue-600' :
+                          lead.source === 'linkedin' ? 'bg-blue-50 text-blue-600' :
+                          lead.source === 'referral' ? 'bg-purple-50 text-purple-600' :
+                          'bg-gray-50 text-gray-600'
                         }`}>
-                          {lead.source === 'facebook' ? '👥 Facebook' :
-                           lead.source === 'google' ? '🔍 Google' :
-                           lead.source === 'website' ? '🌐 Website' :
-                           lead.source === 'zalo' ? '💬 Zalo' :
-                           lead.source === 'linkedin' ? '💼 LinkedIn' :
-                           lead.source === 'referral' ? '👤 Referral' : 
-                           '👆 ' + lead.source}
+                          {lead.source === 'facebook' ? 'Facebook' :
+                           lead.source === 'google' ? 'Google' :
+                           lead.source === 'website' ? 'Website' :
+                           lead.source === 'zalo' ? 'Zalo' :
+                           lead.source === 'linkedin' ? 'LinkedIn' :
+                           lead.source === 'referral' ? 'Referral' : lead.source}
                         </span>
                       </td>
                     )}
                     
                     {/* 9. Tỉnh thành */}
                     {visibleColumns.region && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900">
-                          {lead.region === 'ha_noi' ? 'Hà Nội' : 
-                           lead.region === 'ho_chi_minh' ? 'TP.HCM' : 
-                           lead.region === 'da_nang' ? 'Đà Nẵng' : 
-                           lead.region === 'can_tho' ? 'Cần Thơ' : 
-                           lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
-                        </div>
+                      <td>
+                        {lead.region === 'ha_noi' ? 'Hà Nội' :
+                         lead.region === 'ho_chi_minh' ? 'TP.HCM' :
+                         lead.region === 'da_nang' ? 'Đà Nẵng' :
+                         lead.region === 'can_tho' ? 'Cần Thơ' :
+                         lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
                       </td>
                     )}
                     
@@ -3850,10 +3848,11 @@ export default function SalesManagement() {
                     )}
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
-          
+
           {/* Pagination */}
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">

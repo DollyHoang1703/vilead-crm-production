@@ -1,29 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Omichat Design System - Primary Colors */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Background Colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 213 35% 22%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 213 35% 22%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --popover-foreground: 213 35% 22%;
+    
+    /* Secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 213 35% 22%;
+    
+    /* Muted */
+    --muted: 220 14% 96%;
+    --muted-foreground: 213 16% 53%;
+    
+    /* Accent */
+    --accent: 217 100% 97%;
+    --accent-foreground: 217 91% 60%;
+    
+    /* Destructive */
+    --destructive: 0 77% 71%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input */
+    --border: 214 32% 92%;
+    --input: 214 32% 92%;
+    --ring: 217 91% 60%;
+    
+    /* Radius - Omichat uses 10px (0.625rem) as default */
+    --radius: 0.625rem;
+
+    /* ==================== */
+    /* Omichat Design System Colors */
+    /* ==================== */
+    --omi-primary: #3e79f7;
+    --omi-primary-light: #699dff;
+    --omi-primary-dark: #2a59d1;
+    --omi-primary-lightest: #f0f7ff;
+    
+    /* Status Colors */
+    --omi-success: #2dc56a;
+    --omi-success-light: #04d182;
+    --omi-error: #ff6b72;
+    --omi-error-dark: #d9505c;
+    --omi-warning: #ffc542;
+    --omi-warning-light: #ffd86b;
+    --omi-info: #00cfe8;
+    --omi-secondary: #a461d8;
+    
+    /* Background Colors */
+    --omi-bg: #ffffff;
+    --omi-bg-secondary: #f7f7f8;
+    --omi-bg-tertiary: #fcfcfc;
+    --omi-bg-alt: #fafafb;
+    
+    /* Border Colors */
+    --omi-border: #e6ebf1;
+    --omi-border-light: #d0d4d7;
+    --omi-border-lighter: #e0e0e0;
+    
+    /* Text Colors */
+    --omi-text-primary: #1a3353;
+    --omi-text-default: #455560;
+    --omi-text-secondary: #373d3f;
+    --omi-text-muted: #72849a;
+    --omi-text-light: #90a4ae;
+
+    /* Table Specific */
+    --omi-table-row-height: 80px;
+    --omi-table-header-height: 50px;
+    --omi-table-hover: #f0f7ff;
+    --omi-table-stripe: #fafafb;
+
+    /* Shadows */
+    --omi-shadow-sm: 0 2px 0 rgba(0, 0, 0, 0.015);
+    --omi-shadow-md: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --omi-shadow-lg: 0 1px 2px -2px rgba(0, 0, 0, 0.16), 0 3px 6px 0 rgba(0, 0, 0, 0.12), 0 5px 12px 4px rgba(0, 0, 0, 0.09);
+    --omi-shadow-focus: 0 0 0 2px rgba(62, 121, 247, 0.2);
+
+    /* Chart Colors */
+    --chart-1: 217 91% 60%;
+    --chart-2: 145 63% 47%;
+    --chart-3: 43 100% 63%;
+    --chart-4: 0 100% 71%;
+    --chart-5: 193 100% 46%;
   }
 
   .dark {
@@ -53,84 +125,518 @@
   }
   
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
     background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    color: var(--omi-text-default);
   }
 }
 
 @layer components {
+  /* ==================== */
+  /* Sidebar */
+  /* ==================== */
   .sidebar-item {
-    @apply flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer;
+    @apply flex items-center px-4 py-3 text-sm rounded-[10px] transition-all duration-300 cursor-pointer;
+    color: var(--omi-text-default);
+  }
+  
+  .sidebar-item:hover {
+    background-color: var(--omi-primary-lightest);
+    color: var(--omi-primary);
   }
   
   .sidebar-item.active {
-    @apply bg-blue-50 text-blue-600 border-r-2 border-blue-600;
+    background-color: var(--omi-primary);
+    color: white;
   }
   
+  /* ==================== */
+  /* Cards */
+  /* ==================== */
   .card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100;
+    @apply bg-white border;
+    border-color: var(--omi-border);
+    border-radius: var(--radius);
   }
   
   .card-hover {
-    @apply hover:shadow-xl transition-shadow duration-200;
+    @apply transition-all duration-300;
   }
   
+  .card-hover:hover {
+    border-color: transparent;
+    box-shadow: var(--omi-shadow-lg);
+  }
+  
+  /* ==================== */
+  /* Buttons */
+  /* ==================== */
   .btn-primary {
-    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white transition-all duration-300 cursor-pointer;
+    background-color: var(--omi-primary);
+    border-radius: var(--radius);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--omi-primary-light);
+  }
+  
+  .btn-primary:active {
+    background-color: var(--omi-primary-dark);
   }
   
   .btn-secondary {
-    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium bg-white transition-all duration-300 cursor-pointer;
+    color: var(--omi-text-default);
+    border: 1px solid var(--omi-border);
+    border-radius: var(--radius);
   }
   
+  .btn-secondary:hover {
+    color: var(--omi-primary-light);
+    border-color: var(--omi-primary-light);
+  }
+  
+  /* ==================== */
+  /* Inputs */
+  /* ==================== */
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors;
+    @apply w-full px-3 py-2 text-sm bg-white transition-all duration-300 outline-none;
+    color: var(--omi-text-default);
+    border: 1px solid var(--omi-border);
+    border-radius: var(--radius);
   }
   
+  .input-field::placeholder {
+    color: rgba(114, 132, 154, 0.4);
+  }
+  
+  .input-field:hover {
+    border-color: var(--omi-primary-light);
+  }
+  
+  .input-field:focus {
+    border-color: var(--omi-primary);
+    box-shadow: var(--omi-shadow-focus);
+  }
+  
+  /* ==================== */
+  /* Metric Cards */
+  /* ==================== */
   .metric-card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200;
+    @apply bg-white p-6 transition-all duration-300;
+    border: 1px solid var(--omi-border);
+    border-radius: var(--radius);
   }
   
+  .metric-card:hover {
+    border-color: transparent;
+    box-shadow: var(--omi-shadow-lg);
+  }
+  
+  /* ==================== */
+  /* Tables (Legacy) */
+  /* ==================== */
   .table-header {
-    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50;
-  }
-  
-  .table-cell {
-    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+    @apply px-4 py-3 text-left text-xs font-black uppercase tracking-wider;
+    background-color: var(--omi-bg-alt);
+    color: var(--omi-text-default);
+    border-bottom: 1px solid var(--omi-border);
   }
 
+  .table-cell {
+    @apply px-4 py-3 text-sm;
+    color: var(--omi-text-default);
+    border-bottom: 1px solid var(--omi-border);
+  }
+
+  /* ==================== */
+  /* Omichat Table Styles */
+  /* ==================== */
+  .omi-table-container {
+    @apply bg-white overflow-hidden;
+    border: 1px solid var(--omi-border);
+    border-radius: var(--radius);
+  }
+
+  .omi-table {
+    @apply w-full border-collapse;
+    font-size: 14px;
+  }
+
+  .omi-table thead {
+    background-color: var(--omi-bg-alt);
+  }
+
+  .omi-table th {
+    height: var(--omi-table-header-height);
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--omi-text-default);
+    border-bottom: 1px solid var(--omi-border);
+    border-right: 1px solid var(--omi-border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .omi-table th:last-child {
+    border-right: none;
+  }
+
+  .omi-table tbody tr {
+    height: var(--omi-table-row-height);
+    transition: background-color 0.15s ease;
+  }
+
+  .omi-table tbody tr:hover {
+    background-color: var(--omi-table-hover);
+  }
+
+  .omi-table tbody tr:nth-child(even) {
+    background-color: var(--omi-bg-alt);
+  }
+
+  .omi-table tbody tr:nth-child(even):hover {
+    background-color: var(--omi-table-hover);
+  }
+
+  .omi-table td {
+    padding: 12px 8px;
+    font-size: 14px;
+    color: var(--omi-text-default);
+    border-bottom: 1px solid var(--omi-border);
+    border-right: 1px solid var(--omi-border);
+    vertical-align: middle;
+  }
+
+  .omi-table td:last-child {
+    border-right: none;
+  }
+
+  .omi-table-sticky-left {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: inherit;
+  }
+
+  .omi-table-sticky-right {
+    position: sticky;
+    right: 0;
+    z-index: 10;
+    background-color: inherit;
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .omi-table thead th.omi-table-sticky-left,
+  .omi-table thead th.omi-table-sticky-right {
+    background-color: var(--omi-bg-alt);
+  }
+
+  .omi-table tbody tr:nth-child(odd) td.omi-table-sticky-left,
+  .omi-table tbody tr:nth-child(odd) td.omi-table-sticky-right {
+    background-color: white;
+  }
+
+  .omi-table tbody tr:nth-child(even) td.omi-table-sticky-left,
+  .omi-table tbody tr:nth-child(even) td.omi-table-sticky-right {
+    background-color: var(--omi-bg-alt);
+  }
+
+  .omi-table tbody tr:hover td.omi-table-sticky-left,
+  .omi-table tbody tr:hover td.omi-table-sticky-right {
+    background-color: var(--omi-table-hover);
+  }
+
+  /* ==================== */
+  /* Omichat Checkbox */
+  /* ==================== */
+  .omi-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--omi-border);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .omi-checkbox:checked {
+    background-color: var(--omi-primary);
+    border-color: var(--omi-primary);
+  }
+
+  .omi-checkbox:hover {
+    border-color: var(--omi-primary);
+  }
+
+  .omi-checkbox:focus {
+    box-shadow: var(--omi-shadow-focus);
+  }
+
+  /* ==================== */
+  /* Omichat Badge/Tag */
+  /* ==================== */
+  .omi-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .omi-badge-primary {
+    background-color: rgba(62, 121, 247, 0.15);
+    color: var(--omi-primary);
+  }
+
+  .omi-badge-success {
+    background-color: rgba(45, 197, 106, 0.15);
+    color: var(--omi-success);
+  }
+
+  .omi-badge-warning {
+    background-color: rgba(255, 197, 66, 0.15);
+    color: var(--omi-warning);
+  }
+
+  .omi-badge-danger {
+    background-color: rgba(255, 107, 114, 0.15);
+    color: var(--omi-error);
+  }
+
+  .omi-badge-info {
+    background-color: rgba(62, 121, 247, 0.15);
+    color: var(--omi-primary);
+  }
+
+  .omi-badge-secondary {
+    background-color: #f5f0fa;
+    color: var(--omi-secondary);
+  }
+
+  /* ==================== */
+  /* Omichat Button */
+  /* ==================== */
+  .omi-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8.5px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    border-radius: var(--radius);
+    transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    cursor: pointer;
+    border: 1px solid var(--omi-border);
+    background: #ffffff;
+    color: var(--omi-text-default);
+  }
+
+  .omi-btn:hover {
+    color: var(--omi-primary-light);
+    border-color: var(--omi-primary-light);
+  }
+
+  .omi-btn:active {
+    color: var(--omi-primary-dark);
+    border-color: var(--omi-primary-dark);
+  }
+
+  .omi-btn-primary {
+    background-color: var(--omi-primary);
+    border-color: var(--omi-primary);
+    color: white;
+  }
+
+  .omi-btn-primary:hover {
+    background-color: var(--omi-primary-light);
+    border-color: var(--omi-primary-light);
+  }
+
+  .omi-btn-primary:active {
+    background-color: var(--omi-primary-dark);
+    border-color: var(--omi-primary-dark);
+  }
+
+  .omi-btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--omi-border);
+    color: var(--omi-text-default);
+  }
+
+  .omi-btn-outline:hover {
+    background-color: var(--omi-bg-alt);
+    border-color: var(--omi-primary);
+    color: var(--omi-primary);
+  }
+
+  .omi-btn-ghost {
+    background-color: transparent;
+    border: none;
+    color: var(--omi-text-default);
+  }
+
+  .omi-btn-ghost:hover {
+    background-color: var(--omi-bg-alt);
+  }
+
+  .omi-btn-sm {
+    height: 36px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .omi-btn-lg {
+    height: 40px;
+    padding: 8.5px 20px;
+  }
+
+  .omi-btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  /* ==================== */
+  /* Omichat Link */
+  /* ==================== */
+  .omi-link {
+    color: var(--omi-primary);
+    font-weight: 500;
+    transition: color 0.3s ease;
+    cursor: pointer;
+  }
+
+  .omi-link:hover {
+    color: var(--omi-primary-dark);
+    text-decoration: underline;
+  }
+
+  /* ==================== */
+  /* Omichat Avatar */
+  /* ==================== */
+  .omi-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: 500;
+    background-color: var(--omi-primary);
+    color: white;
+    overflow: hidden;
+  }
+
+  .omi-avatar-xs {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .omi-avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .omi-avatar-lg {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .omi-avatar-xl {
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+  }
+
+  .omi-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ==================== */
+  /* Omichat Text truncate */
+  /* ==================== */
+  .omi-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ==================== */
+  /* Omichat Action menu */
+  /* ==================== */
+  .omi-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: var(--omi-text-muted);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .omi-action-btn:hover {
+    background-color: var(--omi-primary-lightest);
+    color: var(--omi-primary);
+  }
+
+  /* ==================== */
   /* Fix for dropdown/select components */
+  /* ==================== */
   [data-radix-popper-content-wrapper] {
     z-index: 50 !important;
   }
   
   .select-content {
     background-color: white !important;
-    border: 1px solid #e5e7eb !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--omi-border) !important;
+    box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+    border-radius: var(--radius) !important;
   }
 }
 
+/* ==================== */
 /* Custom scrollbar */
+/* ==================== */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f7f7f8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #d0d4d7;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #b0b4b7;
 }
 
+/* ==================== */
 /* Tiptap Rich Text Editor Styles */
+/* ==================== */
 .tiptap {
   outline: none;
 }
@@ -170,7 +676,7 @@
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #9ca3af;
+  color: var(--omi-text-muted);
   pointer-events: none;
   height: 0;
 }
@@ -213,7 +719,7 @@
 
 /* Override prose styles for chat messages */
 .prose-sm {
-  font-size: 0.875rem;
+  font-size: 14px;
 }
 
 .prose p {

@@ -19,6 +19,7 @@ import {
   Search,
   Plus,
   Edit2,
+  Pencil,
   Trash2,
   Eye,
   Save,
@@ -30,6 +31,7 @@ import {
   MoreVertical,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   CheckCircle,
   XCircle,
   HelpCircle,
@@ -60,7 +62,32 @@ import {
   Star,
   Tag,
   User2,
-  ShoppingCart
+  ShoppingCart,
+  Building2,
+  Package,
+  GitBranch,
+  Briefcase,
+  UserCheck,
+  Wrench,
+  Heart,
+  Trophy,
+  Receipt,
+  CreditCard,
+  FolderOpen,
+  Link2,
+  Hash,
+  Palette as PaletteIcon,
+  ListChecks,
+  AlarmClock,
+  LayoutDashboard,
+  TrendingUp,
+  Ruler,
+  Activity,
+  Dumbbell,
+  ImageIcon,
+  StickyNote,
+  Flag,
+  type LucideIcon
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -669,6 +696,1024 @@ const sampleTags: CustomTag[] = [
     createdAt: '2025-03-01T00:00:00'
   }
 ]
+
+// Sample departments and teams data
+const sampleDepartments = [
+  { id: 'dept1', name: 'Kinh doanh' },
+  { id: 'dept2', name: 'Kỹ thuật' },
+  { id: 'dept3', name: 'Hành chính' },
+  { id: 'dept4', name: 'Marketing' },
+  { id: 'dept5', name: 'Phòng sale' },
+]
+
+const sampleTeams = [
+  { id: 'team1', name: 'Sale Team A', departmentId: 'dept1' },
+  { id: 'team2', name: 'Sale Team B', departmentId: 'dept1' },
+  { id: 'team3', name: 'Dev Team', departmentId: 'dept2' },
+  { id: 'team4', name: 'QA Team', departmentId: 'dept2' },
+  { id: 'team5', name: 'Admin Team', departmentId: 'dept3' },
+  { id: 'team6', name: 'Content Team', departmentId: 'dept4' },
+]
+
+// Role data
+const initialRolesList = [
+  { id: 1, name: 'Leader', description: 'Quản lý cấp cao', status: 'active', department: 'Kinh doanh', team: 'Sale Team A', users: 5 },
+  { id: 2, name: 'DEV', description: 'Nhân viên phát triển', status: 'active', department: 'Kỹ thuật', team: 'Dev Team', users: 8 },
+  { id: 3, name: 'Tester', description: 'Nhân viên kiểm thử', status: 'active', department: 'Kỹ thuật', team: 'QA Team', users: 3 },
+  { id: 4, name: 'Trưởng phòng ban khác', description: 'Quản lý phòng ban', status: 'active', department: 'Hành chính', team: 'Admin Team', users: 2 },
+]
+
+// Permission modules grouped by category
+const permissionModuleGroups = [
+  {
+    id: 'customer',
+    name: 'Khách hàng & Lead',
+    icon: '👤',
+    modules: [
+      { id: 'person', name: 'Mọi người', icon: '👤' },
+      { id: 'opportunity', name: 'Cơ hội', icon: '💰' },
+      { id: 'leadQualityFlag', name: 'Cờ đánh giá chất lượng lead', icon: '🚩' },
+      { id: 'personProductInterest', name: 'Mối quan tâm sản phẩm', icon: '❤️' },
+      { id: 'customerBehaviorConfig', name: 'Cấu hình hành vi khách hàng', icon: '⚙️' },
+      { id: 'customerTierConfig', name: 'Cấu hình hạng khách hàng', icon: '🏆' },
+    ]
+  },
+  {
+    id: 'sales',
+    name: 'Bán hàng & Đơn hàng',
+    icon: '🛒',
+    modules: [
+      { id: 'order', name: 'Đơn hàng', icon: '🛒' },
+      { id: 'orderHistory', name: 'Lịch sử đơn hàng', icon: '⏱️' },
+      { id: 'invoice', name: 'Hóa đơn', icon: '🧾' },
+      { id: 'invoiceProduct', name: 'Sản phẩm hóa đơn', icon: '≡' },
+      { id: 'payment', name: 'Thanh toán', icon: '💳' },
+    ]
+  },
+  {
+    id: 'product',
+    name: 'Sản phẩm',
+    icon: '📦',
+    modules: [
+      { id: 'product', name: 'Sản phẩm', icon: '📦' },
+      { id: 'category', name: 'Danh mục', icon: '📁' },
+      { id: 'productCategory', name: 'Danh mục sản phẩm', icon: '🔗' },
+      { id: 'productOption', name: 'Tùy chọn sản phẩm', icon: '⚙️' },
+      { id: 'productOptionValue', name: 'Giá trị tùy chọn sản phẩm', icon: '🔢' },
+      { id: 'productVariant', name: 'Biến thể sản phẩm', icon: '🎨' },
+      { id: 'productVariantOptionValue', name: 'Giá trị tùy chọn biến thể', icon: '📊' },
+    ]
+  },
+  {
+    id: 'task',
+    name: 'Công việc & Tác vụ',
+    icon: '✅',
+    modules: [
+      { id: 'task', name: 'Công việc', icon: '✅' },
+      { id: 'taskLabel', name: 'Nhãn công việc', icon: '🏷️' },
+      { id: 'autoTaskTemplate', name: 'Mẫu tác vụ tự động', icon: '📋' },
+      { id: 'reminder', name: 'Nhắc nhở', icon: '⏰' },
+    ]
+  },
+  {
+    id: 'organization',
+    name: 'Tổ chức',
+    icon: '🏢',
+    modules: [
+      { id: 'company', name: 'Công ty', icon: '🏢' },
+      { id: 'department', name: 'Phòng ban', icon: '🏛️' },
+      { id: 'team', name: 'Nhóm', icon: '👥' },
+    ]
+  },
+  {
+    id: 'kpi',
+    name: 'KPI & Hiệu suất',
+    icon: '📊',
+    modules: [
+      { id: 'dashboard', name: 'Bảng điều khiển', icon: '📊' },
+      { id: 'kpiAssignment', name: 'Phân công KPI', icon: '🔄' },
+      { id: 'kpiDataPoint', name: 'Điểm dữ liệu KPI', icon: '📈' },
+      { id: 'kpiDefinition', name: 'Định nghĩa KPI', icon: '📐' },
+      { id: 'memberPerformanceStats', name: 'Thống kê hiệu suất thành viên', icon: '📊' },
+      { id: 'memberSkill', name: 'Kỹ năng thành viên', icon: '💪' },
+      { id: 'memberWorkloadSnapshot', name: 'Ảnh chụp khối lượng công việc', icon: '📸' },
+    ]
+  },
+  {
+    id: 'settings',
+    name: 'Cấu hình & Hệ thống',
+    icon: '⚙️',
+    modules: [
+      { id: 'assignmentRule', name: 'Quy tắc phân công', icon: '☑️' },
+      { id: 'assignmentSettings', name: 'Cài đặt phân công', icon: '☑️' },
+      { id: 'notificationTemplate', name: 'Mẫu thông báo', icon: '🔔' },
+      { id: 'embedding', name: 'Dữ liệu nhúng', icon: '📦' },
+    ]
+  },
+  {
+    id: 'tags',
+    name: 'Phân loại & Nhãn',
+    icon: '🏷️',
+    modules: [
+      { id: 'label', name: 'Nhãn', icon: '🏷️' },
+      { id: 'tag', name: 'Thẻ', icon: '🏷️' },
+      { id: 'note', name: 'Ghi chú', icon: '📝' },
+    ]
+  },
+  {
+    id: 'geography',
+    name: 'Địa lý',
+    icon: '📍',
+    modules: [
+      { id: 'province', name: 'Tỉnh / Thành phố', icon: '📍' },
+      { id: 'ward', name: 'Phường / Xã', icon: '📍' },
+    ]
+  },
+]
+
+// Flat list of all modules for state initialization
+const allPermissionModules = permissionModuleGroups.flatMap(group => group.modules)
+
+// Module icon mapping
+const moduleIconMap: Record<string, LucideIcon> = {
+  // Khách hàng & Lead
+  person: User2,
+  opportunity: Target,
+  leadQualityFlag: Flag,
+  personProductInterest: Heart,
+  customerBehaviorConfig: Settings,
+  customerTierConfig: Trophy,
+  // Bán hàng & Đơn hàng
+  order: ShoppingCart,
+  orderHistory: History,
+  invoice: Receipt,
+  invoiceProduct: FileText,
+  payment: CreditCard,
+  // Sản phẩm
+  product: Package,
+  category: FolderOpen,
+  productCategory: Link2,
+  productOption: Settings,
+  productOptionValue: Hash,
+  productVariant: PaletteIcon,
+  productVariantOptionValue: Layers,
+  // Công việc & Tác vụ
+  task: ListChecks,
+  taskLabel: Tag,
+  autoTaskTemplate: FileText,
+  reminder: AlarmClock,
+  // Tổ chức
+  company: Building2,
+  department: Building2,
+  team: Users,
+  // KPI & Hiệu suất
+  dashboard: LayoutDashboard,
+  kpiAssignment: RefreshCw,
+  kpiDataPoint: TrendingUp,
+  kpiDefinition: Ruler,
+  memberPerformanceStats: BarChart3,
+  memberSkill: Dumbbell,
+  memberWorkloadSnapshot: ImageIcon,
+  // Cấu hình & Hệ thống
+  assignmentRule: CheckCircle,
+  assignmentSettings: Settings,
+  notificationTemplate: Bell,
+  embedding: Database,
+  // Phân loại & Nhãn
+  label: Tag,
+  tag: Tag,
+  note: StickyNote,
+  // Địa lý
+  province: MapPin,
+  ward: MapPin,
+}
+
+// Sample employees data for assign permission
+const sampleEmployeesForAssign = [
+  { id: 4, code: '4', name: 'Hoàng Chính Nghĩa', username: 'nghiahc', department: 'Phòng kinh doanh', roles: ['Leader', 'DEV'], status: 'active' },
+  { id: 5, code: '5', name: 'Nguyễn Minh Quang', username: 'nmquang', department: 'Phòng kinh doanh', roles: ['Leader', 'Tester'], status: 'active' },
+  { id: 6, code: '6', name: 'Nguyễn Thị Mai', username: 'ntmai', department: 'Phòng chăm sóc khách hàng', roles: ['Tester'], status: 'active' },
+  { id: 7, code: '7', name: 'Lê Đình Nam', username: 'ldnam', department: 'Team Minh Quang', roles: ['DEV'], status: 'active' },
+  { id: 8, code: '8', name: 'Trần Văn Hùng', username: 'tvhung', department: 'Phòng kinh doanh', roles: ['Leader'], status: 'active' },
+  { id: 9, code: '9', name: 'Phạm Thị Lan', username: 'ptlan', department: 'Phòng kỹ thuật', roles: ['DEV', 'Tester'], status: 'active' },
+]
+
+// Assign Permission Component
+const AssignPermissionContent = () => {
+  const [assignRolesList] = useState([
+    { id: 1, name: 'Leader' },
+    { id: 2, name: 'DEV' },
+    { id: 3, name: 'Tester' },
+    { id: 4, name: 'Trưởng phòng ban khác' },
+  ])
+  const [selectedAssignRoleId, setSelectedAssignRoleId] = useState<number>(1)
+  const [employees] = useState(sampleEmployeesForAssign)
+  const [roleAssignments, setRoleAssignments] = useState<Record<number, number[]>>({
+    1: [4, 5, 8], // Leader: Hoàng Chính Nghĩa, Nguyễn Minh Quang, Trần Văn Hùng
+    2: [4, 7, 9], // DEV: Hoàng Chính Nghĩa, Lê Đình Nam, Phạm Thị Lan
+    3: [5, 6, 9], // Tester: Nguyễn Minh Quang, Nguyễn Thị Mai, Phạm Thị Lan
+    4: [], // Trưởng phòng ban khác: none
+  })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [filterDepartment, setFilterDepartment] = useState('')
+  const [filterTeam, setFilterTeam] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Get selected employees for current role
+  const selectedEmployees = roleAssignments[selectedAssignRoleId] || []
+
+  const toggleSelectAll = () => {
+    const allEmployeeIds = employees.map(e => e.id)
+    if (selectedEmployees.length === employees.length) {
+      setRoleAssignments(prev => ({ ...prev, [selectedAssignRoleId]: [] }))
+    } else {
+      setRoleAssignments(prev => ({ ...prev, [selectedAssignRoleId]: allEmployeeIds }))
+    }
+  }
+
+  const toggleSelectEmployee = (id: number) => {
+    setRoleAssignments(prev => {
+      const currentAssigned = prev[selectedAssignRoleId] || []
+      if (currentAssigned.includes(id)) {
+        return { ...prev, [selectedAssignRoleId]: currentAssigned.filter(e => e !== id) }
+      } else {
+        return { ...prev, [selectedAssignRoleId]: [...currentAssigned, id] }
+      }
+    })
+  }
+
+  // Get current role name
+  const currentRoleName = assignRolesList.find(r => r.id === selectedAssignRoleId)?.name || ''
+
+  return (
+    <div className="flex gap-6 h-[calc(100vh-200px)]">
+      {/* Left Sidebar - Role List */}
+      <div className="w-56 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-2">
+          {assignRolesList.map((role) => (
+            <div
+              key={role.id}
+              className={`relative flex items-center px-3 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
+                selectedAssignRoleId === role.id 
+                  ? 'bg-[#3e79f7] text-white' 
+                  : 'text-[#455560] hover:bg-gray-100'
+              }`}
+              onClick={() => setSelectedAssignRoleId(role.id)}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">{role.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right Side - Employee Table */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Filters and Save Button */}
+        <div className="flex items-center gap-3 mb-4">
+          <select
+            value={filterDepartment}
+            onChange={(e) => setFilterDepartment(e.target.value)}
+            className="h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300 min-w-[160px]"
+          >
+            <option value="">Theo phòng ban</option>
+            <option value="dept1">Kinh doanh</option>
+            <option value="dept2">Kỹ thuật</option>
+            <option value="dept3">Hành chính</option>
+            <option value="dept4">Marketing</option>
+            <option value="dept5">Phòng sale</option>
+          </select>
+          <select
+            value={filterTeam}
+            onChange={(e) => setFilterTeam(e.target.value)}
+            className="h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300 min-w-[160px]"
+          >
+            <option value="">Theo nhóm</option>
+            <option value="team1">Sale Team A</option>
+            <option value="team2">Sale Team B</option>
+            <option value="team3">Dev Team</option>
+            <option value="team4">QA Team</option>
+            <option value="team5">Admin Team</option>
+          </select>
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]" />
+            <Input
+              placeholder="Tìm kiếm nhân viên..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          <div className="ml-auto">
+            <Button size="sm">
+              <Save className="w-4 h-4 mr-2" />
+              Lưu thay đổi
+            </Button>
+          </div>
+        </div>
+
+        {/* Table Container */}
+        <div className="flex-1 flex flex-col bg-white border border-[#e6ebf1] rounded-[10px] overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-[#fafafa] border-b border-[#e6ebf1]">
+                <tr>
+                  <th className="text-left py-3 px-4 font-normal text-[#455560] w-10">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7]"
+                      checked={selectedEmployees.length === employees.length && employees.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Mã NV</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Họ và tên</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Tên đăng n...</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Phòng ban</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Vai trò</th>
+                  <th className="text-left py-3 px-4 font-semibold text-[#455560] uppercase text-xs tracking-wider whitespace-nowrap">Trạng thái làm ...</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((employee) => (
+                  <tr key={employee.id} className="border-b border-[#e6ebf1] hover:bg-[#f5f5f5] transition-colors">
+                    <td className="py-3 px-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7]"
+                        checked={selectedEmployees.includes(employee.id)}
+                        onChange={() => toggleSelectEmployee(employee.id)}
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-[#455560]">{employee.code}</td>
+                    <td className="py-3 px-4 text-[#455560]">{employee.name}</td>
+                    <td className="py-3 px-4 text-[#455560]">{employee.username}</td>
+                    <td className="py-3 px-4 text-[#455560]">{employee.department}</td>
+                    <td className="py-3 px-4 text-[#455560]">{employee.roles.join(',')}</td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 text-[#04d182]">
+                        <span className="w-2 h-2 rounded-full bg-[#04d182]"></span>
+                        Đang làm việc
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Pagination */}
+          <div className="flex items-center justify-end px-4 py-3 border-t border-[#e6ebf1] bg-white">
+            <div className="flex items-center gap-1">
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-[#e6ebf1] text-[#455560] hover:bg-gray-50 disabled:opacity-50" disabled>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded bg-[#3e79f7] text-white text-sm font-medium">
+                1
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-[#e6ebf1] text-[#455560] hover:bg-gray-50 disabled:opacity-50" disabled>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// RoleManagementNew Component
+const RoleManagementNew = () => {
+  const [rolesList, setRolesList] = useState(initialRolesList)
+  const [selectedRoleId, setSelectedRoleId] = useState<number>(rolesList[0]?.id || 1)
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [roleToDelete, setRoleToDelete] = useState<number | null>(null)
+  const [showRoleDropdown, setShowRoleDropdown] = useState<number | null>(null)
+  const [isEditingRole, setIsEditingRole] = useState(false)
+  const [editRoleForm, setEditRoleForm] = useState({ 
+    name: '', 
+    description: '', 
+    scopeEnabled: false,
+    scope: 'department' as 'department' | 'team' | 'global',
+    scopeTarget: ''
+  })
+  const [addRoleForm, setAddRoleForm] = useState({ 
+    name: '', 
+    description: '', 
+    scopeEnabled: false,
+    scope: 'department' as 'department' | 'team' | 'global',
+    scopeTarget: ''
+  })
+  const [addRoleError, setAddRoleError] = useState('')
+  const selectedRoleData = rolesList.find(r => r.id === selectedRoleId) || rolesList[0]
+  
+  // Permission states
+  const [searchPermission, setSearchPermission] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    permissionModuleGroups.reduce((acc, group) => ({ ...acc, [group.id]: true }), {})
+  )
+
+  // Module permissions state
+  const [modulePermissions, setModulePermissions] = useState<Record<string, {
+    all: boolean
+    canRead: boolean
+    canUpdate: boolean
+    canSoftDelete: boolean
+    canDestroy: boolean
+  }>>(
+    allPermissionModules.reduce((acc, mod) => ({
+      ...acc,
+      [mod.id]: { all: false, canRead: false, canUpdate: false, canSoftDelete: false, canDestroy: false }
+    }), {})
+  )
+
+  const toggleGroupExpand = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
+  }
+
+  const toggleGroupAll = (groupId: string, checked: boolean) => {
+    const group = permissionModuleGroups.find(g => g.id === groupId)
+    if (!group) return
+    
+    setModulePermissions(prev => {
+      const updated = { ...prev }
+      group.modules.forEach(mod => {
+        updated[mod.id] = {
+          all: checked,
+          canRead: checked,
+          canUpdate: checked,
+          canSoftDelete: checked,
+          canDestroy: checked
+        }
+      })
+      return updated
+    })
+  }
+
+  const isGroupAllChecked = (groupId: string) => {
+    const group = permissionModuleGroups.find(g => g.id === groupId)
+    if (!group) return false
+    return group.modules.every(mod => modulePermissions[mod.id]?.all)
+  }
+
+  const toggleModuleAll = (moduleId: string, checked: boolean) => {
+    setModulePermissions(prev => ({
+      ...prev,
+      [moduleId]: {
+        all: checked,
+        canRead: checked,
+        canUpdate: checked,
+        canSoftDelete: checked,
+        canDestroy: checked
+      }
+    }))
+  }
+
+  const toggleModulePermission = (moduleId: string, permission: string, checked: boolean) => {
+    setModulePermissions(prev => {
+      const updated = { ...prev[moduleId], [permission]: checked }
+      const allChecked = updated.canRead && updated.canUpdate && updated.canSoftDelete && updated.canDestroy
+      return {
+        ...prev,
+        [moduleId]: { ...updated, all: allChecked }
+      }
+    })
+  }
+
+  // Filter groups and modules based on search
+  const filteredGroups = permissionModuleGroups.map(group => ({
+    ...group,
+    modules: group.modules.filter(mod => 
+      mod.name.toLowerCase().includes(searchPermission.toLowerCase())
+    )
+  })).filter(group => group.modules.length > 0)
+
+  // Handle delete role
+  const handleDeleteRole = () => {
+    if (roleToDelete) {
+      setRolesList(prev => prev.filter(r => r.id !== roleToDelete))
+      if (selectedRoleId === roleToDelete) {
+        setSelectedRoleId(rolesList[0]?.id || 1)
+      }
+      setShowDeleteConfirm(false)
+      setRoleToDelete(null)
+    }
+  }
+
+  // Handle edit role
+  const startEditRole = () => {
+    setEditRoleForm({ 
+      name: selectedRoleData.name, 
+      description: selectedRoleData.description,
+      scopeEnabled: true,
+      scope: 'department',
+      scopeTarget: 'dept1'
+    })
+    setIsEditingRole(true)
+    setShowRoleDropdown(null)
+  }
+
+  const saveEditRole = () => {
+    const scopeData = editRoleForm.scopeEnabled && editRoleForm.scope !== 'global' 
+      ? {
+          department: editRoleForm.scope === 'department' 
+            ? sampleDepartments.find(d => d.id === editRoleForm.scopeTarget)?.name || ''
+            : '',
+          team: editRoleForm.scope === 'team'
+            ? sampleTeams.find(t => t.id === editRoleForm.scopeTarget)?.name || ''
+            : ''
+        }
+      : { department: '', team: '' }
+    
+    setRolesList(prev => prev.map(r => 
+      r.id === selectedRoleId 
+        ? { ...r, name: editRoleForm.name, description: editRoleForm.description, ...scopeData }
+        : r
+    ))
+    setIsEditingRole(false)
+  }
+
+  // Handle add role
+  const handleAddRole = () => {
+    if (!addRoleForm.name.trim()) {
+      setAddRoleError('Vui lòng nhập tên vai trò')
+      return
+    }
+    const scopeData = addRoleForm.scopeEnabled && addRoleForm.scope !== 'global' 
+      ? {
+          department: addRoleForm.scope === 'department' 
+            ? sampleDepartments.find(d => d.id === addRoleForm.scopeTarget)?.name || ''
+            : '',
+          team: addRoleForm.scope === 'team'
+            ? sampleTeams.find(t => t.id === addRoleForm.scopeTarget)?.name || ''
+            : ''
+        }
+      : { department: '', team: '' }
+    
+    const newRole = {
+      id: Math.max(...rolesList.map(r => r.id)) + 1,
+      name: addRoleForm.name,
+      description: addRoleForm.description,
+      status: 'active',
+      ...scopeData,
+      users: 0
+    }
+    setRolesList(prev => [...prev, newRole])
+    setShowAddRoleModal(false)
+    setAddRoleForm({ name: '', description: '', scopeEnabled: false, scope: 'department', scopeTarget: '' })
+    setAddRoleError('')
+    setSelectedRoleId(newRole.id)
+  }
+
+  return (
+    <div className="flex gap-6 h-[calc(100vh-200px)]">
+      {/* Left Sidebar - Role List */}
+      <div className="w-56 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-2">
+          {rolesList.map((role) => (
+            <div
+              key={role.id}
+              className={`relative flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
+                selectedRoleId === role.id 
+                  ? 'bg-[#3e79f7] text-white' 
+                  : 'text-[#455560] hover:bg-gray-100'
+              }`}
+              onClick={() => setSelectedRoleId(role.id)}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">{role.name}</span>
+              </div>
+              {selectedRoleId === role.id && (
+                <div className="relative">
+                  <MoreHorizontal 
+                    className="w-4 h-4 cursor-pointer hover:opacity-80" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowRoleDropdown(showRoleDropdown === role.id ? null : role.id)
+                    }}
+                  />
+                  {/* Dropdown Menu */}
+                  {showRoleDropdown === role.id && (
+                    <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[120px]">
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 text-[#455560] hover:bg-gray-100 cursor-pointer text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startEditRole()
+                        }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                        <span>Chỉnh sửa</span>
+                      </div>
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 text-red-500 hover:bg-red-50 cursor-pointer text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setRoleToDelete(role.id)
+                          setShowDeleteConfirm(true)
+                          setShowRoleDropdown(null)
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Xóa</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {/* Add Role Button */}
+          <div
+            className="flex items-center gap-2 px-3 py-2 mt-2 text-[#455560] hover:text-[#3e79f7] cursor-pointer transition-colors"
+            onClick={() => setShowAddRoleModal(true)}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm">Thêm vai trò</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Content - Permission Settings */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Sticky Header - Role Info + Search */}
+        <div className="sticky top-0 z-10 pb-4 space-y-4">
+          {/* Role Info Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              {isEditingRole ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm text-[#1a3353]">
+                      Tên vai trò <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      value={editRoleForm.name}
+                      onChange={(e) => setEditRoleForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="h-9 mt-1 max-w-xs"
+                      placeholder="Tên vai trò"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#1a3353]">Phạm vi vai trò</Label>
+                    <Switch
+                      checked={editRoleForm.scopeEnabled}
+                      onCheckedChange={(checked) => setEditRoleForm(prev => ({ 
+                        ...prev, 
+                        scopeEnabled: checked,
+                        scope: checked ? 'department' : 'global',
+                        scopeTarget: ''
+                      }))}
+                    />
+                  </div>
+                  {editRoleForm.scopeEnabled && (
+                    <>
+                      <div>
+                        <select
+                          value={editRoleForm.scope}
+                          onChange={(e) => setEditRoleForm(prev => ({ 
+                            ...prev, 
+                            scope: e.target.value as 'department' | 'team' | 'global',
+                            scopeTarget: ''
+                          }))}
+                          className="w-full max-w-xs h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
+                        >
+                          <option value="department">Theo phòng ban</option>
+                          <option value="team">Theo nhóm</option>
+                          <option value="global">Toàn quyền</option>
+                        </select>
+                      </div>
+                      {editRoleForm.scope !== 'global' && (
+                        <div>
+                          <Label className="text-sm text-[#1a3353] block">
+                            Áp dụng <span className="text-red-500">*</span>
+                          </Label>
+                          <select
+                            value={editRoleForm.scopeTarget}
+                            onChange={(e) => setEditRoleForm(prev => ({ ...prev, scopeTarget: e.target.value }))}
+                            className="block w-full max-w-xs h-9 px-3 mt-1 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
+                          >
+                            <option value="">-- Chọn {editRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} --</option>
+                            {editRoleForm.scope === 'department' 
+                              ? sampleDepartments.map(dept => (
+                                  <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                ))
+                              : sampleTeams.map(team => (
+                                  <option key={team.id} value={team.id}>{team.name}</option>
+                                ))
+                            }
+                          </select>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div>
+                    <Label className="text-sm text-[#1a3353]">Mô tả</Label>
+                    <Textarea
+                      value={editRoleForm.description}
+                      onChange={(e) => setEditRoleForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="mt-1 min-h-[60px] max-w-xs"
+                      placeholder="Mô tả vai trò"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-lg font-semibold text-[#1a3353]">
+                    Phân quyền: {selectedRoleData?.name}
+                  </h2>
+                  <p className="text-sm text-[#455560]">{selectedRoleData?.description}</p>
+                </>
+              )}
+              {/* Additional Role Info */}
+              {!isEditingRole && (
+                <div className="flex items-center gap-4 mt-2 text-xs text-[#455560]">
+                  <span className="flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5" />
+                    Phòng ban: <strong>{selectedRoleData?.department || 'Chưa gán'}</strong>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    Nhóm: <strong>{selectedRoleData?.team || 'Chưa gán'}</strong>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User2 className="w-3.5 h-3.5" />
+                    Người dùng: <strong>{selectedRoleData?.users || 0}</strong>
+                  </span>
+                </div>
+              )}
+            </div>
+            {isEditingRole ? (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setIsEditingRole(false)}>
+                  Hủy
+                </Button>
+                <Button size="sm" onClick={saveEditRole}>
+                  Lưu thay đổi
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm">
+                Lưu thay đổi
+              </Button>
+            )}
+          </div>
+
+          {/* Search Header */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-500">Phân quyền theo module</h3>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Tìm kiếm quyền..." 
+                className="pl-8 h-9"
+                value={searchPermission}
+                onChange={(e) => setSearchPermission(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Module Permissions Grid - Grouped */}
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+          {filteredGroups.map((group) => (
+            <Card key={group.id} className="overflow-hidden">
+              {/* Group Header */}
+              <div 
+                className="flex items-center justify-between p-3 bg-[#f8fafc] border-b cursor-pointer hover:bg-[#f1f5f9] transition-colors"
+                onClick={() => toggleGroupExpand(group.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm text-[#1a3353]">{group.name}</span>
+                  <span className="text-xs text-gray-400">({group.modules.length} modules)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Tất cả</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleGroupAll(group.id, !isGroupAllChecked(group.id))
+                      }}
+                      className={`w-10 h-5 rounded-full transition-colors ${
+                        isGroupAllChecked(group.id) ? 'bg-[#3e79f7]' : 'bg-gray-300'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                        isGroupAllChecked(group.id) ? 'translate-x-5' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${
+                    expandedGroups[group.id] ? 'rotate-180' : ''
+                  }`} />
+                </div>
+              </div>
+              
+              {/* Group Content - Modules */}
+              {expandedGroups[group.id] && (
+                <div className="p-3 grid grid-cols-2 gap-3">
+                  {group.modules.map((module) => {
+                    const ModuleIcon = moduleIconMap[module.id] || Building2
+                    return (
+                    <div key={module.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between p-2.5 bg-gray-50 border-b">
+                        <div className="flex items-center gap-2">
+                          <ModuleIcon className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium text-xs text-gray-700">{module.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-gray-400">Tất cả</span>
+                          <button
+                            onClick={() => toggleModuleAll(module.id, !modulePermissions[module.id]?.all)}
+                            className={`w-8 h-4 rounded-full transition-colors ${
+                              modulePermissions[module.id]?.all ? 'bg-[#3e79f7]' : 'bg-gray-300'
+                            }`}
+                          >
+                            <div className={`w-3 h-3 bg-white rounded-full shadow transition-transform ${
+                              modulePermissions[module.id]?.all ? 'translate-x-4' : 'translate-x-0.5'
+                            }`} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 p-2">
+                        {[
+                          { key: 'canRead', label: 'Xem' },
+                          { key: 'canUpdate', label: 'Chỉnh sửa' },
+                          { key: 'canSoftDelete', label: 'Xóa tạm' },
+                          { key: 'canDestroy', label: 'Xóa vĩnh viễn' },
+                        ].map((perm) => (
+                          <label 
+                            key={perm.key}
+                            className="flex items-center gap-1.5 p-1.5 bg-gray-100 rounded hover:bg-blue-50 cursor-pointer transition-colors"
+                          >
+                            <input 
+                              type="checkbox"
+                              checked={modulePermissions[module.id]?.[perm.key as keyof typeof modulePermissions[string]] || false}
+                              onChange={(e) => toggleModulePermission(module.id, perm.key, e.target.checked)}
+                              className="w-3.5 h-3.5 rounded text-[#3e79f7]"
+                            />
+                            <span className="text-[10px]">{perm.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    )
+                  })}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Add Role Modal */}
+      {showAddRoleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddRoleModal(false)}>
+          <div className="bg-white rounded-lg w-[480px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                <h3 className="text-lg font-semibold text-[#1a3353]">Thêm mới vai trò mới</h3>
+                <p className="text-sm text-[#455560]">Tạo vai trò mới với phân quyền chi tiết</p>
+              </div>
+              <button onClick={() => setShowAddRoleModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <Label className="text-sm text-[#1a3353]">
+                  Tên vai trò <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Nhập tên vai trò"
+                  value={addRoleForm.name}
+                  onChange={(e) => {
+                    setAddRoleForm(prev => ({ ...prev, name: e.target.value }))
+                    if (addRoleError) setAddRoleError('')
+                  }}
+                  className="mt-1"
+                />
+                {addRoleError && (
+                  <p className="text-sm text-red-500 mt-1">{addRoleError}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm text-[#1a3353]">Phạm vi vai trò</Label>
+                <Switch
+                  checked={addRoleForm.scopeEnabled}
+                  onCheckedChange={(checked) => setAddRoleForm(prev => ({ 
+                    ...prev, 
+                    scopeEnabled: checked,
+                    scope: checked ? 'department' : 'global',
+                    scopeTarget: ''
+                  }))}
+                />
+              </div>
+              {addRoleForm.scopeEnabled && (
+                <>
+                  <div>
+                    <select
+                      value={addRoleForm.scope}
+                      onChange={(e) => setAddRoleForm(prev => ({ 
+                        ...prev, 
+                        scope: e.target.value as 'department' | 'team' | 'global',
+                        scopeTarget: ''
+                      }))}
+                      className="w-full h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
+                    >
+                      <option value="department">Theo phòng ban</option>
+                      <option value="team">Theo nhóm</option>
+                      <option value="global">Toàn quyền</option>
+                    </select>
+                  </div>
+                  {addRoleForm.scope !== 'global' && (
+                    <div>
+                      <Label className="text-sm text-[#1a3353]">
+                        Áp dụng <span className="text-red-500">*</span>
+                      </Label>
+                      <select
+                        value={addRoleForm.scopeTarget}
+                        onChange={(e) => setAddRoleForm(prev => ({ ...prev, scopeTarget: e.target.value }))}
+                        className="w-full h-9 px-3 mt-1 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
+                      >
+                        <option value="">-- Chọn {addRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} --</option>
+                        {addRoleForm.scope === 'department' 
+                          ? sampleDepartments.map(dept => (
+                              <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))
+                          : sampleTeams.map(team => (
+                              <option key={team.id} value={team.id}>{team.name}</option>
+                            ))
+                        }
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
+              <div>
+                <Label className="text-sm text-[#1a3353]">Mô tả</Label>
+                <Textarea
+                  placeholder="Mô tả vai trò và trách nhiệm"
+                  value={addRoleForm.description}
+                  onChange={(e) => setAddRoleForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="mt-1 min-h-[80px]"
+                />
+              </div>
+              <div>
+                <Label className="text-sm text-[#1a3353]">Phân quyền</Label>
+                <p className="text-xs text-[#455560] mt-1">Sau khi tạo vai trò, bạn có thể thiết lập phân quyền chi tiết</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <Button variant="outline" onClick={() => setShowAddRoleModal(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleAddRole}>
+                Tạo vai trò
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white rounded-lg w-[400px] p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[#1a3353]">Xác nhận xóa</h3>
+                <p className="text-sm text-[#455560]">Bạn có xác nhận xóa vai trò này?</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                Hủy
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteRole}>
+                Xóa vai trò
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close dropdown */}
+      {showRoleDropdown && (
+        <div className="fixed inset-0 z-10" onClick={() => setShowRoleDropdown(null)} />
+      )}
+    </div>
+  )
+}
 
 export default function SettingsManagement() {
   const [activeTab, setActiveTab] = useState('workflow')
@@ -5296,57 +6341,422 @@ export default function SettingsManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Cài đặt Hệ thống</h1>
-          <p className="text-gray-600">Quản lý cấu hình và bảo mật hệ thống CRM</p>
-        </div>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Xuất cấu hình
-        </Button>
+    <div className="flex min-h-[600px]">
+      {/* Sidebar Menu - Fixed */}
+      <div className="w-52 border-r border-[#e6ebf1] pr-3 sticky top-0 self-start">
+        <nav className="space-y-0.5">
+          {/* 1. Thiết Lập (Công ty) */}
+          <button
+            onClick={() => setActiveTab('company')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'company'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Wrench className="w-4 h-4" />
+            Thiết lập
+          </button>
+          {/* 2. Phân quyền */}
+          <button
+            onClick={() => setActiveTab('permissions')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'permissions'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            Phân quyền
+          </button>
+          {/* 3. Dịch vụ (Sản phẩm) */}
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'products'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Dịch vụ
+          </button>
+          {/* 4. Bán hàng (Quy trình) */}
+          <button
+            onClick={() => setActiveTab('workflow')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'workflow'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Briefcase className="w-4 h-4" />
+            Bán hàng
+          </button>
+          {/* 5. Thông báo */}
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'notifications'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            Thông báo
+          </button>
+          {/* 6. Lịch sử */}
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'history'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Lịch sử
+          </button>
+        </nav>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="company">Công ty</TabsTrigger>
-          <TabsTrigger value="workflow">Quy trình</TabsTrigger>
-          <TabsTrigger value="interface">Giao diện</TabsTrigger>
-          <TabsTrigger value="products">Sản phẩm</TabsTrigger>
-          <TabsTrigger value="integrations">Tích hợp</TabsTrigger>
-          <TabsTrigger value="history">Lịch sử</TabsTrigger>
-        </TabsList>
+      {/* Main Content */}
+      <div className="flex-1 pl-6">
+        {activeTab === 'company' && <CompanyManagement />}
+        
+        {/* Phân quyền - 2 tabs: Vai trò, Gán quyền */}
+        {activeTab === 'permissions' && (
+          <div>
+            <Tabs defaultValue="roles" className="space-y-6">
+              <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+                <TabsTrigger value="roles" className="uppercase">Vai trò</TabsTrigger>
+                <TabsTrigger value="assign" className="uppercase">Gán quyền</TabsTrigger>
+              </TabsList>
 
-        <TabsContent value="company" className="mt-6">
-          <CompanyManagement />
-        </TabsContent>
+              <TabsContent value="roles" className="space-y-0">
+                <RoleManagementNew />
+              </TabsContent>
 
-        {/* Other tabs content will be implemented */}
-        <TabsContent value="workflow" className="mt-6">
-          <WorkflowManagement />
-        </TabsContent>
+              <TabsContent value="assign" className="space-y-0">
+                <AssignPermissionContent />
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+        
+        {/* Dịch vụ - 2 tabs: Dịch vụ (Gói sản phẩm), Sản phẩm */}
+        {activeTab === 'products' && (
+          <div>
+            <Tabs defaultValue="services" className="space-y-6">
+              <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+                <TabsTrigger value="services" className="uppercase">Dịch vụ</TabsTrigger>
+                <TabsTrigger value="products" className="uppercase">Sản phẩm</TabsTrigger>
+              </TabsList>
 
-        <TabsContent value="interface" className="mt-6">
-          <InterfaceManagement />
-        </TabsContent>
+              <TabsContent value="services" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Gói dịch vụ</h2>
+                    <p className="text-sm text-[#455560]">Quản lý các gói dịch vụ và sản phẩm combo</p>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm gói dịch vụ
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gói cơ bản</CardTitle>
+                      <CardDescription>Dành cho doanh nghiệp nhỏ</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-[#3e79f7]">500.000đ<span className="text-sm font-normal text-[#455560]">/tháng</span></div>
+                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
+                        <li>• 100 leads/tháng</li>
+                        <li>• 5 người dùng</li>
+                        <li>• Báo cáo cơ bản</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gói chuyên nghiệp</CardTitle>
+                      <CardDescription>Dành cho doanh nghiệp vừa</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-[#3e79f7]">1.500.000đ<span className="text-sm font-normal text-[#455560]">/tháng</span></div>
+                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
+                        <li>• Không giới hạn leads</li>
+                        <li>• 20 người dùng</li>
+                        <li>• Báo cáo nâng cao</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gói doanh nghiệp</CardTitle>
+                      <CardDescription>Dành cho doanh nghiệp lớn</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-[#3e79f7]">Liên hệ</div>
+                      <ul className="mt-4 space-y-2 text-sm text-[#455560]">
+                        <li>• Tùy chỉnh theo yêu cầu</li>
+                        <li>• Không giới hạn người dùng</li>
+                        <li>• Hỗ trợ 24/7</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
 
-        <TabsContent value="products" className="mt-6">
-          <ProductManagement />
-        </TabsContent>
+              <TabsContent value="products" className="space-y-4">
+                <ProductManagement />
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+        
+        {/* Bán hàng - 3 tabs: Quy trình, Phân bố leads, Nhãn */}
+        {activeTab === 'workflow' && (
+          <div>
+            <Tabs defaultValue="process" className="space-y-6">
+              <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+                <TabsTrigger value="process" className="uppercase">Quy trình</TabsTrigger>
+                <TabsTrigger value="distribution" className="uppercase">Phân bố leads</TabsTrigger>
+                <TabsTrigger value="labels" className="uppercase">Nhãn</TabsTrigger>
+              </TabsList>
 
-        <TabsContent value="integrations" className="mt-6">
-          <IntegrationManagement />
-        </TabsContent>
+              <TabsContent value="process" className="space-y-4">
+                <WorkflowManagement />
+              </TabsContent>
 
-        <TabsContent value="templates" className="mt-6">
-          <DataTemplateManagement />
-        </TabsContent>
+              <TabsContent value="distribution" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Phân bố Leads</h2>
+                    <p className="text-sm text-[#455560]">Cấu hình quy tắc phân bố leads tự động</p>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm quy tắc
+                  </Button>
+                </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Phân bố theo vòng tròn</h4>
+                          <p className="text-sm text-[#455560]">Leads được phân bố đều cho các nhân viên</p>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Phân bố theo nguồn</h4>
+                          <p className="text-sm text-[#455560]">Leads từ Facebook → Team A, Zalo → Team B</p>
+                        </div>
+                        <Switch />
+                      </div>
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Phân bố theo khu vực</h4>
+                          <p className="text-sm text-[#455560]">Leads phân theo địa lý khách hàng</p>
+                        </div>
+                        <Switch />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        <TabsContent value="history" className="mt-6">
-          <SystemHistoryManagement />
-        </TabsContent>
-      </Tabs>
+              <TabsContent value="labels" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý Nhãn</h2>
+                    <p className="text-sm text-[#455560]">Tạo và quản lý nhãn cho leads và deals</p>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm nhãn
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-red-500"></div>
+                      <div>
+                        <h4 className="font-medium">Hot Lead</h4>
+                        <p className="text-xs text-[#455560]">25 leads</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
+                      <div>
+                        <h4 className="font-medium">Warm Lead</h4>
+                        <p className="text-xs text-[#455560]">48 leads</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                      <div>
+                        <h4 className="font-medium">Cold Lead</h4>
+                        <p className="text-xs text-[#455560]">120 leads</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                      <div>
+                        <h4 className="font-medium">VIP</h4>
+                        <p className="text-xs text-[#455560]">15 leads</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+        
+        {/* Thông báo - 3 tabs: Mẫu nội dung, Quy tắc, Nhật ký */}
+        {activeTab === 'notifications' && (
+          <div>
+            <Tabs defaultValue="templates" className="space-y-6">
+              <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+                <TabsTrigger value="templates" className="uppercase">Mẫu nội dung</TabsTrigger>
+                <TabsTrigger value="rules" className="uppercase">Quy tắc</TabsTrigger>
+                <TabsTrigger value="logs" className="uppercase">Nhật ký</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="templates" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Mẫu nội dung thông báo</h2>
+                    <p className="text-sm text-[#455560]">Quản lý các mẫu tin nhắn và email</p>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm mẫu
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Chào mừng khách hàng mới</CardTitle>
+                      <CardDescription>Email</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-[#455560]">Xin chào {'{customer_name}'}, cảm ơn bạn đã quan tâm...</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Nhắc lịch hẹn</CardTitle>
+                      <CardDescription>SMS</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-[#455560]">Nhắc nhở: Bạn có lịch hẹn vào {'{appointment_time}'}...</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="rules" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Quy tắc thông báo</h2>
+                    <p className="text-sm text-[#455560]">Cấu hình điều kiện gửi thông báo tự động</p>
+                  </div>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm quy tắc
+                  </Button>
+                </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Lead mới từ Website</h4>
+                          <p className="text-sm text-[#455560]">Gửi email chào mừng khi có lead mới</p>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Nhắc follow-up</h4>
+                          <p className="text-sm text-[#455560]">Nhắc nhân viên sau 3 ngày không liên hệ</p>
+                        </div>
+                        <Switch defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Deal thắng</h4>
+                          <p className="text-sm text-[#455560]">Thông báo khi deal chuyển sang Won</p>
+                        </div>
+                        <Switch />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="logs" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#1a3353]">Nhật ký thông báo</h2>
+                    <p className="text-sm text-[#455560]">Lịch sử các thông báo đã gửi</p>
+                  </div>
+                </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-4 h-4 text-[#3e79f7]" />
+                          <div>
+                            <p className="text-sm font-medium">Email: Chào mừng khách hàng mới</p>
+                            <p className="text-xs text-[#455560]">Gửi đến: nguyenvana@email.com</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className="bg-green-100 text-green-800">Đã gửi</Badge>
+                          <p className="text-xs text-[#455560] mt-1">2 phút trước</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Bell className="w-4 h-4 text-[#3e79f7]" />
+                          <div>
+                            <p className="text-sm font-medium">Push: Nhắc follow-up lead</p>
+                            <p className="text-xs text-[#455560]">Gửi đến: Trần Văn B</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className="bg-green-100 text-green-800">Đã gửi</Badge>
+                          <p className="text-xs text-[#455560] mt-1">15 phút trước</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+        
+        {activeTab === 'interface' && <InterfaceManagement />}
+        {activeTab === 'integrations' && <IntegrationManagement />}
+        {activeTab === 'templates' && <DataTemplateManagement />}
+        {activeTab === 'history' && <SystemHistoryManagement />}
+      </div>
     </div>
   )
 }
