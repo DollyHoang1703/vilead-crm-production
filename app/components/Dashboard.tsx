@@ -202,7 +202,7 @@ export default function Dashboard() {
   const conversionData = [
     { stage: 'Lead mới', count: 254, percentage: 100 },
     { stage: 'Đang tư vấn', count: 186, percentage: 73.2 },
-    { stage: 'Đã gửi ĐX', count: 132, percentage: 52.0 },
+    { stage: 'Đã gửi đề xuất', count: 132, percentage: 52.0 },
     { stage: 'Đàm phán', count: 124, percentage: 48.8 },
     { stage: 'Chờ thanh toán', count: 89, percentage: 35.0 },
     { stage: 'Chuyển đổi thành công', count: 42, percentage: 16.5 },

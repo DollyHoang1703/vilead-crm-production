@@ -269,7 +269,7 @@ const demoCRMCustomers: CRMCustomer[] = [
 const salesStages = [
   { id: 'new-lead', name: 'Lead mới', color: 'bg-gray-100 text-gray-700', icon: UserPlus },
   { id: 'consulting', name: 'Đang tư vấn', color: 'bg-blue-100 text-blue-700', icon: MessageSquare },
-  { id: 'quote-sent', name: 'Đã gửi ĐX', color: 'bg-green-100 text-green-700', icon: Mail },
+  { id: 'quote-sent', name: 'Đã gửi đề xuất', color: 'bg-green-100 text-green-700', icon: Mail },
   { id: 'negotiation', name: 'Đàm phán', color: 'bg-yellow-100 text-yellow-700', icon: Briefcase },
   { id: 'payment-pending', name: 'Chuyển đổi - chờ thanh toán', color: 'bg-purple-100 text-purple-700', icon: Clock },
   { id: 'converted', name: 'Chuyển đổi thành công', color: 'bg-green-100 text-green-700', icon: Check },

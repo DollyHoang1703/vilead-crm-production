@@ -1679,7 +1679,7 @@ export default function SalesManagement() {
                     {showTooltip === 'stage-qualified' && (
                       <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
                         <div className="max-w-xs">
-                          <p className="font-medium mb-1">📄 Đã gửi ĐX [LINH ĐỘNG]</p>
+                          <p className="font-medium mb-1">📄 Đã gửi đề xuất [LINH ĐỘNG]</p>
                           <p>Có thể tùy chỉnh tên, màu sắc, xóa hoặc thêm giai đoạn.</p>
                           <p className="mt-1 text-gray-300">Đã gửi đề xuất/báo giá cho khách hàng.</p>
                         </div>
@@ -1690,7 +1690,7 @@ export default function SalesManagement() {
                   <span className="text-sm">📄</span>
                 </div>
                 <div>
-                  <p className="text-xs text-green-600 mb-1">Đã gửi ĐX</p>
+                  <p className="text-xs text-green-600 mb-1">Đã gửi đề xuất</p>
                   <p className="text-lg font-bold text-green-900">{pipelineStats.qualifiedLeads}</p>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-xs text-green-500">T.trước: 2</p>
@@ -1892,7 +1892,7 @@ export default function SalesManagement() {
                         <div className="max-w-xs">
                           <p className="font-medium mb-1">Tiến độ Pipeline</p>
                           <p>Tỷ lệ phần trăm leads đã chốt thành công trong pipeline 7 giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Pipeline: Lead mới → Đang tư vấn → Đã gửi ĐX → Đàm phán → Chờ TT → Đã chốt → Thất bại</p>
+                          <p className="mt-1 text-gray-300">Pipeline: Lead mới → Đang tư vấn → Đã gửi đề xuất → Đàm phán → Chờ TT → Đã chốt → Thất bại</p>
                         </div>
                         <div className="absolute top-[-4px] left-3 w-2 h-2 bg-black transform rotate-45"></div>
                       </div>
@@ -1964,7 +1964,7 @@ export default function SalesManagement() {
                 <option value="all">Tất cả trạng thái</option>
                 <option value="new">🆕 Lead mới</option>
                 <option value="contacted">💬 Đang tư vấn</option>
-                <option value="qualified">📄 Đã gửi ĐX</option>
+                <option value="qualified">📄 Đã gửi đề xuất</option>
                 <option value="proposal">🤝 Đàm phán</option>
                 <option value="negotiation">💳 Chờ thanh toán</option>
                 <option value="converted">✅ Đã chốt</option>
@@ -2434,7 +2434,7 @@ export default function SalesManagement() {
                         }`}>
                           {lead.status === 'new' ? '🆕 Lead mới' :
                            lead.status === 'contacted' ? '� Đang tư vấn' :
-                           lead.status === 'qualified' ? '� Đã gửi ĐX' :
+                           lead.status === 'qualified' ? '� Đã gửi đề xuất' :
                            lead.status === 'proposal' ? '🤝 Đàm phán' :
                            lead.status === 'negotiation' ? '� Chờ thanh toán' :
                            lead.status === 'converted' ? '✅ Đã chốt' :

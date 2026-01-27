@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CheckCircle,
+  Check,
   Clock,
   AlertCircle,
   XCircle,
@@ -34,6 +35,7 @@ import {
   X,
   Trash2,
   Edit,
+  MessageSquare,
   MessageSquarePlus,
   Send,
   Save,
@@ -130,6 +132,7 @@ export default function SalesManagement() {
   const [selectedPipelineStage, setSelectedPipelineStage] = useState<string | null>(null)
   const [showTooltip, setShowTooltip] = useState<string | null>(null)
   const [showAutoAssignTooltip, setShowAutoAssignTooltip] = useState<string | null>(null)
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null)
   const [showLeadDetailModal, setShowLeadDetailModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [activeDetailTab, setActiveDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
@@ -172,7 +175,31 @@ export default function SalesManagement() {
   const [filterInteractionCount, setFilterInteractionCount] = useState({min: '', max: ''})
   const [filterPriority, setFilterPriority] = useState('')
   const [filterProductInterest, setFilterProductInterest] = useState('')
+  const [filterProvince, setFilterProvince] = useState('')
+  const [showProvinceDropdown, setShowProvinceDropdown] = useState(false)
+  const [provinceSearchTerm, setProvinceSearchTerm] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Vietnam provinces list
+  const vietnamProvinces = [
+    'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu',
+    'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
+    'Bình Thuận', 'Cà Mau', 'Cần Thơ', 'Cao Bằng', 'Đà Nẵng',
+    'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp',
+    'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Nội', 'Hà Tĩnh',
+    'Hải Dương', 'Hải Phòng', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên',
+    'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng',
+    'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An',
+    'Ninh Bình', 'Ninh Thuận', 'Phú Thọ', 'Phú Yên', 'Quảng Bình',
+    'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng',
+    'Sơn La', 'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa',
+    'Thành phố Hà Nội', 'Thành phố Hồ Chí Minh', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh',
+    'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+  ]
+
+  const filteredProvinces = vietnamProvinces.filter(province =>
+    province.toLowerCase().includes(provinceSearchTerm.toLowerCase())
+  )
   
   // Column visibility state
   // Sales team data
@@ -262,21 +289,13 @@ export default function SalesManagement() {
     customerName: true,
     phone: true,
     email: true,
-    company: false,
-    address: false,
     source: true,
-    region: false,
+    address: true,
     stage: true,
-    product: false,
-    customerType: false,
     salesOwner: true,
     tags: true,
     notes: true,
-    files: true,
     createdDate: true,
-    lastModified: false,
-    interactionCount: false,
-    lastInteraction: false,
     actions: true
   })
   
@@ -1396,7 +1415,7 @@ export default function SalesManagement() {
     switch(status) {
       case 'new': return 'Lead mới';
       case 'contacted': return 'Đang tư vấn';
-      case 'qualified': return 'Đã gửi ĐX';
+      case 'qualified': return 'Đã gửi đề xuất';
       case 'negotiation': return 'Đàm phán';
       case 'payment_pending': return 'Chuyển đổi - chờ thanh toán';
       case 'converted': return 'Chuyển đổi thành công';
@@ -1425,8 +1444,6 @@ export default function SalesManagement() {
   
   // Column labels for selector
   const columnLabels = {
-    checkbox: 'Checkbox',
-    stt: 'STT',
     customerName: 'Tên khách hàng',
     phone: 'Số điện thoại',
     email: 'Email',
@@ -1440,11 +1457,8 @@ export default function SalesManagement() {
     salesOwner: 'Sales phụ trách',
     tags: 'Tags/Nhãn',
     notes: 'Ghi chú',
-    files: 'Tệp đính kèm',
     createdDate: 'Ngày tạo',
     lastModified: 'Ngày cập nhật',
-    interactionCount: 'Số lần tương tác',
-    lastInteraction: 'Lần tương tác cuối',
     actions: 'Hành động'
   }
   
@@ -2566,21 +2580,17 @@ export default function SalesManagement() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-gray-900">Quy trình Bán hàng</h3>
-                <div 
+                <h3 className="text-lg font-semibold text-gray-900">Quy trình Bán hàng</h3>
+                <div
                   className="relative"
                   onMouseEnter={() => setShowTooltip('pipeline-overview')}
                   onMouseLeave={() => setShowTooltip(null)}
                 >
-                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                  <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
                   {showTooltip === 'pipeline-overview' && (
-                    <div className="absolute left-0 top-6 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                      <div className="max-w-xs">
-                        <p className="font-medium mb-1">Quy trình Bán hàng</p>
-                        <p>Theo dõi toàn bộ hành trình khách hàng từ lead mới đến chuyển đổi thành công.</p>
-                        <p className="mt-1 text-gray-300">Nhấp vào từng giai đoạn để xem chi tiết leads.</p>
-                      </div>
-                      <div className="absolute top-[-4px] left-3 w-2 h-2 bg-black transform rotate-45"></div>
+                    <div className="absolute left-0 top-7 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[280px]">
+                      <p>Theo dõi toàn bộ hành trình khách hàng từ lead mới đến chuyển đổi thành công.</p>
+                      <div className="absolute top-[-6px] left-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                     </div>
                   )}
                 </div>
@@ -2588,31 +2598,26 @@ export default function SalesManagement() {
             </div>
             
             {/* Pipeline Cards in horizontal layout */}
-            <div className="flex flex-wrap gap-2 justify-between">
+            <div className="flex gap-6 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {/* 1. Lead mới - BẮT BUỘC */}
               <div
                 className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'new' ? 'ring-2 ring-purple-700' : ''}`}
                 onClick={() => handlePipelineStageClick('new')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
+                <div className="absolute top-2 right-2">
                   <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-new')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-new' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">🆕 Lead mới [BẮT BUỘC]</p>
-                          <p>Giai đoạn bắt đầu - không thể xóa hay đổi tên.</p>
-                          <p className="mt-1 text-gray-300">Tất cả lead mới sẽ vào đây.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[200px]">
+                        <p>Giai đoạn bắt đầu - không thể xóa hay đổi tên.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">🆕</span>
                 </div>
                 <div>
                   <p className="text-base font-semibold text-white mb-2">Lead mới</p>
@@ -2634,25 +2639,20 @@ export default function SalesManagement() {
                 className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'contacted' ? 'ring-2 ring-blue-700' : ''}`}
                 onClick={() => handlePipelineStageClick('contacted')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
+                <div className="absolute top-2 right-2">
                   <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-contacted')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-contacted' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">💬 Đang tư vấn [LINH ĐỘNG]</p>
-                          <p>Có thể tùy chỉnh tên, màu sắc, xóa hoặc thêm giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Đang tư vấn và tìm hiểu nhu cầu khách hàng.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[220px]">
+                        <p>Đang tư vấn và tìm hiểu nhu cầu khách hàng.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">💬</span>
                 </div>
                 <div>
                   <p className="text-base font-semibold text-white mb-2">Đang tư vấn</p>
@@ -2674,28 +2674,23 @@ export default function SalesManagement() {
                 className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'qualified' ? 'ring-2 ring-green-700' : ''}`}
                 onClick={() => handlePipelineStageClick('qualified')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
+                <div className="absolute top-2 right-2">
                   <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-qualified')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-white/70 hover:text-white cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-qualified' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">📄 Đã gửi ĐX [LINH ĐỘNG]</p>
-                          <p>Có thể tùy chỉnh tên, màu sắc, xóa hoặc thêm giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Đã gửi đề xuất/hợp đồng cho khách.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[220px]">
+                        <p>Đã gửi đề xuất/hợp đồng cho khách.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">📄</span>
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-white mb-2">Đã gửi ĐX</p>
+                  <p className="text-base font-semibold text-white mb-2">Đã gửi đề xuất</p>
                   <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.qualifiedLeads}</p>
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-sm text-white/90">T.trước: 2</p>
@@ -2710,40 +2705,31 @@ export default function SalesManagement() {
               </div>
 
               {/* 4. Đàm phán - LINH ĐỘNG */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'negotiation' 
-                    ? 'border-yellow-400 shadow-md ring-2 ring-yellow-200' 
-                    : 'border-yellow-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-yellow-600 to-yellow-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'negotiation' ? 'ring-2 ring-yellow-700' : ''}`}
                 onClick={() => handlePipelineStageClick('negotiation')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                <div className="absolute top-2 right-2">
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-negotiation')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-yellow-500 hover:text-yellow-600 cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-negotiation' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">🤝 Đàm phán [LINH ĐỘNG]</p>
-                          <p>Có thể tùy chỉnh tên, màu sắc, xóa hoặc thêm giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Đang thảo luận về giá cả và điều kiện.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[220px]">
+                        <p>Đang thảo luận về giá cả và điều kiện.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">🤝</span>
                 </div>
                 <div>
-                  <p className="text-xs text-yellow-600 mb-1">Đàm phán</p>
-                  <p className="text-lg font-bold text-yellow-900">{pipelineStats.negotiationLeads}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-yellow-500">T.trước: 4</p>
-                    <p className="text-xs text-red-600 font-medium">-25%</p>
+                  <p className="text-base font-semibold text-white mb-2">Đàm phán</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.negotiationLeads}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 4</p>
+                    <p className="text-sm text-white/90 font-semibold">-25%</p>
                   </div>
                 </div>
               </div>
@@ -2754,40 +2740,31 @@ export default function SalesManagement() {
               </div>
 
               {/* 5. Chờ thanh toán - BẮT BUỘC */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'payment_pending' 
-                    ? 'border-purple-400 shadow-md ring-2 ring-purple-200' 
-                    : 'border-purple-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'payment_pending' ? 'ring-2 ring-orange-700' : ''}`}
                 onClick={() => handlePipelineStageClick('payment_pending')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                <div className="absolute top-2 right-2">
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-payment')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-purple-500 hover:text-purple-600 cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-payment' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">💳 Chuyển đổi - chờ thanh toán [BẮT BUỘC]</p>
-                          <p>Quan trọng cho báo cáo dòng tiền - không thể xóa.</p>
-                          <p className="mt-1 text-gray-300">Khách hàng đã đồng ý, đang chờ thanh toán.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[240px]">
+                        <p>Khách hàng đã đồng ý, đang chờ thanh toán.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">💳</span>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-600 mb-1">Chuyển đổi - chờ thanh toán</p>
-                  <p className="text-lg font-bold text-purple-900">{pipelineStats.paymentPendingLeads || 0}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-purple-500">T.trước: 1</p>
-                    <p className="text-xs text-green-600 font-medium">+0%</p>
+                  <p className="text-base font-semibold text-white mb-2">Chờ thanh toán</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.paymentPendingLeads || 0}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 1</p>
+                    <p className="text-sm text-white/90 font-semibold">+0%</p>
                   </div>
                 </div>
               </div>
@@ -2798,40 +2775,31 @@ export default function SalesManagement() {
               </div>
 
               {/* 6. Đã chốt - BẮT BUỘC */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'converted' 
-                    ? 'border-green-400 shadow-md ring-2 ring-green-200' 
-                    : 'border-green-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-emerald-600 to-emerald-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'converted' ? 'ring-2 ring-emerald-700' : ''}`}
                 onClick={() => handlePipelineStageClick('converted')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                <div className="absolute top-2 right-2">
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-converted')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-green-500 hover:text-green-600 cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-converted' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">✅ Chuyển đổi thành công [BẮT BUỘC]</p>
-                          <p>Giai đoạn kết thúc thành công - không thể xóa.</p>
-                          <p className="mt-1 text-gray-300">Deal thành công, đã nhận thanh toán.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[200px]">
+                        <p>Deal thành công, đã nhận thanh toán.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">✅</span>
                 </div>
                 <div>
-                  <p className="text-xs text-green-600 mb-1">Chuyển đổi thành công</p>
-                  <p className="text-lg font-bold text-green-900">{pipelineStats.convertedLeads}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-green-500">T.trước: 1</p>
-                    <p className="text-xs text-green-600 font-medium">+100%</p>
+                  <p className="text-base font-semibold text-white mb-2">Thành công</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.convertedLeads}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 1</p>
+                    <p className="text-sm text-white/90 font-semibold">+100%</p>
                   </div>
                 </div>
               </div>
@@ -2842,75 +2810,73 @@ export default function SalesManagement() {
               </div>
 
               {/* 7. Thất bại - BẮT BUỘC */}
-              <div 
-                className={`flex-1 min-w-[110px] bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-3 border relative cursor-pointer transition-all duration-200 hover:shadow-md ${
-                  selectedPipelineStage === 'lost' 
-                    ? 'border-red-400 shadow-md ring-2 ring-red-200' 
-                    : 'border-red-200'
-                }`}
+              <div
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-red-600 to-red-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'lost' ? 'ring-2 ring-red-700' : ''}`}
                 onClick={() => handlePipelineStageClick('lost')}
               >
-                <div className="absolute top-2 right-2 flex items-center gap-1">
-                  <div 
+                <div className="absolute top-2 right-2">
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('stage-lost')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-red-500 hover:text-red-600 cursor-help" />
+                    <HelpCircle className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
                     {showTooltip === 'stage-lost' && (
-                      <div className="absolute right-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">❌ Thất bại [BẮT BUỘC]</p>
-                          <p>Giai đoạn kết thúc không thành công - không thể xóa.</p>
-                          <p className="mt-1 text-gray-300">Deal không thành công, phân tích nguyên nhân.</p>
-                        </div>
-                        <div className="absolute top-[-4px] right-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute right-0 top-6 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[240px]">
+                        <p>Deal không thành công, phân tích nguyên nhân.</p>
+                        <div className="absolute top-[-6px] right-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm">❌</span>
                 </div>
                 <div>
-                  <p className="text-xs text-red-600 mb-1">Thất bại</p>
-                  <p className="text-lg font-bold text-red-900">{pipelineStats.lostLeads || 1}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-red-500">T.trước: 2</p>
-                    <p className="text-xs text-green-600 font-medium">-50%</p>
+                  <p className="text-base font-semibold text-white mb-2">Thất bại</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{pipelineStats.lostLeads || 1}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-sm text-white/90">T.trước: 2</p>
+                    <p className="text-sm text-white/90 font-semibold">-50%</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Pipeline Progress Bar */}
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                <div className="flex items-center gap-2">
-                  <span>Tiến độ Pipeline</span>
-                  <div 
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 animate-pulse"></div>
+                    <span className="text-base font-medium text-gray-700">Tiến độ Pipeline</span>
+                  </div>
+                  <div
                     className="relative"
                     onMouseEnter={() => setShowTooltip('progress-bar')}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
                     {showTooltip === 'progress-bar' && (
-                      <div className="absolute left-0 top-5 z-10 bg-black text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg">
-                        <div className="max-w-xs">
-                          <p className="font-medium mb-1">Tiến độ Pipeline</p>
-                          <p>Tỷ lệ phần trăm leads đã chốt thành công trong pipeline 7 giai đoạn.</p>
-                          <p className="mt-1 text-gray-300">Pipeline: Lead mới → Đang tư vấn → Đã gửi ĐX → Đàm phán → Chờ TT → Đã chốt → Thất bại</p>
-                        </div>
-                        <div className="absolute top-[-4px] left-3 w-2 h-2 bg-black transform rotate-45"></div>
+                      <div className="absolute left-0 top-7 z-10 bg-white text-gray-600 text-sm rounded-xl py-3 px-4 shadow-lg border border-gray-100 min-w-[300px]">
+                        <p>Dựa trên tổng đơn hàng thành công và thực tế trên hợp đồng</p>
+                        <div className="absolute top-[-6px] left-4 w-3 h-3 bg-white border-l border-t border-gray-100 transform rotate-45"></div>
                       </div>
                     )}
                   </div>
                 </div>
-                <span>{Math.round((pipelineStats.convertedLeads / leads.length) * 100)}% hoàn thành</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                    {Math.round((pipelineStats.convertedLeads / leads.length) * 100)}%
+                  </span>
+                  <span className="text-xs text-gray-500">hoàn thành</span>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+              <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${Math.round((pipelineStats.convertedLeads / leads.length) * 100)}%` }}
-                ></div>
+                >
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/25 to-transparent"></div>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-md"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -2968,24 +2934,11 @@ export default function SalesManagement() {
                 <option value="all">Tất cả trạng thái</option>
                 <option value="new">🆕 Lead mới</option>
                 <option value="contacted">💬 Đang tư vấn</option>
-                <option value="qualified">📄 Đã gửi ĐX</option>
+                <option value="qualified">📄 Đã gửi đề xuất</option>
                 <option value="negotiation">🤝 Đàm phán</option>
                 <option value="payment_pending">💳 Chuyển đổi - chờ thanh toán</option>
                 <option value="converted">✅ Chuyển đổi thành công</option>
                 <option value="lost">❌ Thất bại</option>
-              </select>
-              
-              <select
-                value={leadRegionFilter}
-                onChange={(e) => setLeadRegionFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Tất cả tỉnh thành</option>
-                <option value="ha_noi">Hà Nội</option>
-                <option value="ho_chi_minh">TP.HCM</option>
-                <option value="da_nang">Đà Nẵng</option>
-                <option value="can_tho">Cần Thơ</option>
-                <option value="hai_phong">Hải Phòng</option>
               </select>
               
               <select
@@ -3020,10 +2973,10 @@ export default function SalesManagement() {
                 
                 {showColumnSelector && (
                   <div className="absolute right-0 top-12 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-[300px]">
-                    <h4 className="font-medium text-gray-900 mb-3">Chọn cột hiển thị</h4>
+                    <h4 className="font-medium text-gray-900 mb-3">Tùy chỉnh cột hiển thị</h4>
                     <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
                       {Object.entries(columnLabels).map(([key, label]) => (
-                        <label key={key} className="flex items-center space-x-2 text-sm">
+                        <label key={key} className="flex items-center space-x-2 text-sm cursor-pointer">
                           <input
                             type="checkbox"
                             checked={visibleColumns[key as keyof typeof visibleColumns]}
@@ -3031,45 +2984,36 @@ export default function SalesManagement() {
                               ...prev,
                               [key]: e.target.checked
                             }))}
-                            className="rounded border-gray-300"
+                            className="w-4 h-4 rounded border-gray-300 text-[#1a3353] focus:ring-[#1a3353]"
                           />
                           <span className="text-gray-700">{label}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            const allEnabled = Object.keys(visibleColumns).reduce((acc, key) => {
-                              acc[key as keyof typeof visibleColumns] = true;
-                              return acc;
-                            }, {} as typeof visibleColumns);
-                            setVisibleColumns(allEnabled);
-                          }}
-                          className="text-xs text-green-600 hover:text-green-800 font-medium"
-                        >
-                          Tất cả
-                        </button>
-                        <button
-                          onClick={() => setVisibleColumns({
-                            checkbox: true, stt: true, customerName: true, phone: true, email: true,
-                            company: false, address: false, source: true, region: false, stage: true,
-                            product: false,
-                            customerType: false, salesOwner: true, tags: true, notes: false, files: false,
-                            createdDate: true, lastModified: false, interactionCount: false,
-                            lastInteraction: false, actions: true
-                          })}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          Mặc định
-                        </button>
-                      </div>
+                    <div className="mt-4 pt-3 border-t border-gray-200 flex justify-start gap-3">
                       <button
-                        onClick={() => setShowColumnSelector(false)}
-                        className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                        onClick={() => {
+                          const allEnabled = Object.keys(visibleColumns).reduce((acc, key) => {
+                            acc[key as keyof typeof visibleColumns] = true;
+                            return acc;
+                          }, {} as typeof visibleColumns);
+                          setVisibleColumns(allEnabled);
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-white bg-[#1a3353] rounded-lg hover:bg-[#2a4363] transition-colors"
                       >
-                        Đóng
+                        Tất cả
+                      </button>
+                      <button
+                        onClick={() => setVisibleColumns({
+                          checkbox: true, stt: true, customerName: true, phone: true, email: true,
+                          company: false, address: true, source: true, region: false, stage: true,
+                          product: false, customerType: false, salesOwner: true, tags: true, 
+                          notes: true, files: false, createdDate: true, lastModified: false, 
+                          interactionCount: false, lastInteraction: false, actions: true
+                        })}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                      >
+                        Mặc định
                       </button>
                     </div>
                   </div>
@@ -3091,7 +3035,7 @@ export default function SalesManagement() {
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
               >
                 <Download className="w-4 h-4" />
-                Import Excel
+                Nhập leads
               </button>
               
               <button 
@@ -3133,58 +3077,21 @@ export default function SalesManagement() {
               </button>
             </div>
           )}
-        </div>
 
-        {/* Advanced Filters */}
-        {showAdvancedFilters && (
-          <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <h3 className="text-sm font-medium mb-3">Bộ lọc nâng cao</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Department */}
+          {/* Advanced Filters - Inside toolbar container */}
+          {showAdvancedFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">Bộ lọc nâng cao</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Sales phụ trách */}
               <div>
-                <label className="block text-sm font-medium mb-1">Phòng ban</label>
-                <select
-                  value={filterDepartment}
-                  onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="">Tất cả phòng ban</option>
-                  <option value="Sales">Phòng kinh doanh</option>
-                  <option value="Marketing">Phòng marketing</option>
-                  <option value="Customer Success">Phòng chăm sóc khách hàng</option>
-                  <option value="Business Development">Phòng phát triển kinh doanh</option>
-                  <option value="Inside Sales">Phòng telesales</option>
-                </select>
-              </div>
-
-              {/* Team */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Team</label>
-                <select
-                  value={filterTeam}
-                  onChange={(e) => setFilterTeam(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="">Tất cả team</option>
-                  <option value="Team Alpha">Team Alpha</option>
-                  <option value="Team Beta">Team Beta</option>
-                  <option value="Team Gamma">Team Gamma</option>
-                  <option value="Team Delta">Team Delta</option>
-                  <option value="Team Enterprise">Team Enterprise</option>
-                  <option value="Team SMB">Team SMB</option>
-                </select>
-              </div>
-
-              {/* Assignee */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Sales phụ trách</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sales phụ trách</label>
                 <select
                   value={filterAssignee}
                   onChange={(e) => setFilterAssignee(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
-                  <option value="">Tất cả</option>
+                  <option value="">Chọn sale</option>
                   <option value="Nguyễn Văn A">Nguyễn Văn A</option>
                   <option value="Trần Thị B">Trần Thị B</option>
                   <option value="Lê Văn C">Lê Văn C</option>
@@ -3193,88 +3100,40 @@ export default function SalesManagement() {
                 </select>
               </div>
 
-              {/* Last Contact */}
+              {/* Ngày tạo lead (chọn khoảng ngày) */}
               <div>
-                <label className="block text-sm font-medium mb-1">Liên hệ gần nhất</label>
-                <select
-                  value={filterLastContact}
-                  onChange={(e) => setFilterLastContact(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="">Tất cả</option>
-                  <option value="today">Hôm nay</option>
-                  <option value="week">7 ngày qua</option>
-                  <option value="month">30 ngày qua</option>
-                  <option value="old">Hơn 30 ngày</option>
-                </select>
-              </div>
-
-              {/* Created Date Range */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Ngày tạo lead</label>
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={filterCreatedDate.start}
-                    onChange={(e) => setFilterCreatedDate({...filterCreatedDate, start: e.target.value})}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md"
-                  />
-                  <input
-                    type="date"
-                    value={filterCreatedDate.end}
-                    onChange={(e) => setFilterCreatedDate({...filterCreatedDate, end: e.target.value})}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md"
-                  />
+                <label className="block text-xs font-medium text-gray-700 mb-1">Ngày tạo lead</label>
+                <div className="relative">
+                  <div className="flex items-center border border-gray-300 rounded-md bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                    <div className="flex items-center px-2 text-gray-400">
+                      <Calendar className="w-3.5 h-3.5" />
+                    </div>
+                    <input
+                      type="date"
+                      value={filterCreatedDate.start}
+                      onChange={(e) => setFilterCreatedDate({...filterCreatedDate, start: e.target.value})}
+                      className="flex-1 px-1 py-1.5 text-xs border-0 focus:ring-0 focus:outline-none"
+                    />
+                    <span className="text-gray-400 text-xs">-</span>
+                    <input
+                      type="date"
+                      value={filterCreatedDate.end}
+                      onChange={(e) => setFilterCreatedDate({...filterCreatedDate, end: e.target.value})}
+                      className="flex-1 px-1 py-1.5 text-xs border-0 focus:ring-0 focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Interaction Count */}
+              {/* Sản phẩm quan tâm */}
               <div>
-                <label className="block text-sm font-medium mb-1">Số lần tương tác</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Từ"
-                    value={filterInteractionCount.min}
-                    onChange={(e) => setFilterInteractionCount({...filterInteractionCount, min: e.target.value})}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md"
-                    min="0"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Đến"
-                    value={filterInteractionCount.max}
-                    onChange={(e) => setFilterInteractionCount({...filterInteractionCount, max: e.target.value})}
-                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md"
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              {/* Priority */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Độ ưu tiên</label>
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="">Tất cả</option>
-                  <option value="high">Cao</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="low">Thấp</option>
-                </select>
-              </div>
-
-              {/* Product Interest */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Quan tâm sản phẩm</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm quan tâm</label>
                 <select
                   value={filterProductInterest}
                   onChange={(e) => setFilterProductInterest(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
-                  <option value="">Tất cả</option>
+                  <option value="">Chọn sản phẩm</option>
                   <option value="CRM Basic">CRM Basic</option>
                   <option value="CRM Professional">CRM Professional</option>
                   <option value="CRM Enterprise">CRM Enterprise</option>
@@ -3282,29 +3141,109 @@ export default function SalesManagement() {
                   <option value="Sales Analytics">Sales Analytics</option>
                 </select>
               </div>
-            </div>
 
-            {/* Clear Advanced Filters */}
-            <div className="mt-4 pt-3 border-t border-gray-200">
+              {/* Tỉnh thành - Searchable dropdown */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Tỉnh thành</label>
+                <div className="relative">
+                  <div
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-xs bg-white cursor-pointer flex items-center justify-between hover:border-gray-400 transition-colors"
+                    onClick={() => setShowProvinceDropdown(!showProvinceDropdown)}
+                  >
+                    <span className={filterProvince ? 'text-gray-900' : 'text-gray-500'}>
+                      {filterProvince || 'Chọn tỉnh thành'}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${showProvinceDropdown ? 'rotate-180' : ''}`} />
+                  </div>
+
+                  {showProvinceDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[998]"
+                        onClick={() => {
+                          setShowProvinceDropdown(false)
+                          setProvinceSearchTerm('')
+                        }}
+                      />
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[999] max-h-[280px] overflow-hidden">
+                        {/* Search input */}
+                        <div className="p-2 border-b border-gray-100">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Tìm kiếm"
+                              value={provinceSearchTerm}
+                              onChange={(e) => setProvinceSearchTerm(e.target.value)}
+                              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Province list */}
+                        <div className="max-h-[220px] overflow-y-auto">
+                          {filteredProvinces.length > 0 ? (
+                            filteredProvinces.map((province) => (
+                              <button
+                                key={province}
+                                onClick={() => {
+                                  setFilterProvince(province)
+                                  setShowProvinceDropdown(false)
+                                  setProvinceSearchTerm('')
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                                  filterProvince === province ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                                }`}
+                              >
+                                <span>{province}</span>
+                                {filterProvince === province && (
+                                  <Check className="w-4 h-4 text-blue-600" />
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                              Không tìm thấy tỉnh thành
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              </div>
+
+            {/* Filter Action Buttons */}
+            <div className="mt-5 flex items-center gap-3">
               <button
                 onClick={() => {
-                  setFilterDepartment('')
-                  setFilterTeam('')
-                  setFilterAssignee('')
-                  setFilterLastContact('')
-                  setFilterCreatedDate({start: '', end: ''})
-                  setFilterInteractionCount({min: '', max: ''})
-                  setFilterPriority('')
-                  setFilterProductInterest('')
+                  // TODO: Apply filter logic
+                  setShowAdvancedFilters(false)
                 }}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+                <span>Áp dụng bộ lọc</span>
+              </button>
+              <button
+                onClick={() => {
+                  setFilterAssignee('')
+                  setFilterCreatedDate({start: '', end: ''})
+                  setFilterProductInterest('')
+                  setFilterProvince('')
+                  setProvinceSearchTerm('')
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <X className="w-4 h-4" />
                 <span>Xóa bộ lọc nâng cao</span>
               </button>
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Leads View - Table or Kanban */}
         {viewMode === 'table' ? (
@@ -3377,145 +3316,88 @@ export default function SalesManagement() {
                       />
                     </th>
                   )}
-                  
+
                   {/* 2. STT */}
                   {visibleColumns.stt && (
                     <th className="text-center" style={{ width: '60px' }}>
                       STT
                     </th>
                   )}
-                  
+
                   {/* 3. Tên khách hàng */}
                   {visibleColumns.customerName && (
-                    <th style={{ minWidth: '200px' }}>
+                    <th style={{ minWidth: '180px' }}>
                       Tên khách hàng
                     </th>
                   )}
-                  
+
                   {/* 4. Số điện thoại */}
                   {visibleColumns.phone && (
-                    <th style={{ width: '140px' }}>
+                    <th style={{ width: '130px' }}>
                       Số điện thoại
                     </th>
                   )}
 
                   {/* 5. Email */}
                   {visibleColumns.email && (
-                    <th style={{ minWidth: '200px' }}>
+                    <th style={{ minWidth: '180px' }}>
                       Email
                     </th>
                   )}
 
-                  {/* 6. Công ty */}
-                  {visibleColumns.company && (
-                    <th style={{ width: '180px' }}>
-                      Công ty
+                  {/* 6. Nguồn */}
+                  {visibleColumns.source && (
+                    <th style={{ width: '120px' }}>
+                      Nguồn
                     </th>
                   )}
 
                   {/* 7. Địa chỉ */}
                   {visibleColumns.address && (
-                    <th style={{ minWidth: '200px' }}>
+                    <th style={{ minWidth: '180px' }}>
                       Địa chỉ
                     </th>
                   )}
 
-                  {/* 8. Nguồn */}
-                  {visibleColumns.source && (
-                    <th style={{ width: '130px' }}>
-                      Nguồn
-                    </th>
-                  )}
-
-                  {/* 9. Khu vực */}
-                  {visibleColumns.region && (
-                    <th style={{ width: '130px' }}>
-                      Tỉnh thành
-                    </th>
-                  )}
-
-                  {/* 10. Giai đoạn */}
+                  {/* 8. Giai đoạn */}
                   {visibleColumns.stage && (
-                    <th style={{ width: '150px' }}>
+                    <th style={{ minWidth: '150px' }}>
                       Giai đoạn
                     </th>
                   )}
-                  
 
-                  {/* 14. Sản phẩm quan tâm */}
-                  {visibleColumns.product && (
-                    <th style={{ width: '160px' }}>
-                      Sản phẩm quan tâm
-                    </th>
-                  )}
-
-                  {/* 15. Loại khách hàng */}
-                  {visibleColumns.customerType && (
-                    <th style={{ width: '130px' }}>
-                      Loại KH
-                    </th>
-                  )}
-
-                  {/* 16. Sales phụ trách */}
+                  {/* 9. Sales phụ trách */}
                   {visibleColumns.salesOwner && (
-                    <th style={{ width: '160px' }}>
+                    <th style={{ width: '150px' }}>
                       Sales phụ trách
                     </th>
                   )}
 
-                  {/* 17. Tags/Nhãn */}
+                  {/* 10. Tags */}
                   {visibleColumns.tags && (
-                    <th style={{ width: '160px' }}>
+                    <th style={{ width: '140px' }}>
                       Tags
                     </th>
                   )}
 
-                  {/* 18. Ghi chú */}
+                  {/* 11. Ghi chú */}
                   {visibleColumns.notes && (
-                    <th style={{ minWidth: '200px' }}>
+                    <th style={{ minWidth: '180px' }}>
                       Ghi chú
                     </th>
                   )}
 
-                  {/* 19. Tệp đính kèm */}
-                  {visibleColumns.files && (
-                    <th className="text-center" style={{ width: '80px' }}>
-                      Tệp
-                    </th>
-                  )}
-
-                  {/* 20. Ngày tạo */}
+                  {/* 12. Ngày tạo */}
                   {visibleColumns.createdDate && (
-                    <th style={{ width: '120px' }}>
+                    <th style={{ width: '110px' }}>
                       Ngày tạo
                     </th>
                   )}
 
-                  {/* 21. Ngày cập nhật */}
-                  {visibleColumns.lastModified && (
-                    <th style={{ width: '140px' }}>
-                      Cập nhật cuối
-                    </th>
-                  )}
-
-                  {/* 22. Số lần tương tác */}
-                  {visibleColumns.interactionCount && (
-                    <th className="text-center" style={{ width: '100px' }}>
-                      Tương tác
-                    </th>
-                  )}
-
-                  {/* 23. Lần tương tác cuối */}
-                  {visibleColumns.lastInteraction && (
-                    <th style={{ width: '140px' }}>
-                      TT cuối cùng
-                    </th>
-                  )}
-
-                  {/* 24. Hành động */}
+                  {/* 13. Thao tác */}
                   {visibleColumns.actions && (
-                    <th className="omi-table-sticky-right text-center" style={{ width: '140px' }}>
-                      Hành động
+                    <th className="omi-table-sticky-right text-center" style={{ width: '80px' }}>
+                      Thao tác
                     </th>
                   )}
                 </tr>
@@ -3541,7 +3423,7 @@ export default function SalesManagement() {
                         {index + 1}
                       </td>
                     )}
-                    
+
                     {/* 3. Tên khách hàng */}
                     {visibleColumns.customerName && (
                       <td>
@@ -3550,42 +3432,24 @@ export default function SalesManagement() {
                         </span>
                       </td>
                     )}
-                    
+
                     {/* 4. Số điện thoại */}
                     {visibleColumns.phone && (
                       <td>
-                        <span className="omi-truncate block" style={{ maxWidth: '130px' }}>{lead.phone}</span>
+                        <span className="omi-truncate block" style={{ maxWidth: '120px' }}>{lead.phone}</span>
                       </td>
                     )}
 
                     {/* 5. Email */}
                     {visibleColumns.email && (
                       <td>
-                        <span className="omi-truncate block" style={{ maxWidth: '190px' }} title={lead.email}>
+                        <span className="omi-truncate block" style={{ maxWidth: '170px' }} title={lead.email}>
                           {lead.email}
                         </span>
                       </td>
                     )}
 
-                    {/* 6. Công ty */}
-                    {visibleColumns.company && (
-                      <td>
-                        <span className="omi-truncate block" style={{ maxWidth: '170px' }} title={lead.company}>
-                          {lead.company || '-'}
-                        </span>
-                      </td>
-                    )}
-
-                    {/* 7. Địa chỉ */}
-                    {visibleColumns.address && (
-                      <td>
-                        <span className="omi-truncate block" style={{ maxWidth: '190px' }} title={lead.address}>
-                          {lead.address || '-'}
-                        </span>
-                      </td>
-                    )}
-                    
-                    {/* 8. Nguồn */}
+                    {/* 6. Nguồn */}
                     {visibleColumns.source && (
                       <td>
                         <span className={`omi-badge ${
@@ -3602,88 +3466,61 @@ export default function SalesManagement() {
                            lead.source === 'website' ? 'Website' :
                            lead.source === 'zalo' ? 'Zalo' :
                            lead.source === 'linkedin' ? 'LinkedIn' :
-                           lead.source === 'referral' ? 'Referral' : lead.source}
+                           lead.source === 'referral' ? 'Giới thiệu' : lead.source}
                         </span>
                       </td>
                     )}
-                    
-                    {/* 9. Tỉnh thành */}
-                    {visibleColumns.region && (
+
+                    {/* 7. Địa chỉ */}
+                    {visibleColumns.address && (
                       <td>
-                        {lead.region === 'ha_noi' ? 'Hà Nội' :
-                         lead.region === 'ho_chi_minh' ? 'TP.HCM' :
-                         lead.region === 'da_nang' ? 'Đà Nẵng' :
-                         lead.region === 'can_tho' ? 'Cần Thơ' :
-                         lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
+                        <span className="omi-truncate block" style={{ maxWidth: '170px' }} title={lead.address}>
+                          {lead.address || '-'}
+                        </span>
                       </td>
                     )}
-                    
-                    {/* 10. Giai đoạn */}
+
+                    {/* 8. Giai đoạn */}
                     {visibleColumns.stage && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          lead.status === 'new' ? 'bg-blue-100 text-blue-800' :
-                          lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
-                          lead.status === 'qualified' ? 'bg-purple-100 text-purple-800' :
-                          lead.status === 'proposal' ? 'bg-orange-100 text-orange-800' :
-                          lead.status === 'negotiation' ? 'bg-indigo-100 text-indigo-800' :
-                          lead.status === 'converted' ? 'bg-green-100 text-green-800' :
+                      <td className="whitespace-nowrap">
+                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                          lead.status === 'new' ? 'bg-purple-100 text-purple-800' :
+                          lead.status === 'contacted' ? 'bg-blue-100 text-blue-800' :
+                          lead.status === 'qualified' ? 'bg-green-100 text-green-800' :
+                          lead.status === 'proposal' ? 'bg-yellow-100 text-yellow-800' :
+                          lead.status === 'negotiation' ? 'bg-orange-100 text-orange-800' :
+                          lead.status === 'converted' ? 'bg-emerald-100 text-emerald-800' :
                           lead.status === 'lost' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {lead.status === 'new' ? '🆕 Lead mới' :
-                           lead.status === 'contacted' ? '� Đang tư vấn' :
-                           lead.status === 'qualified' ? '� Đã gửi ĐX' :
-                           lead.status === 'proposal' ? '🤝 Đàm phán' :
-                           lead.status === 'negotiation' ? '� Chờ thanh toán' :
-                           lead.status === 'converted' ? '✅ Đã chốt' :
-                           lead.status === 'lost' ? '❌ Thất bại' : '📋 Khác'}
+                          {lead.status === 'new' ? 'Lead mới' :
+                           lead.status === 'contacted' ? 'Đang tư vấn' :
+                           lead.status === 'qualified' ? 'Đã gửi đề xuất' :
+                           lead.status === 'proposal' ? 'Đàm phán' :
+                           lead.status === 'negotiation' ? 'Chờ thanh toán' :
+                           lead.status === 'converted' ? 'Thành công' :
+                           lead.status === 'lost' ? 'Thất bại' : 'Khác'}
                         </span>
                       </td>
                     )}
-                    
-                    {/* 14. Sản phẩm quan tâm */}
-                    {visibleColumns.product && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900 truncate max-w-40" title={lead.product}>
-                          {lead.product}
-                        </div>
-                      </td>
-                    )}
-                    
-                    {/* 15. Loại khách hàng */}
-                    {visibleColumns.customerType && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                          lead.customerType === 'business' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {lead.customerType === 'business' ? '🏢 Doanh nghiệp' : '👤 Cá nhân'}
-                        </span>
-                      </td>
-                    )}
-                    
-                    {/* 16. Sales phụ trách */}
+
+                    {/* 9. Sales phụ trách */}
                     {visibleColumns.salesOwner && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
-                            <User className="w-3 h-3 text-gray-500" />
-                          </div>
-                          <div className="text-sm text-gray-900 truncate max-w-32">
-                            {lead.assignedTo || 'Chưa phân công'}
-                          </div>
+                      <td>
+                        <div className="text-sm text-gray-900 truncate" style={{ maxWidth: '140px' }}>
+                          {lead.assignedTo || 'Chưa phân công'}
                         </div>
                       </td>
                     )}
-                    
-                    {/* 17. Tags/Nhãn */}
+
+                    {/* 10. Tags */}
                     {visibleColumns.tags && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                      <td>
                         <div className="flex flex-wrap gap-1">
                           {lead.tags.slice(0, 2).map((tag, tagIndex) => (
-                            <span 
+                            <span
                               key={tagIndex}
-                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                                 tag === 'hot' ? 'bg-red-100 text-red-800' :
                                 tag === 'warm' ? 'bg-yellow-100 text-yellow-800' :
                                 tag === 'cold' ? 'bg-blue-100 text-blue-800' :
@@ -3692,11 +3529,11 @@ export default function SalesManagement() {
                                 'bg-gray-100 text-gray-800'
                               }`}
                             >
-                              {tag === 'hot' ? '🔴 Hot' :
+                              {tag === 'hot' ? 'Hot' :
                                tag === 'warm' ? 'Warm' :
                                tag === 'cold' ? 'Cold' :
-                               tag === 'enterprise' ? '👑 Enterprise' :
-                               tag === 'sme' ? '⭐ SME' : tag}
+                               tag === 'enterprise' ? 'Enterprise' :
+                               tag === 'sme' ? 'SME' : tag}
                             </span>
                           ))}
                           {lead.tags.length > 2 && (
@@ -3705,132 +3542,117 @@ export default function SalesManagement() {
                         </div>
                       </td>
                     )}
-                    
-                    {/* 18. Ghi chú */}
+
+                    {/* 11. Ghi chú */}
                     {visibleColumns.notes && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900 truncate max-w-48" title={lead.content}>
-                          {lead.content.length > 50 ? `${lead.content.substring(0, 50)}...` : lead.content}
+                      <td>
+                        <div className="text-sm text-gray-600 truncate" style={{ maxWidth: '170px' }} title={lead.content}>
+                          {lead.content.length > 40 ? `${lead.content.substring(0, 40)}...` : lead.content}
                         </div>
                       </td>
                     )}
-                    
-                    {/* 19. Tệp đính kèm */}
-                    {visibleColumns.files && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200 text-center">
-                        <div className="flex items-center justify-center">
-                          {lead.files && lead.files.length > 0 ? (
-                            <button
-                              onClick={() => handleViewFiles(lead)}
-                              className="flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
-                            >
-                              <span className="text-blue-600 text-sm font-medium">{lead.files.length}</span>
-                              <Paperclip className="w-4 h-4 text-blue-600" />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleViewFiles(lead)}
-                              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
-                            >
-                              <span className="text-gray-400 text-sm">0</span>
-                              <Paperclip className="w-4 h-4 text-gray-400" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                    
-                    {/* 20. Ngày tạo */}
+
+                    {/* 12. Ngày tạo */}
                     {visibleColumns.createdDate && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                      <td>
                         <div className="text-sm text-gray-900">
                           {new Date(lead.createdAt).toLocaleDateString('vi-VN')}
                         </div>
                       </td>
                     )}
-                    
-                    {/* 21. Ngày cập nhật */}
-                    {visibleColumns.lastModified && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        <div className="text-sm text-gray-900">
-                          {new Date(lead.updatedAt).toLocaleDateString('vi-VN')}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(lead.updatedAt).toLocaleTimeString('vi-VN', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                      </td>
-                    )}
-                    
-                    {/* 22. Số lần tương tác */}
-                    {visibleColumns.interactionCount && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200 text-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {lead.interactionCount}
-                        </div>
-                      </td>
-                    )}
-                    
-                    {/* 23. Lần tương tác cuối */}
-                    {visibleColumns.lastInteraction && (
-                      <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                        {lead.lastInteractionAt ? (
-                          <div>
-                            <div className="text-sm text-gray-900">
-                              {new Date(lead.lastInteractionAt).toLocaleDateString('vi-VN')}
-                            </div>
-                            <div className={`text-xs ${
-                              Math.floor((Date.now() - new Date(lead.lastInteractionAt).getTime()) / (1000 * 60 * 60 * 24)) > 7
-                                ? 'text-red-500' : 
-                              Math.floor((Date.now() - new Date(lead.lastInteractionAt).getTime()) / (1000 * 60 * 60 * 24)) > 3
-                                ? 'text-orange-500' : 'text-green-500'
-                            }`}>
-                              {Math.floor((Date.now() - new Date(lead.lastInteractionAt).getTime()) / (1000 * 60 * 60 * 24))} ngày trước
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400 italic">Chưa tương tác</span>
-                        )}
-                      </td>
-                    )}
-                    
-                    {/* 24. Hành động */}
+
+                    {/* 13. Thao tác */}
                     {visibleColumns.actions && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white group-hover:bg-gray-50 shadow-lg z-10">
-                        <div className="flex items-center space-x-1">
-                          <button 
-                            onClick={() => handleViewLeadDetail(lead)}
-                            className="p-2 text-slate-600 hover:text-white hover:bg-blue-600 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
-                            title="Xem chi tiết"
+                      <td className="omi-table-sticky-right text-center" style={{ zIndex: openActionMenuId === lead.id ? 100 : 'auto' }}>
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenActionMenuId(openActionMenuId === lead.id ? null : lead.id)}
+                            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-gray-100 rounded-lg transition-colors"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Settings className="w-5 h-5" />
                           </button>
-                          <button 
-                            onClick={() => {
-                              setEditingLead(lead)
-                              setShowEditModal(true)
-                            }}
-                            className="p-2 text-slate-600 hover:text-white hover:bg-purple-600 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleAddNote(lead)}
-                            className="p-2 text-slate-600 hover:text-white hover:bg-yellow-600 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
-                            title="Thêm ghi chú"
-                          >
-                            <StickyNote className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleConvertLead(lead)}
-                            className="p-2 text-slate-600 hover:text-white hover:bg-green-600 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
-                            title="Chuyển đổi thành khách hàng"
-                          >
-                            <User className="w-4 h-4" />
-                          </button>
+
+                          {openActionMenuId === lead.id && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-[999]"
+                                onClick={() => setOpenActionMenuId(null)}
+                              />
+                              <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-200 z-[1000] py-2 text-left">
+                                {/* THÔNG TIN */}
+                                <div className="px-3 py-1.5">
+                                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Thông tin</span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    handleViewLeadDetail(lead)
+                                    setOpenActionMenuId(null)
+                                  }}
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Eye className="w-4 h-4 text-gray-400" />
+                                  <span>Xem chi tiết</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingLead(lead)
+                                    setShowEditModal(true)
+                                    setOpenActionMenuId(null)
+                                  }}
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Edit className="w-4 h-4 text-gray-400" />
+                                  <span>Chỉnh sửa</span>
+                                </button>
+
+                                {/* THAO TÁC NHANH */}
+                                <div className="border-t border-gray-100 mt-1 pt-1">
+                                  <div className="px-3 py-1.5">
+                                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Thao tác nhanh</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      handleAddNote(lead)
+                                      setOpenActionMenuId(null)
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  >
+                                    <StickyNote className="w-4 h-4 text-gray-400" />
+                                    <span>Thêm ghi chú</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleConvertLead(lead)
+                                      setOpenActionMenuId(null)
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  >
+                                    <User className="w-4 h-4 text-gray-400" />
+                                    <span>Chuyển đổi khách hàng</span>
+                                  </button>
+                                </div>
+
+                                {/* THAO TÁC NGUY HIỂM */}
+                                <div className="border-t border-gray-100 mt-1 pt-1">
+                                  <div className="px-3 py-1.5">
+                                    <span className="text-[11px] font-semibold text-red-400 uppercase tracking-wider">Thao tác nguy hiểm</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Bạn có chắc chắn muốn xóa lead "${lead.name}"?`)) {
+                                        // Handle delete lead
+                                        setOpenActionMenuId(null)
+                                      }
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Xóa lead</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </td>
                     )}
@@ -4030,9 +3852,25 @@ export default function SalesManagement() {
                                     <button 
                                       onClick={() => handleViewLeadDetail(lead)}
                                       className="p-1.5 text-slate-600 hover:text-white hover:bg-blue-600 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
-                                      title="Xem chi tiết & Chỉnh sửa"
+                                      title="Xem chi tiết"
                                     >
                                       <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    
+                                    <button 
+                                      onClick={() => handleViewLeadDetail(lead)}
+                                      className="p-1.5 text-slate-600 hover:text-white hover:bg-amber-500 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
+                                      title="Chỉnh sửa"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </button>
+                                    
+                                    <button 
+                                      onClick={() => {/* TODO: Add comment function */}}
+                                      className="p-1.5 text-slate-600 hover:text-white hover:bg-purple-600 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
+                                      title="Ghi chú"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5" />
                                     </button>
                                     
                                     {/* Hiển thị buttons khác nhau tùy theo status */}
@@ -4049,7 +3887,19 @@ export default function SalesManagement() {
                                         <User className="w-3.5 h-3.5" />
                                       </button>
                                     ) : null}
+                                    
+                                    <button 
+                                      onClick={() => {/* TODO: Add delete function */}}
+                                      className="p-1.5 text-slate-600 hover:text-white hover:bg-red-600 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
+                                      title="Xóa"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
+                                </div>
+                                
+                                {/* Date */}
+                                <div className="flex justify-start pt-2">
                                   <span className="text-xs text-gray-500">
                                     {new Date(lead.createdAt).toLocaleDateString('vi-VN')}
                                   </span>
@@ -4093,40 +3943,9 @@ export default function SalesManagement() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-6 px-4">            {[
-                { id: 'pipeline', name: 'Leads & Pipeline', count: leads.length, icon: <Activity className="w-4 h-4" /> }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id as any)
-                    setSelectedMetric(null) // Reset selected metric when manually changing tabs
-                  }}
-                  className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <span className={activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}>
-                    {tab.icon}
-                  </span>
-                  <span>{tab.name}</span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    activeTab === tab.id 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {tab.count}
-                  </span>
-                </button>
-              ))}
-            </nav>
-        </div>        {/* Tab Content */}
-        <div className="p-4">
+      {/* Pipeline Content */}
+      <div>
+        <div>
           {renderPipeline()}
         </div>
       </div>
@@ -7124,7 +6943,7 @@ export default function SalesManagement() {
                 {[
                   { value: 'new', name: 'Lead mới', color: 'bg-gray-100 border-gray-300', icon: '🆕', description: 'Lead mới vừa được tạo, chưa được xử lý' },
                   { value: 'contacted', name: 'Đang tư vấn', color: 'bg-blue-100 border-blue-300', icon: '📞', description: 'Đã liên hệ và đang tư vấn khách hàng' },
-                  { value: 'qualified', name: 'Đã gửi ĐX', color: 'bg-yellow-100 border-yellow-300', icon: '📋', description: 'Đã gửi đề xuất/báo giá cho khách hàng' },
+                  { value: 'qualified', name: 'Đã gửi đề xuất', color: 'bg-yellow-100 border-yellow-300', icon: '📋', description: 'Đã gửi đề xuất/báo giá cho khách hàng' },
                   { value: 'negotiation', name: 'Đàm phán', color: 'bg-orange-100 border-orange-300', icon: '🤝', description: 'Đang trong quá trình thương lượng và đàm phán' },
                   { value: 'payment_pending', name: 'Chờ thanh toán', color: 'bg-purple-100 border-purple-300', icon: '💳', description: 'Đã thống nhất, chờ khách hàng thanh toán' },
                   { value: 'converted', name: 'Chuyển đổi thành công', color: 'bg-green-100 border-green-300', icon: '✅', description: 'Đã thanh toán và chuyển đổi thành công' },

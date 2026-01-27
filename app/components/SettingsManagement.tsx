@@ -69,6 +69,9 @@ import {
   GitBranch,
   Briefcase,
   UserCheck,
+  UserPlus,
+  Crown,
+  Award,
   Wrench,
   Heart,
   Trophy,
@@ -516,7 +519,7 @@ const sampleSalesStages: SalesStage[] = [
   },
   {
     id: 'qualified',
-    name: 'Đã gửi ĐX',
+    name: 'Đã gửi đề xuất',
     description: 'Đã gửi đề xuất/báo giá cho khách hàng',
     color: '#8B5CF6',
     order: 3,
@@ -1742,6 +1745,78 @@ export default function SettingsManagement() {
   const [showAddDistributionRule, setShowAddDistributionRule] = useState(false)
   const [showEditDistributionRule, setShowEditDistributionRule] = useState(false)
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null)
+  
+  // Customer Ranking Edit State
+  const [isEditingRanking, setIsEditingRanking] = useState(false)
+  const [editingTier, setEditingTier] = useState<string | null>(null)
+  const [customerRankingData, setCustomerRankingData] = useState({
+    diamond: {
+      totalSpend: 10000000,
+      orderCount: 20,
+      benefits: ['Ưu đãi độc quyền 20-30%', 'Account Manager riêng', 'Hỗ trợ 24/7 ưu tiên cao', 'Trải nghiệm cá nhân hóa', 'Mời sự kiện VIP']
+    },
+    gold: {
+      totalSpend: 5000000,
+      orderCount: 10,
+      benefits: ['Ưu đãi đặc biệt 15-20%', 'Hỗ trợ ưu tiên', 'Trải nghiệm nâng cao', 'Tư vấn chuyên sâu', 'Quà tặng định kỳ']
+    },
+    silver: {
+      totalSpend: 2000000,
+      orderCount: 5,
+      benefits: ['Ưu đãi thành viên 10-15%', 'Hỗ trợ nhanh chóng', 'Tích điểm thưởng', 'Newsletter độc quyền', 'Chương trình loyalty']
+    },
+    bronze: {
+      totalSpend: 500000,
+      orderCount: 2,
+      benefits: ['Ưu đãi cơ bản 5-10%', 'Hỗ trợ tiêu chuẩn', 'Tích điểm cơ bản', 'Thông tin sản phẩm mới', 'Chăm sóc khách hàng']
+    },
+    new: {
+      totalSpend: 0,
+      orderCount: 0,
+      benefits: ['Ưu đãi chào mừng', 'Hướng dẫn sử dụng', 'Hỗ trợ onboarding', 'Tài liệu tham khảo', 'Chăm sóc khách hàng mới']
+    }
+  })
+  
+  const handleRankingChange = (tier: string, field: string, value: number | string[]) => {
+    setCustomerRankingData(prev => ({
+      ...prev,
+      [tier]: {
+        ...prev[tier as keyof typeof prev],
+        [field]: value
+      }
+    }))
+  }
+  
+  const addBenefit = (tier: string) => {
+    setCustomerRankingData(prev => ({
+      ...prev,
+      [tier]: {
+        ...prev[tier as keyof typeof prev],
+        benefits: [...prev[tier as keyof typeof prev].benefits, '']
+      }
+    }))
+  }
+  
+  const removeBenefit = (tier: string, index: number) => {
+    setCustomerRankingData(prev => ({
+      ...prev,
+      [tier]: {
+        ...prev[tier as keyof typeof prev],
+        benefits: prev[tier as keyof typeof prev].benefits.filter((_, i) => i !== index)
+      }
+    }))
+  }
+  
+  const updateBenefit = (tier: string, index: number, value: string) => {
+    setCustomerRankingData(prev => ({
+      ...prev,
+      [tier]: {
+        ...prev[tier as keyof typeof prev],
+        benefits: prev[tier as keyof typeof prev].benefits.map((b, i) => i === index ? value : b)
+      }
+    }))
+  }
+
   const [selectedAssignmentType, setSelectedAssignmentType] = useState<string>('')
   const [individualSearchTerm, setIndividualSearchTerm] = useState<string>('')
   const [individualFilterTeam, setIndividualFilterTeam] = useState<string>('all')
@@ -6463,14 +6538,15 @@ export default function SettingsManagement() {
           </div>
         )}
         
-        {/* Bán hàng - 3 tabs: Quy trình, Phân bố leads, Nhãn */}
+        {/* Bán hàng - 3 tabs: Quy trình, ds, Nhãn */}
         {activeTab === 'workflow' && (
           <div>
             <Tabs defaultValue="process" className="space-y-6">
               <TabsList className="inline-flex w-auto -mt-6 -ml-6">
                 <TabsTrigger value="process" className="uppercase">Quy trình</TabsTrigger>
                 <TabsTrigger value="distribution" className="uppercase">Phân bố leads</TabsTrigger>
-                <TabsTrigger value="labels" className="uppercase">Nhãn</TabsTrigger>
+                <TabsTrigger value="customerRanking" className="uppercase">Phân hạng khách hàng</TabsTrigger>
+                <TabsTrigger value="labels" className="uppercase">Nhãn gán</TabsTrigger>
               </TabsList>
 
               <TabsContent value="process" className="space-y-4">
@@ -6600,6 +6676,427 @@ export default function SettingsManagement() {
                 </Card>
               </TabsContent>
 
+              <TabsContent value="customerRanking" className="space-y-4">
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#1a3353]">Cài đặt phân hạng khách hàng</h2>
+                      <p className="text-sm text-[#455560]">Tiêu chí và ngưỡng phân loại khách hàng</p>
+                    </div>
+                  </div>
+
+                  {/* Ranking Cards */}
+                  <div className="flex flex-wrap gap-4">
+                    {/* Kim Cương */}
+                    <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[200px] flex-1 bg-gradient-to-br from-purple-600 to-pink-500 text-white shadow-lg relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="absolute top-2 right-2 p-1 rounded hover:bg-white/20">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingTier('diamond')}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem và chỉnh sửa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div>
+                        <p className="text-base font-semibold text-white mb-2">Kim Cương</p>
+                        <p className="text-3xl font-extrabold text-white mb-1">45</p>
+                        <p className="text-sm text-white/80">khách hàng</p>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <p className="text-xs text-white/90">Chi tiêu: ≥ {customerRankingData.diamond.totalSpend.toLocaleString()} VND</p>
+                          <p className="text-xs text-white/90">Đơn hàng: ≥ {customerRankingData.diamond.orderCount} đơn</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vàng */}
+                    <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[200px] flex-1 bg-gradient-to-br from-yellow-500 to-amber-400 text-white shadow-lg relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="absolute top-2 right-2 p-1 rounded hover:bg-white/20">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingTier('gold')}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem và chỉnh sửa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div>
+                        <p className="text-base font-semibold text-white mb-2">Vàng</p>
+                        <p className="text-3xl font-extrabold text-white mb-1">128</p>
+                        <p className="text-sm text-white/80">khách hàng</p>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <p className="text-xs text-white/90">Chi tiêu: ≥ {customerRankingData.gold.totalSpend.toLocaleString()} VND</p>
+                          <p className="text-xs text-white/90">Đơn hàng: ≥ {customerRankingData.gold.orderCount} đơn</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bạc */}
+                    <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[200px] flex-1 bg-gradient-to-br from-gray-400 to-slate-500 text-white shadow-lg relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="absolute top-2 right-2 p-1 rounded hover:bg-white/20">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingTier('silver')}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem và chỉnh sửa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div>
+                        <p className="text-base font-semibold text-white mb-2">Bạc</p>
+                        <p className="text-3xl font-extrabold text-white mb-1">356</p>
+                        <p className="text-sm text-white/80">khách hàng</p>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <p className="text-xs text-white/90">Chi tiêu: ≥ {customerRankingData.silver.totalSpend.toLocaleString()} VND</p>
+                          <p className="text-xs text-white/90">Đơn hàng: ≥ {customerRankingData.silver.orderCount} đơn</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Đồng */}
+                    <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[200px] flex-1 bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="absolute top-2 right-2 p-1 rounded hover:bg-white/20">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingTier('bronze')}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem và chỉnh sửa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div>
+                        <p className="text-base font-semibold text-white mb-2">Đồng</p>
+                        <p className="text-3xl font-extrabold text-white mb-1">892</p>
+                        <p className="text-sm text-white/80">khách hàng</p>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <p className="text-xs text-white/90">Chi tiêu: ≥ {customerRankingData.bronze.totalSpend.toLocaleString()} VND</p>
+                          <p className="text-xs text-white/90">Đơn hàng: ≥ {customerRankingData.bronze.orderCount} đơn</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mới */}
+                    <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[200px] flex-1 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="absolute top-2 right-2 p-1 rounded hover:bg-white/20">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingTier('new')}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem và chỉnh sửa
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div>
+                        <p className="text-base font-semibold text-white mb-2">Mới</p>
+                        <p className="text-3xl font-extrabold text-white mb-1">1,245</p>
+                        <p className="text-sm text-white/80">khách hàng</p>
+                        <div className="mt-3 pt-3 border-t border-white/20">
+                          <p className="text-xs text-white/90">Khách hàng mới đăng ký</p>
+                          <p className="text-xs text-white/90">Chưa có đơn hàng</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit Panel for Diamond */}
+                  {editingTier === 'diamond' && (
+                    <div className="border border-purple-200 rounded-lg p-6 bg-gradient-to-r from-purple-50 to-pink-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-purple-800">Kim Cương (Diamond)</h3>
+                          <p className="text-sm text-purple-600">Khách hàng VIP cao cấp nhất</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]" onClick={() => setEditingTier(null)}>
+                            <Save className="w-4 h-4 mr-1" />
+                            Lưu
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditingTier(null)}>Đóng</Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-purple-700">Tiêu chí chính:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-purple-600 w-24">Tổng chi tiêu:</span>
+                              <Input type="number" value={customerRankingData.diamond.totalSpend} onChange={(e) => handleRankingChange('diamond', 'totalSpend', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-purple-600">VND</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-purple-600 w-24">Số đơn hàng:</span>
+                              <Input type="number" value={customerRankingData.diamond.orderCount} onChange={(e) => handleRankingChange('diamond', 'orderCount', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-purple-600">đơn</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-purple-700">Đặc quyền:</h4>
+                            <button onClick={() => addBenefit('diamond')} className="text-purple-600 hover:text-purple-800"><Plus className="w-4 h-4" /></button>
+                          </div>
+                          <div className="space-y-2">
+                            {customerRankingData.diamond.benefits.map((benefit, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input value={benefit} onChange={(e) => updateBenefit('diamond', index, e.target.value)} className="flex-1" placeholder="Nhập đặc quyền..." />
+                                <button onClick={() => removeBenefit('diamond', index)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Panel for Gold */}
+                  {editingTier === 'gold' && (
+                    <div className="border border-yellow-200 rounded-lg p-6 bg-gradient-to-r from-yellow-50 to-amber-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-yellow-800">Vàng (Gold)</h3>
+                          <p className="text-sm text-yellow-600">Khách hàng trung thành cao</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]" onClick={() => setEditingTier(null)}>
+                            <Save className="w-4 h-4 mr-1" />
+                            Lưu
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditingTier(null)}>Đóng</Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-yellow-700">Tiêu chí chính:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-yellow-600 w-24">Tổng chi tiêu:</span>
+                              <Input type="number" value={customerRankingData.gold.totalSpend} onChange={(e) => handleRankingChange('gold', 'totalSpend', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-yellow-600">VND</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-yellow-600 w-24">Số đơn hàng:</span>
+                              <Input type="number" value={customerRankingData.gold.orderCount} onChange={(e) => handleRankingChange('gold', 'orderCount', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-yellow-600">đơn</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-yellow-700">Đặc quyền:</h4>
+                            <button onClick={() => addBenefit('gold')} className="text-yellow-600 hover:text-yellow-800"><Plus className="w-4 h-4" /></button>
+                          </div>
+                          <div className="space-y-2">
+                            {customerRankingData.gold.benefits.map((benefit, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input value={benefit} onChange={(e) => updateBenefit('gold', index, e.target.value)} className="flex-1" placeholder="Nhập đặc quyền..." />
+                                <button onClick={() => removeBenefit('gold', index)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Panel for Silver */}
+                  {editingTier === 'silver' && (
+                    <div className="border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-gray-50 to-slate-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-800">Bạc (Silver)</h3>
+                          <p className="text-sm text-gray-600">Khách hàng ổn định</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]" onClick={() => setEditingTier(null)}>
+                            <Save className="w-4 h-4 mr-1" />
+                            Lưu
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditingTier(null)}>Đóng</Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-700">Tiêu chí chính:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600 w-24">Tổng chi tiêu:</span>
+                              <Input type="number" value={customerRankingData.silver.totalSpend} onChange={(e) => handleRankingChange('silver', 'totalSpend', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-gray-600">VND</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600 w-24">Số đơn hàng:</span>
+                              <Input type="number" value={customerRankingData.silver.orderCount} onChange={(e) => handleRankingChange('silver', 'orderCount', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-gray-600">đơn</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-gray-700">Đặc quyền:</h4>
+                            <button onClick={() => addBenefit('silver')} className="text-gray-600 hover:text-gray-800"><Plus className="w-4 h-4" /></button>
+                          </div>
+                          <div className="space-y-2">
+                            {customerRankingData.silver.benefits.map((benefit, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input value={benefit} onChange={(e) => updateBenefit('silver', index, e.target.value)} className="flex-1" placeholder="Nhập đặc quyền..." />
+                                <button onClick={() => removeBenefit('silver', index)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Panel for Bronze */}
+                  {editingTier === 'bronze' && (
+                    <div className="border border-orange-200 rounded-lg p-6 bg-gradient-to-r from-orange-50 to-amber-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-orange-800">Đồng (Bronze)</h3>
+                          <p className="text-sm text-orange-600">Khách hàng mới/cơ bản</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]" onClick={() => setEditingTier(null)}>
+                            <Save className="w-4 h-4 mr-1" />
+                            Lưu
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditingTier(null)}>Đóng</Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-orange-700">Tiêu chí chính:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-orange-600 w-24">Tổng chi tiêu:</span>
+                              <Input type="number" value={customerRankingData.bronze.totalSpend} onChange={(e) => handleRankingChange('bronze', 'totalSpend', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-orange-600">VND</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-orange-600 w-24">Số đơn hàng:</span>
+                              <Input type="number" value={customerRankingData.bronze.orderCount} onChange={(e) => handleRankingChange('bronze', 'orderCount', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-orange-600">đơn</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-orange-700">Đặc quyền:</h4>
+                            <button onClick={() => addBenefit('bronze')} className="text-orange-600 hover:text-orange-800"><Plus className="w-4 h-4" /></button>
+                          </div>
+                          <div className="space-y-2">
+                            {customerRankingData.bronze.benefits.map((benefit, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input value={benefit} onChange={(e) => updateBenefit('bronze', index, e.target.value)} className="flex-1" placeholder="Nhập đặc quyền..." />
+                                <button onClick={() => removeBenefit('bronze', index)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit Panel for New */}
+                  {editingTier === 'new' && (
+                    <div className="border border-blue-200 rounded-lg p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-blue-800">Mới (New)</h3>
+                          <p className="text-sm text-blue-600">Khách hàng tiềm năng</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]" onClick={() => setEditingTier(null)}>
+                            <Save className="w-4 h-4 mr-1" />
+                            Lưu
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditingTier(null)}>Đóng</Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-blue-700">Tiêu chí chính:</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-blue-600 w-24">Tổng chi tiêu:</span>
+                              <Input type="number" value={customerRankingData.new.totalSpend} onChange={(e) => handleRankingChange('new', 'totalSpend', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-blue-600">VND</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-blue-600 w-24">Số đơn hàng:</span>
+                              <Input type="number" value={customerRankingData.new.orderCount} onChange={(e) => handleRankingChange('new', 'orderCount', Number(e.target.value))} className="flex-1" />
+                              <span className="text-sm text-blue-600">đơn</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-blue-700">Đặc quyền:</h4>
+                            <button onClick={() => addBenefit('new')} className="text-blue-600 hover:text-blue-800"><Plus className="w-4 h-4" /></button>
+                          </div>
+                          <div className="space-y-2">
+                            {customerRankingData.new.benefits.map((benefit, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <Input value={benefit} onChange={(e) => updateBenefit('new', index, e.target.value)} className="flex-1" placeholder="Nhập đặc quyền..." />
+                                <button onClick={() => removeBenefit('new', index)} className="text-red-500 hover:text-red-700"><X className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quy trình đánh giá */}
+                  {!editingTier && (
+                    <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
+                      <h3 className="text-lg font-bold text-blue-800 mb-4">Quy trình đánh giá</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-blue-700 mb-2">Tần suất cập nhật:</h4>
+                          <ul className="text-sm text-blue-600 space-y-1">
+                            <li>• Tự động: Mỗi đơn hàng mới</li>
+                            <li>• Định kỳ: Cuối mỗi tháng</li>
+                            <li>• Thủ công: Khi có yêu cầu đặc biệt</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-blue-700 mb-2">Yếu tố bổ sung:</h4>
+                          <ul className="text-sm text-blue-600 space-y-1">
+                            <li>• Phản hồi khách hàng</li>
+                            <li>• Mức độ tương tác</li>
+                            <li>• Giới thiệu khách hàng mới</li>
+                            <li>• Tham gia sự kiện</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
               <TabsContent value="labels" className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -6627,7 +7124,6 @@ export default function SettingsManagement() {
                               <h4 className="font-medium">VIP</h4>
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge className="bg-green-100 text-green-800 text-xs">Khách hàng</Badge>
                               <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
                             </div>
                           </div>
@@ -6671,7 +7167,6 @@ export default function SettingsManagement() {
                               <Badge variant="outline" className="text-xs"><Star className="w-3 h-3 mr-1" />Mặc định</Badge>
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge className="bg-blue-100 text-blue-800 text-xs">Lead</Badge>
                               <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
                             </div>
                           </div>
@@ -6714,7 +7209,6 @@ export default function SettingsManagement() {
                               <h4 className="font-medium">Deal lớn</h4>
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge className="bg-purple-100 text-purple-800 text-xs">Deal</Badge>
                               <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
                             </div>
                           </div>
@@ -6757,7 +7251,6 @@ export default function SettingsManagement() {
                               <h4 className="font-medium">Khẩn cấp</h4>
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge className="bg-orange-100 text-orange-800 text-xs">Công việc</Badge>
                               <Badge className="bg-indigo-100 text-indigo-800 text-xs">Toàn cục</Badge>
                             </div>
                           </div>
@@ -6800,7 +7293,6 @@ export default function SettingsManagement() {
                               <h4 className="font-medium">Team A</h4>
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Badge className="bg-blue-100 text-blue-800 text-xs">Lead</Badge>
                               <Badge className="bg-cyan-100 text-cyan-800 text-xs">Nhóm</Badge>
                             </div>
                           </div>
