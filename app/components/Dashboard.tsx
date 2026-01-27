@@ -11,7 +11,8 @@ import {
   MoreVertical,
   BarChart3,
   Plus,
-  Minus
+  Minus,
+  Info
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart } from 'recharts'
 import EnhancedDashboardFilters from './EnhancedDashboardFilters'
@@ -417,174 +418,58 @@ export default function Dashboard() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-            </div>
-            <h3 className="text-gray-600 text-sm font-medium">Doanh thu</h3>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-[#151D48] text-[24px] font-semibold">2.800.000.000</h2>
-              <div className="group relative">
-                <div className="flex items-center text-sm font-medium">
-                  <span className="text-green-600">
-                    <ArrowUpRight className="w-3 h-3 mr-1" />12.0%
-                  </span>
-                  <span className="text-gray-400 mx-1">|</span>
-                  <span className="text-gray-500 text-xs">2.500.000.000</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div className="mb-1">So với tháng trước:</div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng này:</span>
-                    <span className="font-medium">2.800.000.000</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng trước:</span>
-                    <span className="font-medium">2.500.000.000</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500 font-medium">KPI</span>
-                <span className="text-gray-900 font-semibold">85%</span>
-              </div>
-              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden cursor-pointer">
-                <div className="h-full bg-blue-600 rounded-full transition-all duration-300" style={{width: '85%'}}></div>
-              </div>
+            <p className="text-base font-semibold text-white mb-2">Doanh thu</p>
+            <p className="text-4xl font-extrabold text-white mb-1">2.8B</p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm text-white/90">T.trước: 2.5B</p>
+              <p className="text-sm text-white/90 font-semibold">+12%</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Users className="w-5 h-5 text-purple-600" />
-            </div>
-            <h3 className="text-gray-600 text-sm font-medium">Số lượng leads</h3>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-2xl font-semibold text-gray-900">245</h2>
-              <div className="group relative">
-                <div className="flex items-center text-sm font-medium">
-                  <span className="text-green-600">
-                    <ArrowUpRight className="w-3 h-3 mr-1" />18.5%
-                  </span>
-                  <span className="text-gray-400 mx-1">|</span>
-                  <span className="text-gray-500 text-xs">207</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div className="mb-1">So với tháng trước:</div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng này:</span>
-                    <span className="font-medium">245</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng trước:</span>
-                    <span className="font-medium">207</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500 font-medium">KPI</span>
-                <span className="text-gray-900 font-semibold">92%</span>
-              </div>
-              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden cursor-pointer">
-                <div className="h-full bg-purple-600 rounded-full transition-all duration-300" style={{width: '92%'}}></div>
-              </div>
+            <p className="text-base font-semibold text-white mb-2">Số lượng leads</p>
+            <p className="text-4xl font-extrabold text-white mb-1">245</p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm text-white/90">T.trước: 207</p>
+              <p className="text-sm text-white/90 font-semibold">+18.5%</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Percent className="w-5 h-5 text-orange-600" />
-            </div>
-            <h3 className="text-gray-600 text-sm font-medium">Tỷ lệ chuyển đổi</h3>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-2xl font-semibold text-gray-900">18.5%</h2>
-              <div className="group relative">
-                <div className="flex items-center text-sm font-medium">
-                  <span className="text-green-600">
-                    <ArrowUpRight className="w-3 h-3 mr-1" />2.3%
-                  </span>
-                  <span className="text-gray-400 mx-1">|</span>
-                  <span className="text-gray-500 text-xs">16.2%</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div className="mb-1">So với tháng trước:</div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng này:</span>
-                    <span className="font-medium">18.5%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng trước:</span>
-                    <span className="font-medium">16.2%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500 font-medium">KPI</span>
-                <span className="text-gray-900 font-semibold">95%</span>
-              </div>
-              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden cursor-pointer">
-                <div className="h-full bg-orange-600 rounded-full transition-all duration-300" style={{width: '95%'}}></div>
-              </div>
+            <p className="text-base font-semibold text-white mb-2">Tỷ lệ chuyển đổi</p>
+            <p className="text-4xl font-extrabold text-white mb-1">18.5%</p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm text-white/90">T.trước: 16.2%</p>
+              <p className="text-sm text-white/90 font-semibold">+2.3%</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Target className="w-5 h-5 text-green-600" />
-            </div>
-            <h3 className="text-gray-600 text-sm font-medium">Số lượng công việc</h3>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-2xl font-semibold text-gray-900">68</h2>
-              <div className="group relative">
-                <div className="flex items-center text-sm font-medium">
-                  <span className="text-red-600">
-                    <ArrowDownRight className="w-3 h-3 mr-1" />5.2%
-                  </span>
-                  <span className="text-gray-400 mx-1">|</span>
-                  <span className="text-gray-500 text-xs">72</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div className="mb-1">So với tháng trước:</div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng này:</span>
-                    <span className="font-medium">68</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span>Tháng trước:</span>
-                    <span className="font-medium">72</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-500 font-medium">KPI</span>
-                <span className="text-gray-900 font-semibold">88%</span>
-              </div>
-              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden cursor-pointer">
-                <div className="h-full bg-green-600 rounded-full transition-all duration-300" style={{width: '88%'}}></div>
-              </div>
+            <p className="text-base font-semibold text-white mb-2">Số lượng công việc</p>
+            <p className="text-4xl font-extrabold text-white mb-1">68</p>
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-sm text-white/90">T.trước: 72</p>
+              <p className="text-sm text-white/90 font-semibold">-5.2%</p>
             </div>
           </div>
         </div>
@@ -613,63 +498,44 @@ export default function Dashboard() {
           
           {/* Enhanced Summary Cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-gradient-to-br from-white to-blue-50/50 p-5 rounded-xl shadow-md border border-blue-100/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-md"></div>
-                  <span className="text-xs text-gray-600 font-bold tracking-wide uppercase">Doanh thu hôm nay</span>
-                </div>
-                <div className="p-1.5 bg-blue-100 rounded-full">
-                  <TrendingUp className="w-3 h-3 text-blue-600" />
-                </div>
+            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+              <div className="absolute top-2 right-2">
+                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
               </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-[#151D48] text-[24px] font-semibold">310.000.000</span>
-              </div>
-              <div className="flex items-center space-x-1 mt-1">
-                <ArrowUpRight className="w-3 h-3 text-green-600" />
-                <span className="text-sm font-semibold text-green-600">+5.5%</span>
-                <span className="text-xs text-gray-500">so với hôm qua</span>
+              <div>
+                <p className="text-base font-semibold text-white mb-2">Doanh thu hôm nay</p>
+                <p className="text-4xl font-extrabold text-white mb-1">310M</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-sm text-white/90">H.qua: 294M</p>
+                  <p className="text-sm text-white/90 font-semibold">+5.5%</p>
+                </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-white to-green-50/50 p-5 rounded-xl shadow-md border border-green-100/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-md"></div>
-                  <span className="text-xs text-gray-600 font-bold tracking-wide uppercase">
-                    KPI hôm nay
-                  </span>
-                </div>
-                <div className="p-1.5 bg-green-100 rounded-full">
-                  <Target className="w-3 h-3 text-green-600" />
-                </div>
+            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+              <div className="absolute top-2 right-2">
+                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
               </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-[#151D48] text-[24px] font-semibold">150.000.000</span>
-              </div>
-              <div className="flex items-center space-x-1 mt-1">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-sm font-semibold text-green-600">206.7% hoàn thành</span>
+              <div>
+                <p className="text-base font-semibold text-white mb-2">KPI hôm nay</p>
+                <p className="text-4xl font-extrabold text-white mb-1">150M</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-sm text-white/90">Mục tiêu: 150M</p>
+                  <p className="text-sm text-white/90 font-semibold">206.7%</p>
+                </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-white to-purple-50/50 p-5 rounded-xl shadow-md border border-purple-100/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-md"></div>
-                  <span className="text-xs text-gray-600 font-bold tracking-wide uppercase">Tăng trưởng TB</span>
-                </div>
-                <div className="p-1.5 bg-purple-100 rounded-full">
-                  <BarChart3 className="w-3 h-3 text-purple-600" />
-                </div>
+            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+              <div className="absolute top-2 right-2">
+                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
               </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-2xl font-black text-gray-900">+5.5</span>
-                <span className="text-lg font-semibold text-gray-600">%</span>
-              </div>
-              <div className="flex items-center space-x-1 mt-1">
-                <span className="text-xs text-gray-500">Trung bình hàng ngày</span>
+              <div>
+                <p className="text-base font-semibold text-white mb-2">Tăng trưởng TB</p>
+                <p className="text-4xl font-extrabold text-white mb-1">+5.5%</p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-sm text-white/90">Trung bình hàng ngày</p>
+                </div>
               </div>
             </div>
           </div>
@@ -957,84 +823,71 @@ export default function Dashboard() {
         {/* Lead Sources Analysis */}
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg">
-                <Users className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold">Nguồn Leads & Phân tích</h3>
-            </div>
+            <h3 className="text-lg font-semibold">Nguồn Leads & Phân tích</h3>
             <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">Chi tiết</button>
           </div>
           
           {/* Lead Sources Performance */}
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-blue-900">Facebook Ads</div>
-                  <div className="text-sm text-blue-700">245 leads • 24.5%</div>
+                  <div className="text-sm font-medium text-gray-900">Facebook Ads</div>
+                  <div className="text-xs text-gray-500">24.5% tổng leads</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-blue-900">92%</div>
-                <div className="text-xs text-green-600">Chất lượng cao</div>
+                <div className="text-2xl font-bold text-gray-900">245</div>
+                <div className="text-xs text-green-600 font-semibold">92% chuyển đổi</div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100 hover:bg-green-100 transition-colors cursor-pointer">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <div className="p-2 bg-green-500 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-green-900">Google Ads</div>
-                  <div className="text-sm text-green-700">182 leads • 18.2%</div>
+                  <div className="text-sm font-medium text-gray-900">Google Ads</div>
+                  <div className="text-xs text-gray-500">18.2% tổng leads</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-green-900">88%</div>
-                <div className="text-xs text-green-600">Ổn định</div>
+                <div className="text-2xl font-bold text-gray-900">182</div>
+                <div className="text-xs text-green-600 font-semibold">88% chuyển đổi</div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+            <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors cursor-pointer">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7.8 2.4L6.4 1L1 6.4l1.4 1.4L7.8 2.4zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.14-7-7 3.14-7 7-7z"/>
+                <div className="p-2 bg-orange-500 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 15.287c-.678 2.034-2.525 3.467-4.989 3.871a6.79 6.79 0 01-5.524-1.384 6.801 6.801 0 01-2.485-4.755c-.078-1.875.611-3.683 1.901-4.989a6.79 6.79 0 014.755-2.113c1.875-.078 3.683.611 4.989 1.901a6.801 6.801 0 012.485 4.755c.156 1.094-.078 2.189-.611 3.127l-.521.587z"/>
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-orange-900">Zalo Business</div>
-                  <div className="text-sm text-orange-700">153 leads • 15.3%</div>
+                  <div className="text-sm font-medium text-gray-900">Zalo Business</div>
+                  <div className="text-xs text-gray-500">15.3% tổng leads</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-orange-900">95%</div>
-                <div className="text-xs text-orange-600">ROI cao</div>
+                <div className="text-2xl font-bold text-gray-900">153</div>
+                <div className="text-xs text-green-600 font-semibold">95% chuyển đổi</div>
               </div>
             </div>
           </div>
 
           {/* Bottleneck Analysis */}
           <div className="border-t pt-4">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center justify-between">
-              <div className="flex items-center">
-                <svg className="w-4 h-4 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                Điểm tắc nghẽn
-              </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center justify-between">
+              <span>Điểm tắc nghẽn</span>
               <button 
                 onClick={() => setShowCalculationGuide(!showCalculationGuide)}
                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
@@ -1190,8 +1043,8 @@ export default function Dashboard() {
                   <span className="text-sm font-medium text-red-900">Thời gian phản hồi leads</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-red-900">3.2 giờ</div>
-                  <div className="text-xs text-red-600">+25% so với tháng trước</div>
+                  <div className="text-sm font-bold text-red-900">3.2h</div>
+                  <div className="text-xs text-red-600">Tăng 25% so với tuần trước</div>
                 </div>
                 
                 {/* Tooltip */}
