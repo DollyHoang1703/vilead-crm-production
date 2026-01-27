@@ -526,6 +526,7 @@ export default function ChatManagement() {
   const [fileSenderFilter, setFileSenderFilter] = useState<'all' | 'staff' | 'customer'>('all')
   const [showConnectionModal, setShowConnectionModal] = useState(false)
   const [connectionPlatformFilter, setConnectionPlatformFilter] = useState<'all' | 'zalo-personal' | 'zalo-oa' | 'facebook'>('all')
+  const [connectedAccounts, setConnectedAccounts] = useState<ZaloAccount[]>(connectedZaloAccounts)
   const [accountConnectionStatus, setAccountConnectionStatus] = useState<Map<string, boolean>>(
     new Map(connectedZaloAccounts.map(acc => [acc.id, true]))
   )
@@ -715,7 +716,7 @@ export default function ChatManagement() {
               <button 
                 onClick={() => {
                   setSelectedChannel('zalo-personal')
-                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'zalo-personal')
+                  const firstAccount = connectedAccounts.find(a => a.platform === 'zalo-personal')
                   if (firstAccount) setSelectedAccount(firstAccount)
                 }}
                 className={cn(
@@ -727,7 +728,7 @@ export default function ChatManagement() {
               >
                 <span className="text-white font-semibold text-xs">ZL</span>
                 {(() => {
-                  const count = connectedZaloAccounts.filter(a => a.platform === 'zalo-personal').reduce((sum, a) => sum + a.unreadCount, 0)
+                  const count = connectedAccounts.filter(a => a.platform === 'zalo-personal').reduce((sum, a) => sum + a.unreadCount, 0)
                   return count > 0 ? (
                     <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {count > 99 ? '99+' : count}
@@ -738,7 +739,7 @@ export default function ChatManagement() {
               <button 
                 onClick={() => {
                   setSelectedChannel('zalo-oa')
-                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'zalo-oa')
+                  const firstAccount = connectedAccounts.find(a => a.platform === 'zalo-oa')
                   if (firstAccount) setSelectedAccount(firstAccount)
                 }}
                 className={cn(
@@ -750,7 +751,7 @@ export default function ChatManagement() {
               >
                 <span className="text-white font-semibold text-xs">OA</span>
                 {(() => {
-                  const count = connectedZaloAccounts.filter(a => a.platform === 'zalo-oa').reduce((sum, a) => sum + a.unreadCount, 0)
+                  const count = connectedAccounts.filter(a => a.platform === 'zalo-oa').reduce((sum, a) => sum + a.unreadCount, 0)
                   return count > 0 ? (
                     <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {count > 99 ? '99+' : count}
@@ -761,7 +762,7 @@ export default function ChatManagement() {
               <button 
                 onClick={() => {
                   setSelectedChannel('facebook')
-                  const firstAccount = connectedZaloAccounts.find(a => a.platform === 'facebook')
+                  const firstAccount = connectedAccounts.find(a => a.platform === 'facebook')
                   if (firstAccount) setSelectedAccount(firstAccount)
                 }}
                 className={cn(
@@ -773,7 +774,7 @@ export default function ChatManagement() {
               >
                 <span className="text-white font-semibold text-xs">FB</span>
                 {(() => {
-                  const count = connectedZaloAccounts.filter(a => a.platform === 'facebook').reduce((sum, a) => sum + a.unreadCount, 0)
+                  const count = connectedAccounts.filter(a => a.platform === 'facebook').reduce((sum, a) => sum + a.unreadCount, 0)
                   return count > 0 ? (
                     <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {count > 99 ? '99+' : count}
@@ -817,7 +818,7 @@ export default function ChatManagement() {
               {/* Dropdown Menu */}
               {showAccountDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 py-1">
-                  {connectedZaloAccounts.filter(account => account.platform === selectedChannel).map((account) => (
+                  {connectedAccounts.filter(account => account.platform === selectedChannel).map((account) => (
                     <button
                       key={account.id}
                       onClick={() => {
@@ -2158,7 +2159,7 @@ export default function ChatManagement() {
                                         <DropdownMenuItem 
                                           className="cursor-pointer"
                                           onClick={() => {
-                                            setSelectedMemberForRequest(admin)
+                                            setSelectedMemberForRequest(member)
                                             setShowFriendRequestModal(true)
                                           }}
                                         >
@@ -3081,7 +3082,7 @@ export default function ChatManagement() {
               onClick={() => {
                 if (accountToDelete) {
                   // Remove account from the list
-                  setConnectedZaloAccounts(prev => 
+                  setConnectedAccounts(prev => 
                     prev.filter(acc => acc.id !== accountToDelete.id)
                   )
                   // Remove from connection status

@@ -3006,10 +3006,9 @@ export default function SalesManagement() {
                       <button
                         onClick={() => setVisibleColumns({
                           checkbox: true, stt: true, customerName: true, phone: true, email: true,
-                          company: false, address: true, source: true, region: false, stage: true,
-                          product: false, customerType: false, salesOwner: true, tags: true, 
-                          notes: true, files: false, createdDate: true, lastModified: false, 
-                          interactionCount: false, lastInteraction: false, actions: true
+                          address: true, source: true, stage: true,
+                          salesOwner: true, tags: true, 
+                          notes: true, createdDate: true, actions: true
                         })}
                         className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
                       >

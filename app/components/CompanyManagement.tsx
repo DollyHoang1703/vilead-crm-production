@@ -473,6 +473,7 @@ export default function CompanyManagement() {
   // Modal states for quick actions
   const [showPositionModal, setShowPositionModal] = useState(false)
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
+  const [showRoleModal, setShowRoleModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showOfficialDateModal, setShowOfficialDateModal] = useState(false)
   const [showSalaryModal, setShowSalaryModal] = useState(false)
@@ -499,6 +500,7 @@ export default function CompanyManagement() {
   // Form data for quick actions
   const [newPosition, setNewPosition] = useState('')
   const [newDepartmentId, setNewDepartmentId] = useState('')
+  const [newRoleId, setNewRoleId] = useState('')
   const [newStatus, setNewStatus] = useState('')
   const [newOfficialDate, setNewOfficialDate] = useState('')
   const [newSalary, setNewSalary] = useState('')
@@ -2044,8 +2046,8 @@ export default function CompanyManagement() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
                         setSelectedEmployee(employee)
-                        setNewRoleId && setNewRoleId(employee.roleId?.toString() || '')
-                        setShowRoleModal && setShowRoleModal(true)
+                        setNewRoleId(employee.roleId?.toString() || '')
+                        setShowRoleModal(true)
                       }}>
                         <UserCog className="mr-2 h-4 w-4" />
                         Chuyển vai trò

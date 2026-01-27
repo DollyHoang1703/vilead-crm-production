@@ -312,7 +312,7 @@ export default function CustomersManagement() {
   const [editReason, setEditReason] = useState('')
   
   const [showColumnSelector, setShowColumnSelector] = useState(false)
-  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null)
+  const [openActionMenu, setOpenActionMenu] = useState<number | null>(null)
   const [visibleColumns, setVisibleColumns] = useState({
     checkbox: true,
     no: true,

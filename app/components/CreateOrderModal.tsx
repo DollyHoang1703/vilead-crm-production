@@ -382,6 +382,7 @@ export default function CreateOrderModal({
                   >
                     <option value="cash">Tiền mặt</option>
                     <option value="transfer">Chuyển khoản</option>
+                    <option value="card">Thẻ tín dụng/Ghi nợ</option>
                     <option value="installment">Trả góp</option>
                     <option value="momo">Momo</option>
                     <option value="custom">Tùy chỉnh</option>

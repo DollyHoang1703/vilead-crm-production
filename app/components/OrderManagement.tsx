@@ -59,6 +59,8 @@ interface Customer {
   phone: string
   email: string
   company?: string
+  position?: string
+  address?: string
   type: 'lead' | 'customer'
 }
 
@@ -151,9 +153,10 @@ interface Order {
   discount: number
   tax: number
   total: number
+  totalAmount: number
   status: 'draft' | 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled' | 'refunded'
   paymentStatus: 'unpaid' | 'partial' | 'paid' | 'refunded'
-  paymentMethod: 'cash' | 'transfer' | 'installment' | 'momo' | 'custom'
+  paymentMethod: 'cash' | 'transfer' | 'card' | 'installment' | 'momo' | 'custom'
   notes: OrderNote[]
   invoices: Invoice[]
   tags: string[]
@@ -2548,6 +2551,7 @@ Trân trọng,
                   >
                     <option value="cash">Tiền mặt</option>
                     <option value="transfer">Chuyển khoản</option>
+                    <option value="card">Thẻ tín dụng/Ghi nợ</option>
                     <option value="installment">Trả góp</option>
                     <option value="momo">MoMo</option>
                     <option value="custom">Khác</option>

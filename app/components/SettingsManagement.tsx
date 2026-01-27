@@ -281,6 +281,7 @@ interface CustomTag {
   category: 'lead' | 'customer' | 'deal' | 'task'
   scope: 'global' | 'team' | 'user'
   scopeId?: string
+  isActive: boolean
   isDefault: boolean
   autoAssign: {
     enabled: boolean
@@ -624,6 +625,7 @@ const sampleTags: CustomTag[] = [
     color: '#F59E0B',
     category: 'customer',
     scope: 'global',
+    isActive: true,
     isDefault: false,
     autoAssign: {
       enabled: true,
@@ -640,6 +642,7 @@ const sampleTags: CustomTag[] = [
     color: '#10B981',
     category: 'lead',
     scope: 'global',
+    isActive: true,
     isDefault: true,
     autoAssign: {
       enabled: true,
@@ -656,6 +659,7 @@ const sampleTags: CustomTag[] = [
     color: '#EF4444',
     category: 'deal',
     scope: 'global',
+    isActive: true,
     isDefault: false,
     autoAssign: {
       enabled: true,
@@ -672,6 +676,7 @@ const sampleTags: CustomTag[] = [
     color: '#DC2626',
     category: 'task',
     scope: 'global',
+    isActive: true,
     isDefault: false,
     autoAssign: {
       enabled: true,
@@ -689,6 +694,7 @@ const sampleTags: CustomTag[] = [
     category: 'lead',
     scope: 'team',
     scopeId: 'team-a',
+    isActive: true,
     isDefault: false,
     autoAssign: {
       enabled: true,
@@ -7130,7 +7136,13 @@ export default function SettingsManagement() {
                               scope: 'global',
                               isActive: true,
                               isDefault: false,
-                              category: 'customer'
+                              category: 'customer',
+                              autoAssign: {
+                                enabled: false,
+                                conditions: []
+                              },
+                              createdBy: 'admin',
+                              createdAt: new Date().toISOString()
                             })}
                           >
                             <Edit2 className="w-4 h-4" />
@@ -7173,7 +7185,13 @@ export default function SettingsManagement() {
                               scope: 'global',
                               isActive: true,
                               isDefault: true,
-                              category: 'lead'
+                              category: 'lead',
+                              autoAssign: {
+                                enabled: false,
+                                conditions: []
+                              },
+                              createdBy: 'admin',
+                              createdAt: new Date().toISOString()
                             })}
                           >
                             <Edit2 className="w-4 h-4" />
@@ -7215,7 +7233,13 @@ export default function SettingsManagement() {
                               scope: 'global',
                               isActive: true,
                               isDefault: false,
-                              category: 'deal'
+                              category: 'deal',
+                              autoAssign: {
+                                enabled: false,
+                                conditions: []
+                              },
+                              createdBy: 'admin',
+                              createdAt: new Date().toISOString()
                             })}
                           >
                             <Edit2 className="w-4 h-4" />
@@ -7257,7 +7281,13 @@ export default function SettingsManagement() {
                               scope: 'global',
                               isActive: true,
                               isDefault: false,
-                              category: 'task'
+                              category: 'task',
+                              autoAssign: {
+                                enabled: false,
+                                conditions: []
+                              },
+                              createdBy: 'admin',
+                              createdAt: new Date().toISOString()
                             })}
                           >
                             <Edit2 className="w-4 h-4" />
