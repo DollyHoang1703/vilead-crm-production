@@ -4241,15 +4241,6 @@ export default function SettingsManagement() {
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0"
-                  onClick={() => handleDelete(integration.id)}
-                  title="Xóa"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
                   onClick={() => handleEdit(integration.id)}
                   title="Chỉnh sửa"
                 >
@@ -4332,7 +4323,7 @@ export default function SettingsManagement() {
         {/* Modal: Chọn loại tích hợp */}
         {showIntegrationModal && (
           <Dialog open={showIntegrationModal} onOpenChange={setShowIntegrationModal}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md [&>button]:hidden">
               <DialogHeader>
                 <DialogTitle>Thêm tích hợp mới</DialogTitle>
                 <DialogDescription>
@@ -4415,7 +4406,7 @@ export default function SettingsManagement() {
         {/* Modal: QR Code - Kết nối Zalo cá nhân */}
         {showQRModal && (
           <Dialog open={showQRModal} onOpenChange={closeQRModal}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl [&>button]:hidden">
               <DialogHeader>
                 <DialogTitle className="text-2xl">Kết nối Zalo cá nhân</DialogTitle>
               </DialogHeader>
@@ -4521,7 +4512,7 @@ export default function SettingsManagement() {
         {/* Modal: Kết nối Facebook Fanpage */}
         {showFacebookModal && (
           <Dialog open={showFacebookModal} onOpenChange={setShowFacebookModal}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md [&>button]:hidden">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-center">
                   Kết nối Vilead CRM
@@ -4573,7 +4564,7 @@ export default function SettingsManagement() {
         {/* Modal: Kết nối Zalo OA - Step 1 (Link) */}
         {showOALinkModal && (
           <Dialog open={showOALinkModal} onOpenChange={setShowOALinkModal}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md [&>button]:hidden">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-center">
                   Kết nối Vilead CRM

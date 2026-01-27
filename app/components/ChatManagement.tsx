@@ -20,7 +20,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import {
   Search,
   Filter,
@@ -51,7 +61,13 @@ import {
   Eye,
   MessageSquare,
   Settings,
-  Globe
+  Globe,
+  Facebook,
+  QrCode,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -508,7 +524,28 @@ export default function ChatManagement() {
   const [fileSearchTerm, setFileSearchTerm] = useState('')
   const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'file' | 'image' | 'video'>('all')
   const [fileSenderFilter, setFileSenderFilter] = useState<'all' | 'staff' | 'customer'>('all')
+  const [showConnectionModal, setShowConnectionModal] = useState(false)
+  const [connectionPlatformFilter, setConnectionPlatformFilter] = useState<'all' | 'zalo-personal' | 'zalo-oa' | 'facebook'>('all')
+  const [accountConnectionStatus, setAccountConnectionStatus] = useState<Map<string, boolean>>(
+    new Map(connectedZaloAccounts.map(acc => [acc.id, true]))
+  )
   const [memberSearchTerm, setMemberSearchTerm] = useState('')
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [accountToDelete, setAccountToDelete] = useState<ZaloAccount | null>(null)
+  
+  // Friend request states
+  const [showFriendRequestModal, setShowFriendRequestModal] = useState(false)
+  const [friendRequestMessage, setFriendRequestMessage] = useState('Xin chào bạn. Tôi muốn kết bạn với bạn trên Zalo')
+  const [selectedMemberForRequest, setSelectedMemberForRequest] = useState<GroupMember | null>(null)
+  
+  // Integration modal states
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false)
+  const [selectedIntegrationType, setSelectedIntegrationType] = useState<'zalo-personal' | 'zalo-oa' | 'facebook' | ''>('')
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [showOALinkModal, setShowOALinkModal] = useState(false)
+  const [showFacebookModal, setShowFacebookModal] = useState(false)
+  const [qrCheckStatus, setQRCheckStatus] = useState<'pending' | 'checking' | 'success' | 'error'>('pending')
+  const [qrCheckInterval, setQRCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [connectedCustomers, setConnectedCustomers] = useState<Set<string>>(new Set())
   const [conversationCustomerMap, setConversationCustomerMap] = useState<Map<string, string>>(new Map())
   const [customerStageMap, setCustomerStageMap] = useState<Map<string, string>>(new Map())
@@ -517,6 +554,15 @@ export default function ChatManagement() {
 
   const messageScrollRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Toggle account connection status
+  const toggleAccountConnection = (accountId: string) => {
+    setAccountConnectionStatus(prev => {
+      const newMap = new Map(prev)
+      newMap.set(accountId, !prev.get(accountId))
+      return newMap
+    })
+  }
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -644,6 +690,13 @@ export default function ChatManagement() {
           <div className="p-4 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-gray-900">Tin nhắn</h2>
+              <button 
+                onClick={() => setShowConnectionModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Kết nối</span>
+              </button>
             </div>
 
             {/* Search */}
@@ -728,6 +781,11 @@ export default function ChatManagement() {
                   ) : null
                 })()}
               </button>
+              <button 
+                className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors bg-green-500 hover:bg-green-600"
+              >
+                <span className="text-white font-semibold text-xs">W</span>
+              </button>
             </div>
 
             {/* Account Selector Dropdown */}
@@ -738,19 +796,17 @@ export default function ChatManagement() {
               >
                 <div className="flex items-center gap-2">
                   <Avatar className="w-6 h-6">
-                    <AvatarImage src={selectedAccount.avatar} />
-                    <AvatarFallback className="bg-blue-500 text-white text-[10px]">
-                      {selectedAccount.name.substring(0, 2).toUpperCase()}
+                    <AvatarImage src="https://api.dicebear.com/7.x/initials/svg?seed=Vitech" />
+                    <AvatarFallback className="bg-orange-500 text-white text-[10px]">
+                      VT
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm text-gray-900 truncate max-w-[120px]">
-                    {selectedAccount.name}
+                  <span className="text-sm text-gray-900 truncate max-w-[180px]">
+                    Công ty CP Tập Doàn Vitech
                   </span>
-                  {selectedAccount.unreadCount > 0 && (
-                    <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {selectedAccount.unreadCount > 9 ? '9+' : selectedAccount.unreadCount}
-                    </span>
-                  )}
+                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    1
+                  </span>
                 </div>
                 <ChevronDown className={cn(
                   "w-4 h-4 text-gray-400 transition-transform flex-shrink-0",
@@ -854,9 +910,6 @@ export default function ChatManagement() {
                   </Button>
                 )}
               </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                <Filter className="w-4 h-4 text-gray-600" />
-              </Button>
             </div>
           </div>
 
@@ -1157,7 +1210,13 @@ export default function ChatManagement() {
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="Gọi điện">
                     <Phone className="w-4 h-4 text-gray-600" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="Tìm kiếm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" 
+                    title="Tìm kiếm"
+                    onClick={() => setRightPanelTab('files')}
+                  >
                     <Search className="w-4 h-4 text-gray-600" />
                   </Button>
                   <Button
@@ -1482,22 +1541,6 @@ export default function ChatManagement() {
 
             {/* Information Tabs */}
             <Tabs defaultValue="info" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start border-b rounded-none p-0 bg-white h-auto">
-                <TabsTrigger value="info" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
-                  Thông tin
-                </TabsTrigger>
-                {conversationCustomerMap.has(selectedConversation.id) && (
-                  <>
-                    <TabsTrigger value="history" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
-                      Lịch sử
-                    </TabsTrigger>
-                    <TabsTrigger value="notes" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 text-xs px-4">
-                      Ghi chú
-                    </TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-
               <TabsContent value="info" className="flex-1 overflow-y-auto p-4 mt-0">
                 <div className="space-y-4">
                   {/* Contact Information */}
@@ -2112,12 +2155,17 @@ export default function ChatManagement() {
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="w-48">
-                                        <DropdownMenuItem className="cursor-pointer">
+                                        <DropdownMenuItem 
+                                          className="cursor-pointer"
+                                          onClick={() => {
+                                            setSelectedMemberForRequest(admin)
+                                            setShowFriendRequestModal(true)
+                                          }}
+                                        >
                                           <UserPlus className="w-4 h-4 mr-2" />
                                           Gửi lời mời kết bạn
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="cursor-pointer">
-                                          <MessageSquare className="w-4 h-4 mr-2" />
+                                        <DropdownMenuItem className="cursor-pointer">\n                                          <MessageSquare className="w-4 h-4 mr-2" />
                                           Nhắn tin
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
@@ -2170,7 +2218,13 @@ export default function ChatManagement() {
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="w-48">
-                                        <DropdownMenuItem className="cursor-pointer">
+                                        <DropdownMenuItem 
+                                          className="cursor-pointer"
+                                          onClick={() => {
+                                            setSelectedMemberForRequest(member)
+                                            setShowFriendRequestModal(true)
+                                          }}
+                                        >
                                           <UserPlus className="w-4 h-4 mr-2" />
                                           Gửi lời mời kết bạn
                                         </DropdownMenuItem>
@@ -2561,6 +2615,538 @@ export default function ChatManagement() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Connection Management Modal */}
+      <Dialog open={showConnectionModal} onOpenChange={setShowConnectionModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Quản lý kết nối</h2>
+            </div>
+
+            {/* Controls */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-600">Chọn nền tảng:</label>
+                  <select
+                    value={connectionPlatformFilter}
+                    onChange={(e) => setConnectionPlatformFilter(e.target.value as any)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Tất cả nền tảng</option>
+                    <option value="zalo-personal">Zalo cá nhân</option>
+                    <option value="zalo-oa">Zalo OA</option>
+                    <option value="facebook">Facebook</option>
+                  </select>
+                </div>
+                <Button 
+                  className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white"
+                  onClick={() => setShowIntegrationModal(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm kết nối
+                </Button>
+              </div>
+            </div>
+
+            {/* Connected Accounts List */}
+            <ScrollArea className="flex-1 p-6 max-h-[500px]">
+              <div className="space-y-4">
+                {connectedZaloAccounts
+                  .filter(account => connectionPlatformFilter === 'all' || account.platform === connectionPlatformFilter)
+                  .map((account) => (
+                    <div key={account.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={account.avatar} />
+                            <AvatarFallback className="bg-blue-500 text-white">
+                              {account.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-gray-900">{account.name}</h3>
+                              <Badge className={cn(
+                                "text-xs",
+                                account.platform === 'zalo-personal' ? "bg-blue-100 text-blue-800" :
+                                account.platform === 'zalo-oa' ? "bg-purple-100 text-purple-800" :
+                                "bg-blue-600 text-white"
+                              )}>
+                                {account.platform === 'zalo-personal' ? 'Zalo cá nhân' :
+                                 account.platform === 'zalo-oa' ? 'Zalo OA' :
+                                 'Facebook'}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-gray-500 space-y-1">
+                              <div>• Chủ tài khoản: dung acac</div>
+                              <div>• ID: {account.id}853684866249512254</div>
+                              <div>Nhân viên: dung acac</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-3">
+                          {/* Row 1: Badge */}
+                          <div className="flex items-center gap-2">
+                            {accountConnectionStatus.get(account.id) ? (
+                              <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                Đã kết nối
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                Mất kết nối
+                              </Badge>
+                            )}
+                          </div>
+                          {/* Row 2: Disconnect & Delete buttons */}
+                          <div className="flex items-center gap-2">
+                            {accountConnectionStatus.get(account.id) ? (
+                              <Button
+                                size="sm"
+                                onClick={() => toggleAccountConnection(account.id)}
+                                className="bg-orange-500 hover:bg-orange-600 text-white text-xs h-9 border-0"
+                              >
+                                Ngắt kết nối
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => toggleAccountConnection(account.id)}
+                                className="bg-green-500 hover:bg-green-600 text-white text-xs h-9 border-0"
+                              >
+                                Kết nối
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="bg-red-500 hover:bg-red-600 text-white h-9 border-0"
+                              onClick={() => {
+                                setAccountToDelete(account)
+                                setShowDeleteAccountModal(true)
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Chọn loại tích hợp */}
+      <Dialog open={showIntegrationModal} onOpenChange={setShowIntegrationModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thêm kết nối mới</DialogTitle>
+            <DialogDescription>
+              Chọn loại kết nối bạn muốn thêm vào hệ thống
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-6 py-4">
+            <div>
+              <Label>Loại kết nối</Label>
+              <Select
+                value={selectedIntegrationType}
+                onValueChange={(value) => setSelectedIntegrationType(value as 'zalo-personal' | 'zalo-oa' | 'facebook' | '')}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Chọn loại kết nối" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="zalo-personal">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Kết nối Zalo cá nhân
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="zalo-oa">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Kết nối Zalo OA
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="facebook">
+                    <div className="flex items-center gap-2">
+                      <Facebook className="w-4 h-4" />
+                      Kết nối Facebook Fanpage
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedIntegrationType === 'zalo-personal' && (
+              <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                <p className="text-sm text-blue-800">
+                  Quét mã QR bằng ứng dụng Zalo để kết nối tài khoản cá nhân
+                </p>
+              </div>
+            )}
+
+            {selectedIntegrationType === 'zalo-oa' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                <p className="text-sm text-yellow-800">
+                  <AlertTriangle className="w-4 h-4 inline mr-1" />
+                  Yêu cầu gói <strong>OA Nâng cao</strong> hoặc <strong>OA Premium</strong>
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowIntegrationModal(false)
+                setSelectedIntegrationType('')
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedIntegrationType === 'zalo-personal') {
+                  setShowIntegrationModal(false)
+                  setShowQRModal(true)
+                  setTimeout(() => {
+                    setQRCheckStatus('checking')
+                    // Simulate checking
+                    setTimeout(() => setQRCheckStatus('success'), 3000)
+                  }, 500)
+                } else if (selectedIntegrationType === 'zalo-oa') {
+                  setShowIntegrationModal(false)
+                  setShowOALinkModal(true)
+                } else if (selectedIntegrationType === 'facebook') {
+                  setShowIntegrationModal(false)
+                  setShowFacebookModal(true)
+                }
+              }}
+              disabled={!selectedIntegrationType}
+            >
+              Tiếp tục
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: QR Code - Kết nối Zalo cá nhân */}
+      <Dialog open={showQRModal} onOpenChange={(open) => {
+        if (!open) {
+          if (qrCheckInterval) clearInterval(qrCheckInterval)
+          setQRCheckStatus('pending')
+        }
+        setShowQRModal(open)
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Kết nối Zalo cá nhân</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex gap-8 px-6 py-4">
+            {/* Left: QR Code */}
+            <div className="flex-shrink-0">
+              <div className="w-64 h-64 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center relative">
+                {qrCheckStatus === 'pending' || qrCheckStatus === 'checking' ? (
+                  <>
+                    <div className="w-56 h-56 bg-white border border-gray-200 rounded flex items-center justify-center">
+                      <QrCode className="w-32 h-32 text-gray-400" />
+                    </div>
+                    {qrCheckStatus === 'checking' && (
+                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+                      </div>
+                    )}
+                  </>
+                ) : qrCheckStatus === 'success' ? (
+                  <div className="text-center">
+                    <CheckCircle className="w-24 h-24 text-green-500 mx-auto mb-2" />
+                    <p className="text-green-600 font-medium">Kết nối thành công!</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <XCircle className="w-24 h-24 text-red-500 mx-auto mb-2" />
+                    <p className="text-red-600 font-medium">Lỗi kết nối</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => setQRCheckStatus('checking')}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Thử lại
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Instructions */}
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-4">
+                Quét QR để kết nối Zalo
+              </h3>
+
+              <ol className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    1
+                  </span>
+                  <div>
+                    <span>Mở ứng dụng </span>
+                    <Badge variant="outline" className="mx-1">
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      Zalo
+                    </Badge>
+                    <span>trên di động.</span>
+                  </div>
+                </li>
+
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    2
+                  </span>
+                  <div>
+                    <span>Ở mục ⚙️ </span>
+                    <strong>Cài đặt</strong>
+                    <span>, nhấn nút quét QR 📷</span>
+                  </div>
+                </li>
+
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    3
+                  </span>
+                  <span>Quét mã QR để đăng nhập.</span>
+                </li>
+              </ol>
+
+              <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded p-3">
+                <p className="text-sm font-medium text-yellow-900 mb-1">Lưu ý:</p>
+                <ul className="text-xs text-yellow-800 space-y-1">
+                  <li>• Không truy cập: <code className="bg-yellow-100 px-1 rounded">chat.Zalo.me</code> để tránh bị mất kết nối</li>
+                  <li>• Nếu mất kết nối: Bạn làm mới kết nối và đăng nhập lại</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowQRModal(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Kết nối Zalo OA */}
+      <Dialog open={showOALinkModal} onOpenChange={setShowOALinkModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">
+              Kết nối Vilead CRM
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              với tài khoản Zalo OA
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 px-6 py-4">
+            {/* Logo Section */}
+            <div className="flex items-center justify-center gap-6">
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-600">V</span>
+              </div>
+
+              <RefreshCw className="w-6 h-6 text-gray-400" />
+
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                <MessageSquare className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <p className="text-sm text-gray-700">
+                Zalo OA yêu cầu bạn phải mua gói{' '}
+                <strong className="text-yellow-800">OA Nâng cao</strong> hoặc{' '}
+                <strong className="text-yellow-800">OA Premium</strong>{' '}
+                để có thể kết nối với Vilead CRM
+              </p>
+            </div>
+
+            {/* Connect Button */}
+            <Button
+              className="w-full h-12 text-base"
+              onClick={() => {
+                alert('Đang kết nối với Zalo OA...')
+                setShowOALinkModal(false)
+              }}
+            >
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Kết nối tài khoản Zalo OA
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Kết nối Facebook Fanpage */}
+      <Dialog open={showFacebookModal} onOpenChange={setShowFacebookModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">
+              Kết nối Vilead CRM
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              với Facebook Fanpage
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 px-6 py-4">
+            {/* Logo Section */}
+            <div className="flex items-center justify-center gap-6">
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-600">V</span>
+              </div>
+
+              <RefreshCw className="w-6 h-6 text-gray-400" />
+
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                <Facebook className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            {/* Info Message */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p className="text-sm text-gray-700">
+                Đăng nhập Facebook để kết nối các{' '}
+                <strong className="text-blue-600">Fanpage</strong> bạn quản lý
+              </p>
+            </div>
+
+            {/* Connect Button */}
+            <Button
+              className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                alert('Đang kết nối với Facebook...')
+                setShowFacebookModal(false)
+              }}
+            >
+              <Facebook className="w-5 h-5 mr-2" />
+              Kết nối tài khoản Facebook
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Xác nhận xóa kết nối */}
+      <Dialog open={showDeleteAccountModal} onOpenChange={setShowDeleteAccountModal}>
+        <DialogContent className="max-w-md [&>button]:hidden">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Xác nhận xóa</DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 py-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Toàn bộ dữ liệu (tin nhắn, tài liệu đính kèm) sẽ bị xóa trên Quản lý Chat không ảnh hưởng dữ liệu trên Zalo.
+              <br /><br />
+              Bạn có muốn tiếp tục xoá tài khoản này hay không?
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="border-0"
+              onClick={() => {
+                setShowDeleteAccountModal(false)
+                setAccountToDelete(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+              onClick={() => {
+                if (accountToDelete) {
+                  // Remove account from the list
+                  setConnectedZaloAccounts(prev => 
+                    prev.filter(acc => acc.id !== accountToDelete.id)
+                  )
+                  // Remove from connection status
+                  setAccountConnectionStatus(prev => {
+                    const newMap = new Map(prev)
+                    newMap.delete(accountToDelete.id)
+                    return newMap
+                  })
+                }
+                setShowDeleteAccountModal(false)
+                setAccountToDelete(null)
+              }}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Friend Request Modal */}
+      <Dialog open={showFriendRequestModal} onOpenChange={setShowFriendRequestModal}>
+        <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full [&>button]:hidden">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Nhập lời nhắn gửi lời mời kết bạn</DialogTitle>
+          </DialogHeader>
+
+          <div className="px-6 py-4">
+            <textarea
+              value={friendRequestMessage}
+              onChange={(e) => {
+                if (e.target.value.length <= 150) {
+                  setFriendRequestMessage(e.target.value)
+                }
+              }}
+              className="w-full min-h-[120px] px-3 py-2 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Xin chào bạn. Tôi muốn kết bạn với bạn trên Zalo"
+            />
+            <div className="mt-2 text-sm text-gray-500">
+              {friendRequestMessage.length}/150
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowFriendRequestModal(false)
+                setFriendRequestMessage('Xin chào bạn. Tôi muốn kết bạn với bạn trên Zalo')
+                setSelectedMemberForRequest(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                // TODO: Send friend request API
+                console.log('Send friend request to:', selectedMemberForRequest?.name, 'Message:', friendRequestMessage)
+                setShowFriendRequestModal(false)
+                setFriendRequestMessage('Xin chào bạn. Tôi muốn kết bạn với bạn trên Zalo')
+                setSelectedMemberForRequest(null)
+              }}
+            >
+              Gửi
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
