@@ -385,6 +385,7 @@ export default function CustomersManagement() {
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([])
   const [selectAll, setSelectAll] = useState(false)
   const [showQuickTaskModal, setShowQuickTaskModal] = useState(false)
+  const [showExportDropdown, setShowExportDropdown] = useState(false)
   const [quickTaskData, setQuickTaskData] = useState({
     title: '',
     description: '',
@@ -5184,16 +5185,6 @@ export default function CustomersManagement() {
                 </button>
               </div>
             )}
-            <button 
-              onClick={() => setFilterCustomerType('')}
-              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                !filterCustomerType 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Tất cả ({customers.filter(c => c.products && c.products.length > 0 && c.totalSpent > 0).length})
-            </button>
           </div>
         </div>
         
@@ -5314,9 +5305,9 @@ export default function CustomersManagement() {
       {selectedView === 'list' && (
         <>
           {/* Section 3: Thanh công cụ tìm kiếm và lọc */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3 flex-wrap gap-y-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -5669,8 +5660,7 @@ export default function CustomersManagement() {
           {/* End Section 3: Thanh công cụ tìm kiếm và lọc */}
 
           {/* Section 4: Bảng danh sách khách hàng */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             {/* Bulk Actions Toolbar */}
             {selectedCustomerIds.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -5697,6 +5687,40 @@ export default function CustomersManagement() {
                       <Plus className="w-4 h-4" />
                       <span>Tạo task nhanh</span>
                     </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowExportDropdown(!showExportDropdown)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Xuất dữ liệu</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      {showExportDropdown && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                          <button
+                            onClick={() => {
+                              // Handle Excel export
+                              setShowExportDropdown(false)
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2 text-sm text-gray-700"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Xuất Excel</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Handle CSV export
+                              setShowExportDropdown(false)
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2 text-sm text-gray-700 border-t border-gray-100"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Xuất CSV</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {/* Ẩn chức năng gửi email hàng loạt theo yêu cầu */}
                     {/* <button
                       onClick={() => handleBulkEmail()}
@@ -5709,6 +5733,11 @@ export default function CustomersManagement() {
                 </div>
               </div>
             )}
+
+            {/* Thông tin hiển thị */}
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+              <span>Hiển thị {filteredCustomers.length} trong tổng {customers.length} khách hàng</span>
+            </div>
 
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="w-full border-collapse">
@@ -6111,8 +6140,7 @@ export default function CustomersManagement() {
               </table>
             </div>
           </div>
-          </div>
-          {/* End Section 3: Bảng danh sách khách hàng */}
+          {/* End Section 4: Bảng danh sách khách hàng */}
         </>
       )}
 
