@@ -102,7 +102,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "📈",
       tooltip: "Quản lý KPI: Thiết lập và theo dõi chỉ số hiệu suất",
       roles: ["admin", "ceo", "leader"],
-      disabled: true
+      disabled: false
     },
     {
       id: 'chat',
@@ -113,7 +113,6 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       roles: ["admin", "ceo", "leader", "sale"],
       disabled: false
     },
-    /*
     {
       id: 'reports',
       icon: FileText,
@@ -121,9 +120,8 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "📊",
       tooltip: "Báo cáo: Doanh số, hiệu suất và KPIs",
       roles: ["admin", "ceo", "leader", "accountant"],
-      disabled: true
+      disabled: false
     },
-    */
     {
       id: 'settings',
       icon: Settings,
