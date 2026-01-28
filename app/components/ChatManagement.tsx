@@ -67,7 +67,8 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Link
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -148,6 +149,7 @@ interface CRMCustomer {
   createdAt: string
   lastContactedAt: string
   avatar?: string
+  notes?: string
 }
 
 interface ZaloConversation {
@@ -525,6 +527,20 @@ export default function ChatManagement() {
   const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'file' | 'image' | 'video'>('all')
   const [fileSenderFilter, setFileSenderFilter] = useState<'all' | 'staff' | 'customer'>('all')
   const [showConnectionModal, setShowConnectionModal] = useState(false)
+  const [showCreateLeadModal, setShowCreateLeadModal] = useState(false)
+  const [syncedCustomers, setSyncedCustomers] = useState<Map<string, any>>(new Map())
+  const [leadFormData, setLeadFormData] = useState({
+    customerType: 'individual',
+    name: '',
+    phone: '',
+    email: '',
+    source: 'website',
+    province: 'hanoi',
+    assignTo: '',
+    product: '',
+    content: '',
+    notes: ''
+  })
   const [connectionPlatformFilter, setConnectionPlatformFilter] = useState<'all' | 'zalo-personal' | 'zalo-oa' | 'facebook'>('all')
   const [connectedAccounts, setConnectedAccounts] = useState<ZaloAccount[]>(connectedZaloAccounts)
   const [accountConnectionStatus, setAccountConnectionStatus] = useState<Map<string, boolean>>(
@@ -676,7 +692,13 @@ export default function ChatManagement() {
                           conv.contact.phone?.includes(searchTerm) ||
                           conv.lastMessage?.content.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesUnread = !filterUnread || conv.unreadCount > 0
-    return matchesSearch && matchesUnread
+    
+    // For Facebook, only show individual conversations (no groups/communities)
+    const matchesChannel = selectedChannel === 'facebook' 
+      ? conv.conversationType === 'individual'
+      : true
+    
+    return matchesSearch && matchesUnread && matchesChannel
   })
 
   const unreadCount = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
@@ -781,11 +803,6 @@ export default function ChatManagement() {
                     </div>
                   ) : null
                 })()}
-              </button>
-              <button 
-                className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors bg-green-500 hover:bg-green-600"
-              >
-                <span className="text-white font-semibold text-xs">W</span>
               </button>
             </div>
 
@@ -1076,7 +1093,12 @@ export default function ChatManagement() {
           ) : (
             // Conversations View
             <ScrollArea className="flex-1">
-              {filteredConversations.map((conversation) => (
+              {filteredConversations.map((conversation) => {
+                // Check if this conversation is synced with CRM
+                const isSyncedWithCRM = syncedCustomers.has(conversation.id) || 
+                                       conversationCustomerMap.has(conversation.id)
+                
+                return (
                 <div
                   key={conversation.id}
                   onClick={() => handleSelectConversation(conversation)}
@@ -1095,6 +1117,11 @@ export default function ChatManagement() {
                       </Avatar>
                       {conversation.contact.isActive && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                      )}
+                      {isSyncedWithCRM && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-white">
+                          <Link className="w-3 h-3 text-white" />
+                        </div>
                       )}
                     </div>
 
@@ -1122,7 +1149,8 @@ export default function ChatManagement() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </ScrollArea>
           )}
         </div>
@@ -1581,23 +1609,30 @@ export default function ChatManagement() {
                     </Button>
                   </div> */}
 
-                  {/* Tags */}
-                  <div className="pt-3 border-t border-gray-100">
-                    <h4 className="font-semibold text-sm mb-3 text-gray-700">Tags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedConversation.contact.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                          <button className="ml-1 hover:text-red-600">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                      <Button variant="ghost" size="sm" className="h-6 px-2">
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
+                  {/* Tags - Only show when synced with CRM */}
+                  {(() => {
+                    const connectedCustomerId = conversationCustomerMap.get(selectedConversation.id)
+                    const syncedCustomer = syncedCustomers.get(selectedConversation.id)
+                    const crmCustomer = syncedCustomer || (connectedCustomerId 
+                      ? demoCRMCustomers.find(c => c.id === connectedCustomerId)
+                      : null)
+                    
+                    if (crmCustomer && crmCustomer.tags && crmCustomer.tags.length > 0) {
+                      return (
+                        <div className="pt-3 border-t border-gray-100">
+                          <h4 className="font-semibold text-sm mb-3 text-gray-700">Tags</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {crmCustomer.tags.map((tag: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                 </div>
               </TabsContent>
 
@@ -1685,12 +1720,16 @@ export default function ChatManagement() {
               <>
                 {(() => {
                   const connectedCustomerId = conversationCustomerMap.get(selectedConversation.id)
-                  const connectedCustomer = connectedCustomerId 
+                  
+                  // Check if we have a synced customer for this specific conversation
+                  const syncedCustomer = syncedCustomers.get(selectedConversation.id)
+                  
+                  // First check for newly synced customer, then check existing connected customer
+                  const customerToShow = syncedCustomer || (connectedCustomerId 
                     ? demoCRMCustomers.find(c => c.id === connectedCustomerId)
-                    : null
+                    : null)
 
-                  if (connectedCustomer) {
-                    // Show connected state UI
+                  if (customerToShow) {
                     return (
                       <div className="flex-1 flex flex-col overflow-hidden">
                         <ScrollArea className="flex-1">
@@ -1723,66 +1762,23 @@ export default function ChatManagement() {
                                 {/* Avatar + Name + Status */}
                                 <div className="flex items-start gap-3 mb-4 pb-4 border-b border-gray-100">
                                   <Avatar className="w-16 h-16 flex-shrink-0">
-                                    <AvatarImage src={connectedCustomer.avatar} />
+                                    <AvatarImage src={customerToShow.avatar} />
                                     <AvatarFallback className="bg-blue-500 text-white text-base">
-                                      {connectedCustomer.name.substring(0, 2).toUpperCase()}
+                                      {customerToShow.name.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-base text-gray-900 mb-1">
-                                      {connectedCustomer.name}
+                                      {customerToShow.name}
                                     </h3>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <Badge 
-                                        className={cn(
-                                          "text-xs px-2 py-0.5",
-                                          connectedCustomer.status === 'customer' ? "bg-green-100 text-green-700 border-green-300" :
-                                          connectedCustomer.status === 'lead' ? "bg-blue-100 text-blue-700 border-blue-300" :
-                                          "bg-yellow-100 text-yellow-700 border-yellow-300"
-                                        )}
-                                      >
-                                        {connectedCustomer.status === 'customer' ? 'Khách hàng' : 
-                                         connectedCustomer.status === 'lead' ? 'Lead' : 'Tiềm năng'}
+                                      <Badge className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 border-blue-300">
+                                        Lead
                                       </Badge>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Badge 
-                                            className={cn(
-                                              "text-xs py-0 h-5 cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap",
-                                              salesStages.find(s => s.id === (customerStageMap.get(connectedCustomer.id) || 'new-lead'))?.color || "bg-gray-100 text-gray-700"
-                                            )}
-                                          >
-                                            <Tag className="w-3 h-3 mr-1" />
-                                            {salesStages.find(s => s.id === (customerStageMap.get(connectedCustomer.id) || 'new-lead'))?.name || 'Lead mới'}
-                                          </Badge>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start" className="w-56">
-                                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase">
-                                            Giai đoạn bán hàng
-                                          </div>
-                                          {salesStages.map((stage) => {
-                                            const StageIcon = stage.icon
-                                            const isSelected = (customerStageMap.get(connectedCustomer.id) || 'new-lead') === stage.id
-                                            return (
-                                              <DropdownMenuItem 
-                                                key={stage.id}
-                                                onClick={() => {
-                                                  const newMap = new Map(customerStageMap)
-                                                  newMap.set(connectedCustomer.id, stage.id)
-                                                  setCustomerStageMap(newMap)
-                                                }}
-                                                className="flex items-center gap-2 cursor-pointer"
-                                              >
-                                                <div className={cn("w-8 h-8 rounded flex items-center justify-center", stage.color)}>
-                                                  <StageIcon className="w-4 h-4" />
-                                                </div>
-                                                <span className="flex-1 text-sm">{stage.name}</span>
-                                                {isSelected && <Check className="w-4 h-4 text-blue-600" />}
-                                              </DropdownMenuItem>
-                                            )
-                                          })}
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                      <Badge className="text-xs py-0 h-5 cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap bg-gray-100 text-gray-700">
+                                        <Tag className="w-3 h-3 mr-1" />
+                                        Lead mới
+                                      </Badge>
                                     </div>
                                   </div>
                                 </div>
@@ -1792,29 +1788,29 @@ export default function ChatManagement() {
                                   <div className="flex items-center gap-2 text-sm">
                                     <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                     <span className="text-gray-600">Điện thoại:</span>
-                                    <span className="font-medium text-gray-900">{connectedCustomer.phone}</span>
+                                    <span className="font-medium text-gray-900">{customerToShow.phone}</span>
                                   </div>
-                                  {connectedCustomer.email && (
+                                  {customerToShow.email && (
                                     <div className="flex items-center gap-2 text-sm">
                                       <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                       <span className="text-gray-600">Email:</span>
-                                      <span className="font-medium text-gray-900 truncate">{connectedCustomer.email}</span>
+                                      <span className="font-medium text-gray-900 truncate">{customerToShow.email}</span>
                                     </div>
                                   )}
-                                  {connectedCustomer.company && (
+                                  {customerToShow.company && (
                                     <div className="flex items-center gap-2 text-sm">
                                       <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                                       <span className="text-gray-600">Công ty:</span>
-                                      <span className="font-medium text-gray-900 truncate">{connectedCustomer.company}</span>
+                                      <span className="font-medium text-gray-900 truncate">{customerToShow.company}</span>
                                     </div>
                                   )}
                                 </div>
 
                                 {/* Tags */}
-                                {connectedCustomer.tags.length > 0 && (
+                                {customerToShow.tags && customerToShow.tags.length > 0 && (
                                   <div className="mb-4">
                                     <div className="flex flex-wrap gap-1.5">
-                                      {connectedCustomer.tags.map((tag, idx) => (
+                                      {customerToShow.tags.map((tag: string, idx: number) => (
                                         <span
                                           key={idx}
                                           className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700"
@@ -1830,28 +1826,28 @@ export default function ChatManagement() {
                                 <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-xs">
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Nguồn:</span>
-                                    <span className="font-medium text-gray-900">{connectedCustomer.source}</span>
+                                    <span className="font-medium text-gray-900">{customerToShow.source}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Ngày tạo:</span>
                                     <span className="font-medium text-gray-900">
-                                      {new Date(connectedCustomer.createdAt).toLocaleDateString('vi-VN')}
+                                      {new Date(customerToShow.createdAt).toLocaleDateString('vi-VN')}
                                     </span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-gray-600">Liên hệ cuối:</span>
                                     <span className="font-medium text-gray-900">
-                                      {new Date(connectedCustomer.lastContactedAt).toLocaleDateString('vi-VN')}
+                                      {new Date(customerToShow.lastContactedAt).toLocaleDateString('vi-VN')}
                                     </span>
                                   </div>
                                 </div>
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                                  <Button
-                                    size="sm"
+                                  <Button 
+                                    size="sm" 
                                     className="flex-1 text-xs"
-                                    onClick={() => setSelectedLeadDetail(connectedCustomer)}
+                                    onClick={() => setSelectedLeadDetail(customerToShow)}
                                   >
                                     <Eye className="w-4 h-4 mr-1" />
                                     Xem chi tiết
@@ -1864,12 +1860,25 @@ export default function ChatManagement() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={() => {
-                                        const newMap = new Map(conversationCustomerMap)
-                                        newMap.delete(selectedConversation.id)
-                                        setConversationCustomerMap(newMap)
-                                        const newConnected = new Set(connectedCustomers)
-                                        newConnected.delete(connectedCustomer.id)
-                                        setConnectedCustomers(newConnected)
+                                        if (selectedConversation) {
+                                          // Remove from syncedCustomers Map
+                                          const newSyncedMap = new Map(syncedCustomers)
+                                          newSyncedMap.delete(selectedConversation.id)
+                                          setSyncedCustomers(newSyncedMap)
+                                          
+                                          // Remove from conversationCustomerMap
+                                          const newConvMap = new Map(conversationCustomerMap)
+                                          const customerId = newConvMap.get(selectedConversation.id)
+                                          newConvMap.delete(selectedConversation.id)
+                                          setConversationCustomerMap(newConvMap)
+                                          
+                                          // Remove from connectedCustomers if exists
+                                          if (customerId) {
+                                            const newConnected = new Set(connectedCustomers)
+                                            newConnected.delete(customerId)
+                                            setConnectedCustomers(newConnected)
+                                          }
+                                        }
                                       }}>
                                         <X className="w-4 h-4 mr-2" />
                                         Ngắt kết nối
@@ -1906,7 +1915,7 @@ export default function ChatManagement() {
                             <Search className="w-4 h-4 text-gray-400" />
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" className="text-xs h-8 px-3">
+                        <Button variant="outline" size="sm" className="text-xs h-8 px-3" onClick={() => setShowCreateLeadModal(true)}>
                           Thêm mới
                         </Button>
                       </div>
@@ -2024,9 +2033,22 @@ export default function ChatManagement() {
                                               Xem chi tiết
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
-                                              const newConnected = new Set(connectedCustomers)
-                                              newConnected.delete(customer.id)
-                                              setConnectedCustomers(newConnected)
+                                              if (selectedConversation) {
+                                                // Remove from connectedCustomers Set
+                                                const newConnected = new Set(connectedCustomers)
+                                                newConnected.delete(customer.id)
+                                                setConnectedCustomers(newConnected)
+                                                
+                                                // Remove from conversationCustomerMap
+                                                const newConvMap = new Map(conversationCustomerMap)
+                                                newConvMap.delete(selectedConversation.id)
+                                                setConversationCustomerMap(newConvMap)
+                                                
+                                                // Remove from syncedCustomers Map
+                                                const newSyncedMap = new Map(syncedCustomers)
+                                                newSyncedMap.delete(selectedConversation.id)
+                                                setSyncedCustomers(newSyncedMap)
+                                              }
                                             }}>
                                               <X className="w-4 h-4 mr-2" />
                                               Hủy liên kết
@@ -3148,6 +3170,602 @@ export default function ChatManagement() {
               Gửi
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Lead Modal */}
+      <Dialog open={showCreateLeadModal} onOpenChange={setShowCreateLeadModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 [&>button]:hidden">
+          <div className="bg-white rounded-lg">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Thêm Lead mới</h3>
+                  <div className="relative group">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-help">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                      <path d="M12 17h.01" />
+                    </svg>
+                  </div>
+                </div>
+                <button 
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => setShowCreateLeadModal(false)}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Customer Type */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-red-500">*</span>Loại khách hàng
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className={`relative flex items-center p-3 border rounded-lg cursor-pointer hover:border-blue-500 transition-colors ${leadFormData.customerType === 'individual' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+                    <input 
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2" 
+                      type="radio" 
+                      value="individual" 
+                      checked={leadFormData.customerType === 'individual'}
+                      onChange={(e) => setLeadFormData({...leadFormData, customerType: e.target.value})}
+                      name="customerType"
+                    />
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-900">👤 Cá nhân</div>
+                      <div className="text-xs text-gray-500">Khách hàng cá nhân</div>
+                    </div>
+                  </label>
+                  <label className={`relative flex items-center p-3 border rounded-lg cursor-pointer hover:border-blue-500 transition-colors ${leadFormData.customerType === 'business' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+                    <input 
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2" 
+                      type="radio" 
+                      value="business" 
+                      checked={leadFormData.customerType === 'business'}
+                      onChange={(e) => setLeadFormData({...leadFormData, customerType: e.target.value})}
+                      name="customerType"
+                    />
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-900">🏢 Công ty</div>
+                      <div className="text-xs text-gray-500">Khách hàng doanh nghiệp</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Required Info */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-red-500">*</span>Thông tin bắt buộc
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Tên khách hàng <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      placeholder="Nhập tên khách hàng..." 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      type="text" 
+                      value={leadFormData.name}
+                      onChange={(e) => setLeadFormData({...leadFormData, name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Số điện thoại <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      placeholder="0901234567" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      type="tel" 
+                      value={leadFormData.phone}
+                      onChange={(e) => setLeadFormData({...leadFormData, phone: e.target.value})}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      placeholder="email@domain.com" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      type="email" 
+                      value={leadFormData.email}
+                      onChange={(e) => setLeadFormData({...leadFormData, email: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Lead Source & Assignment */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-green-500" />
+                  Nguồn lead & Phân công
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.source}
+                      onChange={(e) => setLeadFormData({...leadFormData, source: e.target.value})}
+                    >
+                      <option value="website">Website</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="google">Google Ads</option>
+                      <option value="referral">Giới thiệu</option>
+                      <option value="cold-call">Cold Call</option>
+                      <option value="exhibition">Triển lãm</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="email-marketing">Email Marketing</option>
+                      <option value="webinar">Webinar</option>
+                      <option value="partner">Đối tác</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tỉnh thành</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.province}
+                      onChange={(e) => setLeadFormData({...leadFormData, province: e.target.value})}
+                    >
+                      <option value="hanoi">Hà Nội</option>
+                      <option value="hcm">TP. Hồ Chí Minh</option>
+                      <option value="danang">Đà Nẵng</option>
+                      <option value="haiphong">Hải Phòng</option>
+                      <option value="cantho">Cần Thơ</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Phân công cho
+                      <div className="inline-block ml-1 relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                          <path d="M12 17h.01" />
+                        </svg>
+                      </div>
+                    </label>
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.assignTo}
+                      onChange={(e) => setLeadFormData({...leadFormData, assignTo: e.target.value})}
+                    >
+                      <option value="">Mặc định (Minh Expert - người tạo)</option>
+                      <option value="Nguyễn Văn A">Nguyễn Văn A (12 leads hiện tại)</option>
+                      <option value="Trần Thị B">Trần Thị B (8 leads hiện tại)</option>
+                      <option value="Lê Văn C">Lê Văn C (15 leads hiện tại)</option>
+                      <option value="Phạm Thị D">Phạm Thị D (10 leads hiện tại)</option>
+                      <option value="Hoàng Văn E">Hoàng Văn E (6 leads hiện tại)</option>
+                      <option value="Đỗ Thị F">Đỗ Thị F (9 leads hiện tại)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Info */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-yellow-500">
+                    <line x1="12" x2="12" y1="2" y2="22" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  Thông tin sản phẩm & Bán hàng
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm quan tâm</label>
+                    <select 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.product}
+                      onChange={(e) => setLeadFormData({...leadFormData, product: e.target.value})}
+                    >
+                      <option value="">Chọn sản phẩm...</option>
+                      <option value="CRM Solution">CRM Solution - Quản lý khách hàng</option>
+                      <option value="ERP System">ERP System - Quản lý tài nguyên doanh nghiệp</option>
+                      <option value="Website Development">Website Development - Phát triển website</option>
+                      <option value="E-commerce Platform">E-commerce Platform - Nền tảng thương mại điện tử</option>
+                      <option value="Mobile Application">Mobile Application - Ứng dụng di động</option>
+                      <option value="Marketing Automation">Marketing Automation - Tự động hóa marketing</option>
+                      <option value="Data Analytics">Data Analytics - Phân tích dữ liệu</option>
+                      <option value="Cloud Services">Cloud Services - Dịch vụ đám mây</option>
+                      <option value="AI/ML Solutions">AI/ML Solutions - Giải pháp trí tuệ nhân tạo</option>
+                      <option value="Cybersecurity">Cybersecurity - An ninh mạng</option>
+                      <option value="Digital Transformation">Digital Transformation - Chuyển đổi số</option>
+                      <option value="Custom Software">Custom Software - Phần mềm tùy chỉnh</option>
+                      <option value="Consulting Services">Consulting Services - Dịch vụ tư vấn</option>
+                      <option value="Training & Support">Training & Support - Đào tạo và hỗ trợ</option>
+                      <option value="Other">Khác</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-orange-500">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                  </svg>
+                  Mô tả chi tiết
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Nội dung quan tâm</label>
+                    <textarea 
+                      placeholder="Mô tả nhu cầu, yêu cầu của khách hàng..." 
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.content}
+                      onChange={(e) => setLeadFormData({...leadFormData, content: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Ghi chú</label>
+                    <textarea 
+                      placeholder="Ghi chú thêm về lead này..." 
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={leadFormData.notes}
+                      onChange={(e) => setLeadFormData({...leadFormData, notes: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Xem trước Lead
+                </h4>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <div><strong>Tên:</strong> {leadFormData.name || 'Chưa nhập'}</div>
+                  <div><strong>Email:</strong> {leadFormData.email || 'Chưa nhập'}</div>
+                  <div><strong>SĐT:</strong> {leadFormData.phone || 'Chưa nhập'}</div>
+                  <div><strong>Nguồn:</strong> {leadFormData.source === 'website' ? 'Website' : leadFormData.source === 'facebook' ? 'Facebook' : leadFormData.source === 'google' ? 'Google Ads' : leadFormData.source}</div>
+                  <div><strong>Phân công cho:</strong> {leadFormData.assignTo || 'Minh Expert (người tạo)'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button 
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => {
+                  setShowCreateLeadModal(false)
+                  setLeadFormData({
+                    customerType: 'individual',
+                    name: '',
+                    phone: '',
+                    email: '',
+                    source: 'website',
+                    province: 'hanoi',
+                    assignTo: '',
+                    product: '',
+                    content: '',
+                    notes: ''
+                  })
+                }}
+              >
+                Hủy
+              </button>
+              <button 
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                onClick={() => {
+                  // Create new lead customer
+                  const newCustomer = {
+                    id: Date.now().toString(),
+                    name: leadFormData.name,
+                    phone: leadFormData.phone,
+                    email: leadFormData.email,
+                    company: leadFormData.customerType === 'business' ? leadFormData.name : '',
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${leadFormData.name}`,
+                    status: 'lead' as const,
+                    source: leadFormData.source === 'website' ? 'Website' : 
+                            leadFormData.source === 'facebook' ? 'Facebook' : 
+                            leadFormData.source === 'google' ? 'Google Ads' : 
+                            leadFormData.source.charAt(0).toUpperCase() + leadFormData.source.slice(1),
+                    tags: ['Lead mới'],
+                    createdAt: new Date().toISOString(),
+                    lastContactedAt: new Date().toISOString(),
+                    notes: leadFormData.notes
+                  }
+                  
+                  // Connect to current conversation and save customer
+                  if (selectedConversation) {
+                    // Save customer to syncedCustomers Map with conversation ID as key
+                    const newSyncedMap = new Map(syncedCustomers)
+                    newSyncedMap.set(selectedConversation.id, newCustomer)
+                    setSyncedCustomers(newSyncedMap)
+                    
+                    // Also update conversation customer map
+                    const newMap = new Map(conversationCustomerMap)
+                    newMap.set(selectedConversation.id, newCustomer.id)
+                    setConversationCustomerMap(newMap)
+                    
+                    const newConnected = new Set(connectedCustomers)
+                    newConnected.add(newCustomer.id)
+                    setConnectedCustomers(newConnected)
+                  }
+                  
+                  // Close modal and reset form
+                  setShowCreateLeadModal(false)
+                  setLeadFormData({
+                    customerType: 'individual',
+                    name: '',
+                    phone: '',
+                    email: '',
+                    source: 'website',
+                    province: 'hanoi',
+                    assignTo: '',
+                    product: '',
+                    content: '',
+                    notes: ''
+                  })
+                }}
+              >
+                <Plus className="w-4 h-4" />
+                Thêm Lead
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Detail Modal */}
+      <Dialog open={!!selectedLeadDetail} onOpenChange={(open) => !open && setSelectedLeadDetail(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
+          <div className="bg-white rounded-lg flex flex-col h-full">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Chi tiết Lead - {selectedLeadDetail?.name}
+                  </h3>
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    Chuyển đổi thành công
+                  </span>
+                </div>
+                <button 
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => setSelectedLeadDetail(null)}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 mt-4 -mb-px">
+                <button 
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    leadDetailTab === 'contact' 
+                      ? 'border-blue-500 text-blue-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setLeadDetailTab('contact')}
+                >
+                  Thông tin liên hệ
+                </button>
+                <button 
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    leadDetailTab === 'history' 
+                      ? 'border-blue-500 text-blue-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setLeadDetailTab('history')}
+                >
+                  Lịch sử tương tác
+                </button>
+                <button 
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    leadDetailTab === 'notes' 
+                      ? 'border-blue-500 text-blue-600' 
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  onClick={() => setLeadDetailTab('notes')}
+                >
+                  Ghi chú & Nội dung
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                {leadDetailTab === 'contact' && selectedLeadDetail && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                      {/* Basic Info */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <User className="w-5 h-5 text-blue-500" />
+                          Thông tin cơ bản
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Tên khách hàng:</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.name}</span>
+                          </div>
+                          {selectedLeadDetail.company && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Công ty:</span>
+                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.company}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Loại khách hàng:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {selectedLeadDetail.company ? 'Doanh nghiệp' : 'Cá nhân'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contact Info */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Phone className="w-5 h-5 text-green-500" />
+                          Thông tin liên hệ
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Số điện thoại:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.phone}</span>
+                              <button className="p-1 text-green-600 hover:bg-green-100 rounded">
+                                <Phone className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          {selectedLeadDetail.email && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Email:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.email}</span>
+                                <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                                  <Mail className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Nguồn:</span>
+                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.source}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                      {/* Sales Info */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Briefcase className="w-5 h-5 text-purple-500" />
+                          Thông tin bán hàng
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Sản phẩm quan tâm:</span>
+                            <span className="text-sm font-medium text-gray-900">CRM Solution</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Sales phụ trách:</span>
+                            <span className="text-sm font-medium text-gray-900">Minh Expert</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Giá trị lead:</span>
+                            <span className="text-sm font-medium text-green-600">50.000.000 VNĐ</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Xác suất thành công:</span>
+                            <span className="text-sm font-medium text-gray-900">85%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Time Info */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <ClockIcon className="w-5 h-5 text-orange-500" />
+                          Thông tin thời gian
+                        </h4>
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Ngày tạo:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Cập nhật cuối:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Lần liên hệ cuối:</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {new Date(selectedLeadDetail.lastContactedAt).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">Số lần tương tác:</span>
+                            <span className="text-sm font-medium text-blue-600">8 lần</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedLeadDetail.tags?.map((tag, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {leadDetailTab === 'history' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-500 text-center py-8">Lịch sử tương tác sẽ được hiển thị tại đây</p>
+                  </div>
+                )}
+
+                {leadDetailTab === 'notes' && (
+                  <div className="space-y-4">
+                    {selectedLeadDetail?.notes ? (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-sm text-gray-900">{selectedLeadDetail.notes}</p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">Chưa có ghi chú</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
+              <button 
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200"
+                onClick={() => setSelectedLeadDetail(null)}
+              >
+                Đóng
+              </button>
+              <button 
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Chuyển đổi
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
