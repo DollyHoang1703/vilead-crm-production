@@ -2706,9 +2706,7 @@ export default function ChatManagement() {
                               </Badge>
                             </div>
                             <div className="text-sm text-gray-500 space-y-1">
-                              <div>• Chủ tài khoản: dung acac</div>
                               <div>• ID: {account.id}853684866249512254</div>
-                              <div>Nhân viên: dung acac</div>
                             </div>
                           </div>
                         </div>

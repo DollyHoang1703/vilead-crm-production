@@ -102,7 +102,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "📈",
       tooltip: "Quản lý KPI: Thiết lập và theo dõi chỉ số hiệu suất",
       roles: ["admin", "ceo", "leader"],
-      disabled: false
+      disabled: true
     },
     {
       id: 'chat',
