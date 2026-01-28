@@ -2598,10 +2598,12 @@ export default function SalesManagement() {
             </div>
             
             {/* Pipeline Cards in horizontal layout */}
-            <div className="flex gap-6 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex gap-6 overflow-x-auto py-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 overflow-y-visible">
               {/* 1. Lead mới - BẮT BUỘC */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'new' ? 'ring-2 ring-purple-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'new' ? 'ring-4 ring-purple-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('new')}
               >
                 <div className="absolute top-2 right-2">
@@ -2636,7 +2638,9 @@ export default function SalesManagement() {
 
               {/* 2. Đang tư vấn - LINH ĐỘNG */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'contacted' ? 'ring-2 ring-blue-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'contacted' ? 'ring-4 ring-blue-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('contacted')}
               >
                 <div className="absolute top-2 right-2">
@@ -2671,7 +2675,9 @@ export default function SalesManagement() {
 
               {/* 3. Đã gửi ĐX - LINH ĐỘNG */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'qualified' ? 'ring-2 ring-green-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'qualified' ? 'ring-4 ring-green-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('qualified')}
               >
                 <div className="absolute top-2 right-2">
@@ -2706,7 +2712,9 @@ export default function SalesManagement() {
 
               {/* 4. Đàm phán - LINH ĐỘNG */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-yellow-600 to-yellow-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'negotiation' ? 'ring-2 ring-yellow-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-yellow-600 to-yellow-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'negotiation' ? 'ring-4 ring-yellow-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('negotiation')}
               >
                 <div className="absolute top-2 right-2">
@@ -2741,7 +2749,9 @@ export default function SalesManagement() {
 
               {/* 5. Chờ thanh toán - BẮT BUỘC */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'payment_pending' ? 'ring-2 ring-orange-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'payment_pending' ? 'ring-4 ring-orange-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('payment_pending')}
               >
                 <div className="absolute top-2 right-2">
@@ -2776,7 +2786,9 @@ export default function SalesManagement() {
 
               {/* 6. Đã chốt - BẮT BUỘC */}
               <div
-                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-emerald-600 to-emerald-400 text-white shadow-lg cursor-pointer relative ${selectedPipelineStage === 'converted' ? 'ring-2 ring-emerald-700' : ''}`}
+                className={`flex flex-col justify-between rounded-lg px-8 py-7 min-w-[220px] max-w-[240px] bg-gradient-to-br from-emerald-600 to-emerald-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl ${
+                  selectedPipelineStage === 'converted' ? 'ring-4 ring-emerald-300 transform scale-105 z-10' : ''
+                }`}
                 onClick={() => handlePipelineStageClick('converted')}
               >
                 <div className="absolute top-2 right-2">
@@ -3246,10 +3258,10 @@ export default function SalesManagement() {
 
         {/* Leads View - Table or Kanban */}
         {viewMode === 'table' ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
             {/* Bulk Actions Bar - Show when leads are selected */}
             {selectedLeadIds.length > 0 && (
-              <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-blue-900">
@@ -3299,8 +3311,12 @@ export default function SalesManagement() {
               </div>
             )}
             
-            <div className="omi-table-container">
-              <div className="overflow-x-auto">
+            {/* Display count */}
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+              <span>Hiển thị {filteredLeads.length} trong tổng {leads.length} khách hàng</span>
+            </div>
+            
+            <div className="omi-table-container overflow-x-auto rounded-lg border border-gray-200">
                 <table className="omi-table">
                 <thead>
                 <tr>
@@ -3661,11 +3677,10 @@ export default function SalesManagement() {
                 ))}
                 </tbody>
               </table>
-            </div>
           </div>
 
           {/* Pagination */}
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
             <div className="flex-1 flex justify-between sm:hidden">
               <button className="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-800 transition-all duration-200 shadow-sm hover:shadow-md">
                 Trước
