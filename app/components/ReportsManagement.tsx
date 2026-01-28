@@ -47,8 +47,10 @@ import {
   Monitor,
   Star,
   XCircle,
-  Edit
+  Edit,
+  Info
 } from 'lucide-react'
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -97,6 +99,8 @@ interface SalesPerformanceReport {
   ordersCreated: number
   conversionRate: number
   revenue: number
+  kpiTarget?: number
+  kpiCompletion?: number
   leadsBySource: {
     zalo: number
     facebook: number
@@ -245,40 +249,248 @@ const sampleSalesReports: SalesReport[] = [
   }
 ]
 
-const sampleSalesPerformance: SalesPerformanceReport[] = [
-  {
-    id: '1',
-    salesPerson: 'Nguyễn Văn An',
-    salesTeam: 'Team A',
-    dateRange: '01/06/2025 - 07/06/2025',
-    leadsAssigned: 45,
-    ordersCreated: 18,
-    conversionRate: 40,
-    revenue: 125000000,
-    leadsBySource: {
-      zalo: 25,
-      facebook: 15,
-      manual: 5
+// Sales Performance Data by Time Period
+const getSalesPerformanceData = (period: string): SalesPerformanceReport[] => {
+  const todayData: SalesPerformanceReport[] = [
+    {
+      id: '1',
+      salesPerson: 'Nguyễn Văn An',
+      salesTeam: 'Team A',
+      dateRange: '29/01/2026',
+      leadsAssigned: 8,
+      ordersCreated: 3,
+      conversionRate: 38,
+      revenue: 22000000,
+      kpiTarget: 5000000,
+      kpiCompletion: 440,
+      leadsBySource: { zalo: 5, facebook: 2, manual: 1 },
+      createdAt: '2026-01-29T00:00:00'
     },
-    createdAt: '2025-06-08T00:00:00'
-  },
-  {
-    id: '2',
-    salesPerson: 'Trần Thị Bình',
-    salesTeam: 'Team B',
-    dateRange: '01/06/2025 - 07/06/2025',
-    leadsAssigned: 38,
-    ordersCreated: 22,
-    conversionRate: 58,
-    revenue: 180000000,
-    leadsBySource: {
-      zalo: 20,
-      facebook: 12,
-      manual: 6
+    {
+      id: '2',
+      salesPerson: 'Trần Thị Bình',
+      salesTeam: 'Team B',
+      dateRange: '29/01/2026',
+      leadsAssigned: 6,
+      ordersCreated: 4,
+      conversionRate: 67,
+      revenue: 28000000,
+      kpiTarget: 5000000,
+      kpiCompletion: 560,
+      leadsBySource: { zalo: 3, facebook: 2, manual: 1 },
+      createdAt: '2026-01-29T00:00:00'
     },
-    createdAt: '2025-06-08T00:00:00'
+    {
+      id: '3',
+      salesPerson: 'Hoàng Minh Tuấn',
+      salesTeam: 'Team B',
+      dateRange: '29/01/2026',
+      leadsAssigned: 7,
+      ordersCreated: 5,
+      conversionRate: 71,
+      revenue: 32000000,
+      kpiTarget: 5000000,
+      kpiCompletion: 640,
+      leadsBySource: { zalo: 4, facebook: 2, manual: 1 },
+      createdAt: '2026-01-29T00:00:00'
+    }
+  ]
+
+  const weekData: SalesPerformanceReport[] = [
+    {
+      id: '1',
+      salesPerson: 'Nguyễn Văn An',
+      salesTeam: 'Team A',
+      dateRange: '23/01/2026 - 29/01/2026',
+      leadsAssigned: 45,
+      ordersCreated: 18,
+      conversionRate: 40,
+      revenue: 125000000,
+      kpiTarget: 150000000,
+      kpiCompletion: 83,
+      leadsBySource: { zalo: 25, facebook: 15, manual: 5 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '2',
+      salesPerson: 'Trần Thị Bình',
+      salesTeam: 'Team B',
+      dateRange: '23/01/2026 - 29/01/2026',
+      leadsAssigned: 38,
+      ordersCreated: 22,
+      conversionRate: 58,
+      revenue: 180000000,
+      kpiTarget: 140000000,
+      kpiCompletion: 129,
+      leadsBySource: { zalo: 20, facebook: 12, manual: 6 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '3',
+      salesPerson: 'Lê Minh Chánh',
+      salesTeam: 'Team A',
+      dateRange: '23/01/2026 - 29/01/2026',
+      leadsAssigned: 52,
+      ordersCreated: 15,
+      conversionRate: 29,
+      revenue: 95000000,
+      kpiTarget: 120000000,
+      kpiCompletion: 79,
+      leadsBySource: { zalo: 30, facebook: 18, manual: 4 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '4',
+      salesPerson: 'Phạm Thu Hà',
+      salesTeam: 'Team C',
+      dateRange: '23/01/2026 - 29/01/2026',
+      leadsAssigned: 41,
+      ordersCreated: 19,
+      conversionRate: 46,
+      revenue: 142000000,
+      leadsBySource: { zalo: 22, facebook: 14, manual: 5 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '5',
+      salesPerson: 'Hoàng Minh Tuấn',
+      salesTeam: 'Team B',
+      dateRange: '23/01/2026 - 29/01/2026',
+      leadsAssigned: 36,
+      ordersCreated: 24,
+      conversionRate: 67,
+      revenue: 198000000,
+      kpiTarget: 160000000,
+      kpiCompletion: 124,
+      leadsBySource: { zalo: 18, facebook: 13, manual: 5 },
+      createdAt: '2026-01-29T00:00:00'
+    }
+  ]
+
+  const monthData: SalesPerformanceReport[] = [
+    {
+      id: '1',
+      salesPerson: 'Nguyễn Văn An',
+      salesTeam: 'Team A',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 185,
+      ordersCreated: 72,
+      conversionRate: 39,
+      revenue: 520000000,
+      kpiTarget: 600000000,
+      kpiCompletion: 87,
+      leadsBySource: { zalo: 105, facebook: 60, manual: 20 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '2',
+      salesPerson: 'Trần Thị Bình',
+      salesTeam: 'Team B',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 162,
+      ordersCreated: 95,
+      conversionRate: 59,
+      revenue: 745000000,
+      kpiTarget: 560000000,
+      kpiCompletion: 133,
+      leadsBySource: { zalo: 85, facebook: 52, manual: 25 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '3',
+      salesPerson: 'Lê Minh Chánh',
+      salesTeam: 'Team A',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 208,
+      ordersCreated: 62,
+      conversionRate: 30,
+      revenue: 395000000,
+      kpiTarget: 480000000,
+      kpiCompletion: 82,
+      leadsBySource: { zalo: 120, facebook: 70, manual: 18 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '4',
+      salesPerson: 'Phạm Thu Hà',
+      salesTeam: 'Team C',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 175,
+      ordersCreated: 81,
+      conversionRate: 46,
+      revenue: 595000000,
+      leadsBySource: { zalo: 92, facebook: 60, manual: 23 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '5',
+      salesPerson: 'Hoàng Minh Tuấn',
+      salesTeam: 'Team B',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 148,
+      ordersCreated: 102,
+      conversionRate: 69,
+      revenue: 825000000,
+      kpiTarget: 640000000,
+      kpiCompletion: 129,
+      leadsBySource: { zalo: 75, facebook: 55, manual: 18 },
+      createdAt: '2026-01-29T00:00:00'
+    },
+    {
+      id: '6',
+      salesPerson: 'Vũ Thị Mai',
+      salesTeam: 'Team A',
+      dateRange: '01/01/2026 - 29/01/2026',
+      leadsAssigned: 155,
+      ordersCreated: 68,
+      conversionRate: 44,
+      revenue: 485000000,
+      kpiTarget: 520000000,
+      kpiCompletion: 93,
+      leadsBySource: { zalo: 88, facebook: 50, manual: 17 },
+      createdAt: '2026-01-29T00:00:00'
+    }
+  ]
+
+  const quarterData: SalesPerformanceReport[] = monthData.map(sales => ({
+    ...sales,
+    dateRange: 'Q1/2026',
+    leadsAssigned: sales.leadsAssigned * 3,
+    ordersCreated: sales.ordersCreated * 3,
+    revenue: sales.revenue * 3,
+    kpiTarget: sales.kpiTarget ? sales.kpiTarget * 3 : undefined,
+    leadsBySource: {
+      zalo: sales.leadsBySource.zalo * 3,
+      facebook: sales.leadsBySource.facebook * 3,
+      manual: sales.leadsBySource.manual * 3
+    }
+  }))
+
+  const yearData: SalesPerformanceReport[] = monthData.map(sales => ({
+    ...sales,
+    dateRange: '2026',
+    leadsAssigned: sales.leadsAssigned * 12,
+    ordersCreated: sales.ordersCreated * 12,
+    revenue: sales.revenue * 12,
+    kpiTarget: sales.kpiTarget ? sales.kpiTarget * 12 : undefined,
+    leadsBySource: {
+      zalo: sales.leadsBySource.zalo * 12,
+      facebook: sales.leadsBySource.facebook * 12,
+      manual: sales.leadsBySource.manual * 12
+    }
+  }))
+
+  switch(period) {
+    case 'today': return todayData
+    case 'this_week': return weekData
+    case 'this_month': return monthData
+    case 'this_quarter': return quarterData
+    case 'this_year': return yearData
+    default: return monthData
   }
-]
+}
+
+const sampleSalesPerformance: SalesPerformanceReport[] = getSalesPerformanceData('this_week')
 
 const sampleProcessAnalysis: SalesProcessAnalysis[] = [
   {
@@ -738,6 +950,16 @@ export default function ReportsManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showSalesDetailModal, setShowSalesDetailModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState('')
+  const [modalSearchTerm, setModalSearchTerm] = useState('')
+  const [showPerformanceDetailModal, setShowPerformanceDetailModal] = useState(false)
+  const [selectedSalesForDetail, setSelectedSalesForDetail] = useState<SalesPerformanceReport | null>(null)
+  
+  // Pending filters for Sales tab (only applied when clicking "Áp dụng bộ lọc")
+  const [pendingDateRange, setPendingDateRange] = useState('this_week')
+  const [pendingSalesDepartment, setPendingSalesDepartment] = useState('')
+  const [pendingTeam, setPendingTeam] = useState('')
   
   // Collapsible sections state
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
@@ -891,65 +1113,65 @@ export default function ReportsManagement() {
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng doanh số</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(sampleSalesReports[0]?.totalRevenue || 0)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Tuần này</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Tổng doanh số</p>
+            <p className="text-4xl font-extrabold text-white mb-1">
+              {formatCurrency(sampleSalesReports[0]?.totalRevenue || 0)}
+            </p>
+            <div className="mt-3">
+              <p className="text-sm text-white/90">Tuần này</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Số đơn bán</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {sampleSalesReports[0]?.totalOrders || 0}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">+12% so với tuần trước</p>
-              </div>
-              <ShoppingCart className="w-8 h-8 text-blue-500" />
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Số đơn bán</p>
+            <p className="text-4xl font-extrabold text-white mb-1">
+              {sampleSalesReports[0]?.totalOrders || 0}
+            </p>
+            <div className="mt-3">
+              <p className="text-sm text-white/90">+12% so với tuần trước</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tỷ lệ chốt TB</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {Math.round(sampleSalesPerformance.reduce((acc, s) => acc + s.conversionRate, 0) / sampleSalesPerformance.length)}%
-                </p>
-                <p className="text-xs text-gray-500 mt-1">+5% so với tuần trước</p>
-              </div>
-              <Target className="w-8 h-8 text-purple-500" />
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Tỷ lệ chốt TB</p>
+            <p className="text-4xl font-extrabold text-white mb-1">
+              {Math.round(sampleSalesPerformance.reduce((acc, s) => acc + s.conversionRate, 0) / sampleSalesPerformance.length)}%
+            </p>
+            <div className="mt-3">
+              <p className="text-sm text-white/90">+5% so với tuần trước</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">GTB đơn hàng</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(sampleSalesReports[0]?.averageOrderValue || 0)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">-2% so với tuần trước</p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-orange-500" />
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">GTB đơn hàng</p>
+            <p className="text-4xl font-extrabold text-white mb-1">
+              {formatCurrency(sampleSalesReports[0]?.averageOrderValue || 0)}
+            </p>
+            <div className="mt-3">
+              <p className="text-sm text-white/90">-2% so với tuần trước</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Quick Report Access */}
@@ -1097,120 +1319,166 @@ export default function ReportsManagement() {
         
         <div className="flex items-center space-x-3">
           <select 
-            value={selectedDateRange}
-            onChange={(e) => setSelectedDateRange(e.target.value)}
+            value={pendingDateRange}
+            onChange={(e) => setPendingDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="today">Hôm nay</option>
             <option value="this_week">Tuần này</option>
             <option value="this_month">Tháng này</option>
             <option value="this_quarter">Quý này</option>
-            <option value="custom">Tùy chỉnh</option>
+            <option value="this_year">Năm này</option>
           </select>
           
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Lọc
-          </Button>
+          <select 
+            value={pendingSalesDepartment}
+            onChange={(e) => setPendingSalesDepartment(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+          >
+            <option value="">Phòng sale</option>
+            <option value="sale_department_1">Phòng Sale 1</option>
+            <option value="sale_department_2">Phòng Sale 2</option>
+            <option value="sale_department_3">Phòng Sale 3</option>
+          </select>
           
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Xuất Excel
-          </Button>
+          <select 
+            value={pendingTeam}
+            onChange={(e) => setPendingTeam(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+          >
+            <option value="">Chọn team</option>
+            <option value="team_a">Team A</option>
+            <option value="team_b">Team B</option>
+            <option value="team_c">Team C</option>
+            <option value="team_d">Team D</option>
+          </select>
           
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo báo cáo
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => {
+              // Apply pending filters to actual state
+              setSelectedDateRange(pendingDateRange)
+              setSalesPersonFilter(pendingSalesDepartment)
+              // Team filter can be added here when needed
+            }}
+          >
+            Áp dụng bộ lọc
           </Button>
         </div>
       </div>
 
       {/* Sales Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng doanh số</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(450000000)}
-                </p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-xs text-green-600">+15.2%</span>
+        {(() => {
+          const summaryData = {
+            today: { revenue: 75000000, orders: 22, conversion: 32, paymentRate: 76 },
+            this_week: { revenue: 490000000, orders: 140, conversion: 32, paymentRate: 76 },
+            this_month: { revenue: 2070000000, orders: 580, conversion: 32, paymentRate: 76 },
+            this_quarter: { revenue: 2070000000, orders: 580, conversion: 32, paymentRate: 76 },
+            this_year: { revenue: 2070000000, orders: 580, conversion: 32, paymentRate: 76 }
+          }
+          const data = summaryData[selectedDateRange as keyof typeof summaryData] || summaryData.this_week
+          
+          return (
+            <>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tổng doanh số</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">
+                    {formatCurrency(data.revenue)}
+                  </p>
+                  <div className="mt-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 text-white/90 mr-1" />
+                    <span className="text-sm text-white/90">+15.2%</span>
+                  </div>
                 </div>
               </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Số đơn bán</p>
-                <p className="text-2xl font-bold text-blue-600">125</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-xs text-green-600">+8.3%</span>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Số đơn bán</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{data.orders}</p>
+                  <div className="mt-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 text-white/90 mr-1" />
+                    <span className="text-sm text-white/90">+8.3%</span>
+                  </div>
                 </div>
               </div>
-              <ShoppingCart className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">GTB đơn hàng</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(3600000)}
-                </p>
-                <div className="flex items-center mt-1">
-                  <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-xs text-red-600">-2.1%</span>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tỷ lệ chuyển đổi trung bình</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{data.conversion}%</p>
+                  <div className="mt-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 text-white/90 mr-1" />
+                    <span className="text-sm text-white/90">+4.5%</span>
+                  </div>
                 </div>
               </div>
-              <BarChart3 className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tỷ lệ thanh toán</p>
-                <p className="text-2xl font-bold text-orange-600">75%</p>
-                <div className="flex items-center mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-xs text-green-600">+3.2%</span>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tỷ lệ thanh toán</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">{data.paymentRate}%</p>
+                  <div className="mt-3 flex items-center">
+                    <TrendingUp className="w-4 h-4 text-white/90 mr-1" />
+                    <span className="text-sm text-white/90">+3.2%</span>
+                  </div>
                 </div>
               </div>
-              <CheckCircle className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </>
+          )
+        })()}
       </div>
 
       {/* Order Status Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Phân loại đơn hàng theo trạng thái</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { status: 'paid', count: 75, label: 'Đã thanh toán', color: 'green' },
-                { status: 'unpaid', count: 30, label: 'Chưa thanh toán', color: 'yellow' },
-                { status: 'pending_contract', count: 15, label: 'Chờ hợp đồng', color: 'blue' },
-                { status: 'drafting_contract', count: 3, label: 'Đang soạn HĐ', color: 'purple' },
-                { status: 'cancelled', count: 2, label: 'Đã hủy', color: 'red' }
-              ].map((item) => (
+              {(() => {
+                const statusData = {
+                  today: [
+                    { status: 'paid', count: 16, label: 'Đã thanh toán', color: 'green' },
+                    { status: 'unpaid', count: 4, label: 'Chưa thanh toán', color: 'yellow' },
+                    { status: 'pending_contract', count: 2, label: 'Chờ hợp đồng', color: 'blue' },
+                    { status: 'drafting_contract', count: 0, label: 'Đang soạn HĐ', color: 'purple' },
+                    { status: 'cancelled', count: 0, label: 'Đã hủy', color: 'red' }
+                  ],
+                  this_week: [
+                    { status: 'paid', count: 105, label: 'Đã thanh toán', color: 'green' },
+                    { status: 'unpaid', count: 25, label: 'Chưa thanh toán', color: 'yellow' },
+                    { status: 'pending_contract', count: 8, label: 'Chờ hợp đồng', color: 'blue' },
+                    { status: 'drafting_contract', count: 2, label: 'Đang soạn HĐ', color: 'purple' },
+                    { status: 'cancelled', count: 0, label: 'Đã hủy', color: 'red' }
+                  ],
+                  this_month: [
+                    { status: 'paid', count: 435, label: 'Đã thanh toán', color: 'green' },
+                    { status: 'unpaid', count: 100, label: 'Chưa thanh toán', color: 'yellow' },
+                    { status: 'pending_contract', count: 35, label: 'Chờ hợp đồng', color: 'blue' },
+                    { status: 'drafting_contract', count: 8, label: 'Đang soạn HĐ', color: 'purple' },
+                    { status: 'cancelled', count: 2, label: 'Đã hủy', color: 'red' }
+                  ]
+                }
+                const data = statusData[selectedDateRange as keyof typeof statusData] || statusData.this_month
+                const total = data.reduce((sum, item) => sum + item.count, 0)
+                
+                return data.map((item) => (
                 <div key={item.status} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full bg-${item.color}-500`}></div>
@@ -1219,23 +1487,139 @@ export default function ReportsManagement() {
                   <div className="flex items-center space-x-2">
                     <span className="font-bold">{item.count}</span>
                     <span className="text-sm text-gray-500">
-                      ({Math.round((item.count / 125) * 100)}%)
+                      ({total > 0 ? Math.round((item.count / total) * 100) : 0}%)
                     </span>
                   </div>
                 </div>
-              ))}
+                ))
+              })()}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Xu hướng doanh số 7 ngày</CardTitle>
+            <CardTitle>Doanh số theo sản phẩm</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
-              <p className="text-gray-500">Biểu đồ xu hướng doanh số</p>
+            <div className="space-y-4">
+              {(() => {
+                const productData = {
+                  today: [
+                    { product: 'Gói Enterprise', revenue: 35000000, percentage: 47 },
+                    { product: 'Gói Professional', revenue: 25000000, percentage: 33 },
+                    { product: 'Gói Starter', revenue: 10000000, percentage: 13 },
+                    { product: 'Dịch vụ tư vấn', revenue: 5000000, percentage: 7 }
+                  ],
+                  this_week: [
+                    { product: 'Gói Enterprise', revenue: 240000000, percentage: 49 },
+                    { product: 'Gói Professional', revenue: 150000000, percentage: 31 },
+                    { product: 'Gói Starter', revenue: 70000000, percentage: 14 },
+                    { product: 'Dịch vụ tư vấn', revenue: 30000000, percentage: 6 }
+                  ],
+                  this_month: [
+                    { product: 'Gói Enterprise', revenue: 1014000000, percentage: 49 },
+                    { product: 'Gói Professional', revenue: 642000000, percentage: 31 },
+                    { product: 'Gói Starter', revenue: 290000000, percentage: 14 },
+                    { product: 'Dịch vụ tư vấn', revenue: 124000000, percentage: 6 }
+                  ]
+                }
+                const data = productData[selectedDateRange as keyof typeof productData] || productData.this_month
+                
+                return data.map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{item.product}</span>
+                      <span className="text-xs text-gray-500">{item.percentage}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-blue-600">
+                        {formatCurrency(item.revenue)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                ))
+              })()}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-6">
+          <CardHeader>
+            <CardTitle>
+              {selectedDateRange === 'today' && 'Xu hướng doanh số hôm nay'}
+              {selectedDateRange === 'this_week' && 'Xu hướng doanh số 7 ngày qua'}
+              {(selectedDateRange === 'this_month' || selectedDateRange === 'this_quarter' || selectedDateRange === 'this_year') && 'Xu hướng doanh số tháng qua'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={256}>
+              {(() => {
+                const chartData = {
+                  today: [
+                    { date: '29/01', revenue: 75000000, displayDate: '29/01/2026' }
+                  ],
+                  this_week: [
+                    { date: '23/01', revenue: 68000000, displayDate: '23/01/2026' },
+                    { date: '24/01', revenue: 72000000, displayDate: '24/01/2026' },
+                    { date: '25/01', revenue: 65000000, displayDate: '25/01/2026' },
+                    { date: '26/01', revenue: 58000000, displayDate: '26/01/2026' },
+                    { date: '27/01', revenue: 82000000, displayDate: '27/01/2026' },
+                    { date: '28/01', revenue: 70000000, displayDate: '28/01/2026' },
+                    { date: '29/01', revenue: 75000000, displayDate: '29/01/2026' }
+                  ],
+                  this_month: [
+                    { date: '01/01', revenue: 45000000, displayDate: '01/01/2026' },
+                    { date: '05/01', revenue: 50000000, displayDate: '05/01/2026' },
+                    { date: '10/01', revenue: 65000000, displayDate: '10/01/2026' },
+                    { date: '15/01', revenue: 80000000, displayDate: '15/01/2026' },
+                    { date: '20/01', revenue: 75000000, displayDate: '20/01/2026' },
+                    { date: '25/01', revenue: 65000000, displayDate: '25/01/2026' },
+                    { date: '29/01', revenue: 75000000, displayDate: '29/01/2026' }
+                  ]
+                }
+                const data = chartData[selectedDateRange as keyof typeof chartData] || chartData.this_month
+                
+                return (
+                  <RechartsLineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                />
+                <YAxis 
+                  tick={{ fontSize: 12 }}
+                  stroke="#6b7280"
+                  tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '8px 12px'
+                  }}
+                  formatter={(value: any) => [formatCurrency(value), 'Doanh số']}
+                  labelFormatter={(label) => {
+                    const item = data.find(d => d.date === label)
+                    return item ? item.displayDate : label
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ fill: '#3b82f6', r: 4 }}
+                  activeDot={{ r: 6, fill: '#2563eb' }}
+                />
+              </RechartsLineChart>
+                )
+              })()}
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -1243,8 +1627,32 @@ export default function ReportsManagement() {
       {/* Detailed Sales Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Chi tiết doanh số theo ngày</CardTitle>
-          <CardDescription>Thống kê chi tiết theo từng ngày trong tuần</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>
+                {selectedDateRange === 'today' && 'Chi tiết doanh số hôm nay'}
+                {selectedDateRange === 'this_week' && 'Chi tiết doanh số theo tuần'}
+                {selectedDateRange === 'this_month' && 'Chi tiết doanh số theo tháng'}
+                {selectedDateRange === 'this_quarter' && 'Chi tiết doanh số theo quý'}
+                {selectedDateRange === 'this_year' && 'Chi tiết doanh số theo năm'}
+              </CardTitle>
+              <CardDescription>
+                {selectedDateRange === 'today' && 'Thống kê chi tiết hôm nay'}
+                {selectedDateRange === 'this_week' && 'Thống kê chi tiết theo từng ngày trong tuần'}
+                {(selectedDateRange === 'this_month' || selectedDateRange === 'this_quarter' || selectedDateRange === 'this_year') && 'Thống kê chi tiết theo từng ngày trong tháng'}
+              </CardDescription>
+            </div>
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                // Export all displayed records to Excel
+                console.log('Exporting to Excel...')
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Xuất excel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -1253,44 +1661,211 @@ export default function ReportsManagement() {
                 <TableHead>Ngày</TableHead>
                 <TableHead>Doanh số</TableHead>
                 <TableHead>Số đơn</TableHead>
-                <TableHead>GTB</TableHead>
-                <TableHead>Tỷ lệ TT</TableHead>
+                <TableHead>Số khách hàng</TableHead>
+                <TableHead>Giá trị bán</TableHead>
+                <TableHead>Tỷ lệ thanh toán</TableHead>
                 <TableHead>Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[
-                { date: '2025-06-01', revenue: 65000000, orders: 18, avg: 3611111, paymentRate: 72 },
-                { date: '2025-06-02', revenue: 58000000, orders: 16, avg: 3625000, paymentRate: 75 },
-                { date: '2025-06-03', revenue: 72000000, orders: 20, avg: 3600000, paymentRate: 80 },
-                { date: '2025-06-04', revenue: 69000000, orders: 19, avg: 3631579, paymentRate: 74 },
-                { date: '2025-06-05', revenue: 82000000, orders: 23, avg: 3565217, paymentRate: 78 },
-                { date: '2025-06-06', revenue: 55000000, orders: 15, avg: 3666667, paymentRate: 73 },
-                { date: '2025-06-07', revenue: 49000000, orders: 14, avg: 3500000, paymentRate: 71 }
-              ].map((day, index) => (
+              {(() => {
+                // Data for today (29/01/2026)
+                const todayData = [
+                  { date: '2026-01-29', revenue: 75000000, orders: 22, customers: 18, totalValue: 98500000, paymentRate: 76 }
+                ]
+
+                // Data for this week (23/01 - 29/01/2026)
+                const weekData = [
+                  { date: '2026-01-23', revenue: 68000000, orders: 19, customers: 16, totalValue: 89000000, paymentRate: 76 },
+                  { date: '2026-01-24', revenue: 72000000, orders: 21, customers: 17, totalValue: 95000000, paymentRate: 76 },
+                  { date: '2026-01-25', revenue: 65000000, orders: 18, customers: 15, totalValue: 85000000, paymentRate: 76 },
+                  { date: '2026-01-26', revenue: 58000000, orders: 16, customers: 13, totalValue: 77000000, paymentRate: 75 },
+                  { date: '2026-01-27', revenue: 82000000, orders: 24, customers: 20, totalValue: 108000000, paymentRate: 76 },
+                  { date: '2026-01-28', revenue: 70000000, orders: 20, customers: 17, totalValue: 92000000, paymentRate: 76 },
+                  { date: '2026-01-29', revenue: 75000000, orders: 22, customers: 18, totalValue: 98500000, paymentRate: 76 }
+                ]
+
+                // Data for this month (January 2026 - 31 days)
+                const monthData = [
+                  { date: '2026-01-01', revenue: 45000000, orders: 12, customers: 10, totalValue: 60000000, paymentRate: 75 },
+                  { date: '2026-01-02', revenue: 52000000, orders: 15, customers: 12, totalValue: 69000000, paymentRate: 75 },
+                  { date: '2026-01-03', revenue: 48000000, orders: 14, customers: 11, totalValue: 64000000, paymentRate: 75 },
+                  { date: '2026-01-04', revenue: 55000000, orders: 16, customers: 13, totalValue: 73000000, paymentRate: 75 },
+                  { date: '2026-01-05', revenue: 50000000, orders: 14, customers: 12, totalValue: 67000000, paymentRate: 75 },
+                  { date: '2026-01-06', revenue: 62000000, orders: 18, customers: 15, totalValue: 82000000, paymentRate: 76 },
+                  { date: '2026-01-07', revenue: 58000000, orders: 17, customers: 14, totalValue: 77000000, paymentRate: 75 },
+                  { date: '2026-01-08', revenue: 68000000, orders: 20, customers: 16, totalValue: 90000000, paymentRate: 76 },
+                  { date: '2026-01-09', revenue: 72000000, orders: 21, customers: 17, totalValue: 95000000, paymentRate: 76 },
+                  { date: '2026-01-10', revenue: 65000000, orders: 19, customers: 15, totalValue: 86000000, paymentRate: 76 },
+                  { date: '2026-01-11', revenue: 58000000, orders: 16, customers: 13, totalValue: 77000000, paymentRate: 75 },
+                  { date: '2026-01-12', revenue: 55000000, orders: 15, customers: 12, totalValue: 73000000, paymentRate: 75 },
+                  { date: '2026-01-13', revenue: 70000000, orders: 20, customers: 17, totalValue: 93000000, paymentRate: 75 },
+                  { date: '2026-01-14', revenue: 75000000, orders: 22, customers: 18, totalValue: 99000000, paymentRate: 76 },
+                  { date: '2026-01-15', revenue: 80000000, orders: 23, customers: 19, totalValue: 105000000, paymentRate: 76 },
+                  { date: '2026-01-16', revenue: 72000000, orders: 21, customers: 17, totalValue: 95000000, paymentRate: 76 },
+                  { date: '2026-01-17', revenue: 68000000, orders: 19, customers: 16, totalValue: 90000000, paymentRate: 76 },
+                  { date: '2026-01-18', revenue: 62000000, orders: 18, customers: 15, totalValue: 82000000, paymentRate: 76 },
+                  { date: '2026-01-19', revenue: 58000000, orders: 16, customers: 14, totalValue: 77000000, paymentRate: 75 },
+                  { date: '2026-01-20', revenue: 75000000, orders: 22, customers: 18, totalValue: 99000000, paymentRate: 76 },
+                  { date: '2026-01-21', revenue: 78000000, orders: 23, customers: 19, totalValue: 103000000, paymentRate: 76 },
+                  { date: '2026-01-22', revenue: 70000000, orders: 20, customers: 17, totalValue: 93000000, paymentRate: 75 },
+                  { date: '2026-01-23', revenue: 68000000, orders: 19, customers: 16, totalValue: 89000000, paymentRate: 76 },
+                  { date: '2026-01-24', revenue: 72000000, orders: 21, customers: 17, totalValue: 95000000, paymentRate: 76 },
+                  { date: '2026-01-25', revenue: 65000000, orders: 18, customers: 15, totalValue: 85000000, paymentRate: 76 },
+                  { date: '2026-01-26', revenue: 58000000, orders: 16, customers: 13, totalValue: 77000000, paymentRate: 75 },
+                  { date: '2026-01-27', revenue: 82000000, orders: 24, customers: 20, totalValue: 108000000, paymentRate: 76 },
+                  { date: '2026-01-28', revenue: 70000000, orders: 20, customers: 17, totalValue: 92000000, paymentRate: 76 },
+                  { date: '2026-01-29', revenue: 75000000, orders: 22, customers: 18, totalValue: 98500000, paymentRate: 76 },
+                  { date: '2026-01-30', revenue: 68000000, orders: 19, customers: 16, totalValue: 90000000, paymentRate: 76 },
+                  { date: '2026-01-31', revenue: 72000000, orders: 21, customers: 17, totalValue: 95000000, paymentRate: 76 }
+                ]
+
+                let displayData = monthData
+                if (selectedDateRange === 'today') {
+                  displayData = todayData
+                } else if (selectedDateRange === 'this_week') {
+                  displayData = weekData
+                }
+
+                return displayData.map((day, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{formatDate(day.date)}</TableCell>
                   <TableCell className="font-bold text-green-600">
                     {formatCurrency(day.revenue)}
                   </TableCell>
                   <TableCell>{day.orders}</TableCell>
-                  <TableCell>{formatCurrency(day.avg)}</TableCell>
+                  <TableCell>{day.customers}</TableCell>
+                  <TableCell className="font-semibold">
+                    {formatCurrency(day.totalValue)}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={day.paymentRate >= 75 ? 'default' : 'secondary'}>
                       {day.paymentRate}%
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDate(day.date)
+                        setShowSalesDetailModal(true)
+                      }}
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              })()}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Sales Detail Modal */}
+      {showSalesDetailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Chi tiết doanh số ngày {formatDate(selectedDate)}</h2>
+              <Button variant="ghost" size="sm" onClick={() => {
+                setShowSalesDetailModal(false)
+                setModalSearchTerm('')
+              }}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input 
+                      placeholder="Tìm kiếm đơn hàng, khách hàng..."
+                      className="pl-10 w-80"
+                      value={modalSearchTerm}
+                      onChange={(e) => setModalSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white">
+                    <option value="">Phòng sale</option>
+                    <option value="ps">PS Phòng sale</option>
+                    <option value="sale1">Phòng Sale 1</option>
+                    <option value="sale2">Phòng Sale 2</option>
+                  </select>
+                  <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white">
+                    <option value="">Chọn team</option>
+                    <option value="team_a">Team A</option>
+                    <option value="team_b">Team B</option>
+                    <option value="team_c">Team C</option>
+                  </select>
+                </div>
+                <Button className="bg-green-600 hover:bg-green-700">
+                  <Download className="w-4 h-4 mr-2" />
+                  Xuất dữ liệu
+                </Button>
+              </div>
+
+              <div className="overflow-auto max-h-[calc(90vh-220px)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">STT</TableHead>
+                      <TableHead>Mã đơn hàng</TableHead>
+                      <TableHead>Khách hàng</TableHead>
+                      <TableHead>Tổng tiền</TableHead>
+                      <TableHead>Chiết khấu (VND)</TableHead>
+                      <TableHead>Thực thu (Net)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const allOrders = [
+                        { id: 1, orderCode: 'DH001', customer: 'Nguyễn Văn A', discount: 500000, total: 10000000, net: 9500000 },
+                        { id: 2, orderCode: 'DH002', customer: 'Trần Thị B', discount: 0, total: 15000000, net: 15000000 },
+                        { id: 3, orderCode: 'DH003', customer: 'Lê Văn C', discount: 1000000, total: 20000000, net: 19000000 },
+                        { id: 4, orderCode: 'DH004', customer: 'Phạm Thị D', discount: 200000, total: 8000000, net: 7800000 },
+                        { id: 5, orderCode: 'DH005', customer: 'Hoàng Văn E', discount: 0, total: 12000000, net: 12000000 },
+                        { id: 6, orderCode: 'DH006', customer: 'Vũ Thị F', discount: 300000, total: 18000000, net: 17700000 },
+                        { id: 7, orderCode: 'DH007', customer: 'Đỗ Văn G', discount: 0, total: 9000000, net: 9000000 },
+                        { id: 8, orderCode: 'DH008', customer: 'Bùi Thị H', discount: 750000, total: 25000000, net: 24250000 },
+                        { id: 9, orderCode: 'DH009', customer: 'Đinh Văn I', discount: 0, total: 11000000, net: 11000000 },
+                        { id: 10, orderCode: 'DH010', customer: 'Cao Thị K', discount: 400000, total: 16000000, net: 15600000 }
+                      ]
+                      
+                      const filteredOrders = modalSearchTerm
+                        ? allOrders.filter(order => 
+                            order.orderCode.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                            order.customer.toLowerCase().includes(modalSearchTerm.toLowerCase())
+                          )
+                        : allOrders
+                      
+                      return filteredOrders.map((order, index) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell className="text-blue-600 font-medium">{order.orderCode}</TableCell>
+                          <TableCell>{order.customer}</TableCell>
+                          <TableCell className="font-semibold">
+                            {formatCurrency(order.total)}
+                          </TableCell>
+                          <TableCell className="text-orange-600">
+                            {order.discount > 0 ? formatCurrency(order.discount) : '0'}
+                          </TableCell>
+                          <TableCell className="font-bold text-green-600">
+                            {formatCurrency(order.net)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -1306,87 +1881,125 @@ export default function ReportsManagement() {
         
         <div className="flex items-center space-x-3">
           <select 
-            value={selectedDateRange}
-            onChange={(e) => setSelectedDateRange(e.target.value)}
+            value={pendingDateRange}
+            onChange={(e) => setPendingDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
+            <option value="today">Hôm nay</option>
             <option value="this_week">Tuần này</option>
             <option value="this_month">Tháng này</option>
             <option value="this_quarter">Quý này</option>
-            <option value="custom">Tùy chỉnh</option>
+            <option value="this_year">Năm này</option>
           </select>
           
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Xuất Excel
+          <select 
+            value={pendingSalesDepartment}
+            onChange={(e) => setPendingSalesDepartment(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+          >
+            <option value="">Phòng sale</option>
+            <option value="sale_department_1">Phòng Sale 1</option>
+            <option value="sale_department_2">Phòng Sale 2</option>
+            <option value="sale_department_3">Phòng Sale 3</option>
+          </select>
+          
+          <select 
+            value={pendingTeam}
+            onChange={(e) => setPendingTeam(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+          >
+            <option value="">Chọn team</option>
+            <option value="team_a">Team A</option>
+            <option value="team_b">Team B</option>
+            <option value="team_c">Team C</option>
+            <option value="team_d">Team D</option>
+          </select>
+          
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => {
+              // Apply pending filters to actual state
+              setSelectedDateRange(pendingDateRange)
+              setSalesPersonFilter(pendingSalesDepartment)
+            }}
+          >
+            Áp dụng bộ lọc
           </Button>
         </div>
       </div>
 
       {/* Performance Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng Lead được giao</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {sampleSalesPerformance.reduce((acc, s) => acc + s.leadsAssigned, 0)}
-                </p>
+        {(() => {
+          const displayData = getSalesPerformanceData(selectedDateRange)
+          
+          return (
+            <>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tổng Lead được giao</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">
+                    {displayData.reduce((acc, s) => acc + s.leadsAssigned, 0)}
+                  </p>
+                </div>
               </div>
-              <Users className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng đơn chốt</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {sampleSalesPerformance.reduce((acc, s) => acc + s.ordersCreated, 0)}
-                </p>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tổng đơn chốt</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">
+                    {displayData.reduce((acc, s) => acc + s.ordersCreated, 0)}
+                  </p>
+                </div>
               </div>
-              <ShoppingCart className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tỷ lệ chốt TB</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {Math.round(sampleSalesPerformance.reduce((acc, s) => acc + s.conversionRate, 0) / sampleSalesPerformance.length)}%
-                </p>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tỷ lệ chốt TB</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">
+                    {Math.round(displayData.reduce((acc, s) => acc + s.conversionRate, 0) / displayData.length)}%
+                  </p>
+                </div>
               </div>
-              <Target className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng doanh số</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(sampleSalesPerformance.reduce((acc, s) => acc + s.revenue, 0))}
-                </p>
+              <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
+                <div className="absolute top-2 right-2">
+                  <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white mb-2">Tổng doanh số</p>
+                  <p className="text-4xl font-extrabold text-white mb-1">
+                    {formatCurrency(displayData.reduce((acc, s) => acc + s.revenue, 0))}
+                  </p>
+                </div>
               </div>
-              <DollarSign className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </>
+          )
+        })()}
       </div>
 
       {/* Sales Performance Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Bảng hiệu suất Sales</CardTitle>
-          <CardDescription>Chi tiết hiệu quả bán hàng của từng sales</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Bảng hiệu suất Sales</CardTitle>
+              <CardDescription>Chi tiết hiệu quả bán hàng của từng sales</CardDescription>
+            </div>
+            <Button className="bg-green-600 hover:bg-green-700 text-white">
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -1398,12 +2011,15 @@ export default function ReportsManagement() {
                 <TableHead>Đơn chốt</TableHead>
                 <TableHead>Tỷ lệ chốt</TableHead>
                 <TableHead>Doanh số</TableHead>
+                <TableHead>KPI</TableHead>
                 <TableHead>Nguồn Lead</TableHead>
                 <TableHead>Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sampleSalesPerformance.map((sales) => (
+              {(() => {
+                const displayData = getSalesPerformanceData(selectedDateRange)
+                return displayData.map((sales) => (
                 <TableRow key={sales.id}>
                   <TableCell className="font-medium">{sales.salesPerson}</TableCell>
                   <TableCell>{sales.salesTeam}</TableCell>
@@ -1418,6 +2034,26 @@ export default function ReportsManagement() {
                     {formatCurrency(sales.revenue)}
                   </TableCell>
                   <TableCell>
+                    {sales.kpiTarget && sales.kpiCompletion ? (
+                      <div className="space-y-1">
+                        <Badge 
+                          variant={
+                            sales.kpiCompletion >= 100 ? 'default' : 
+                            sales.kpiCompletion >= 80 ? 'secondary' : 
+                            'destructive'
+                          }
+                        >
+                          {sales.kpiCompletion}%
+                        </Badge>
+                        <div className="text-xs text-gray-500">
+                          {formatCurrency(sales.kpiTarget)}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Chưa có KPI</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <div className="text-xs space-y-1">
                       <div>Zalo: {sales.leadsBySource.zalo}</div>
                       <div>FB: {sales.leadsBySource.facebook}</div>
@@ -1425,18 +2061,149 @@ export default function ReportsManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedSalesForDetail(sales)
+                        setShowPerformanceDetailModal(true)
+                      }}
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              })()}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Performance Detail Modal */}
+      {showPerformanceDetailModal && selectedSalesForDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Chi tiết hiệu suất - {selectedSalesForDetail.salesPerson}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowPerformanceDetailModal(false)}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex justify-end mb-6">
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                  <Download className="w-4 h-4 mr-2" />
+                  Xuất dữ liệu
+                </Button>
+              </div>
+
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">STT</TableHead>
+                      <TableHead>Nguồn</TableHead>
+                      <TableHead>Lead được giao</TableHead>
+                      <TableHead>Đơn chốt</TableHead>
+                      <TableHead>Tỷ lệ chốt</TableHead>
+                      <TableHead>Doanh số</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const detailData = getPerformanceDetailData(selectedSalesForDetail)
+                      const totalRevenue = detailData.reduce((sum, item) => sum + item.revenue, 0)
+                      
+                      return (
+                        <>
+                          {detailData.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{item.id}</TableCell>
+                              <TableCell>{item.source}</TableCell>
+                              <TableCell>{item.leads}</TableCell>
+                              <TableCell>{item.orders}</TableCell>
+                              <TableCell>{item.conversionRate.toFixed(1)}%</TableCell>
+                              <TableCell className="font-bold text-green-600">
+                                {formatCurrency(item.revenue)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-gray-50 font-semibold">
+                            <TableCell colSpan={4}></TableCell>
+                            <TableCell>Tổng doanh số:</TableCell>
+                            <TableCell className="font-bold text-green-600">
+                              {formatCurrency(totalRevenue)}
+                            </TableCell>
+                          </TableRow>
+                        </>
+                      )
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+
+  // Performance Detail Modal Helper
+  const getPerformanceDetailData = (sales: SalesPerformanceReport) => {
+    const sourceMap = {
+      'Facebook Ads': { leads: 0, orders: 0, revenue: 0 },
+      'Google Ads': { leads: 0, orders: 0, revenue: 0 },
+      'Zalo': { leads: 0, orders: 0, revenue: 0 },
+      'Website': { leads: 0, orders: 0, revenue: 0 },
+      'Giới thiệu': { leads: 0, orders: 0, revenue: 0 }
+    }
+
+    // Calculate based on leadsBySource ratio
+    const totalLeads = sales.leadsAssigned
+    const totalOrders = sales.ordersCreated
+    const totalRevenue = sales.revenue
+
+    // Facebook Ads: 40% of leads
+    const fbRatio = 0.40
+    sourceMap['Facebook Ads'].leads = Math.round(totalLeads * fbRatio)
+    sourceMap['Facebook Ads'].orders = Math.round(totalOrders * fbRatio)
+    sourceMap['Facebook Ads'].revenue = Math.round(totalRevenue * fbRatio)
+
+    // Google Ads: 28% of leads
+    const gaRatio = 0.28
+    sourceMap['Google Ads'].leads = Math.round(totalLeads * gaRatio)
+    sourceMap['Google Ads'].orders = Math.round(totalOrders * gaRatio)
+    sourceMap['Google Ads'].revenue = Math.round(totalRevenue * gaRatio)
+
+    // Zalo: 20% of leads
+    const zaloRatio = 0.20
+    sourceMap['Zalo'].leads = Math.round(totalLeads * zaloRatio)
+    sourceMap['Zalo'].orders = Math.round(totalOrders * zaloRatio)
+    sourceMap['Zalo'].revenue = Math.round(totalRevenue * zaloRatio)
+
+    // Website: 8% of leads
+    const webRatio = 0.08
+    sourceMap['Website'].leads = Math.round(totalLeads * webRatio)
+    sourceMap['Website'].orders = Math.round(totalOrders * webRatio)
+    sourceMap['Website'].revenue = Math.round(totalRevenue * webRatio)
+
+    // Giới thiệu: 4% of leads
+    const refRatio = 0.04
+    sourceMap['Giới thiệu'].leads = Math.round(totalLeads * refRatio)
+    sourceMap['Giới thiệu'].orders = Math.round(totalOrders * refRatio)
+    sourceMap['Giới thiệu'].revenue = Math.round(totalRevenue * refRatio)
+
+    return Object.entries(sourceMap).map((entry, idx) => ({
+      id: idx + 1,
+      source: entry[0],
+      leads: entry[1].leads,
+      orders: entry[1].orders,
+      conversionRate: entry[1].leads > 0 ? Math.round((entry[1].orders / entry[1].leads) * 100 * 10) / 10 : 0,
+      revenue: entry[1].revenue
+    }))
+  }
 
   // Sales Process Component
   const SalesProcessComponent = () => (
@@ -1566,53 +2333,45 @@ export default function ReportsManagement() {
 
       {/* Cancellation Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Đơn hủy</p>
-                <p className="text-2xl font-bold text-red-600">12</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-red-600 to-red-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Đơn hủy</p>
+            <p className="text-4xl font-extrabold text-white mb-1">12</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tỷ lệ hủy</p>
-                <p className="text-2xl font-bold text-red-600">8.7%</p>
-              </div>
-              <TrendingDown className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-red-600 to-red-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Tỷ lệ hủy</p>
+            <p className="text-4xl font-extrabold text-white mb-1">8.7%</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Giá trị mất</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(45000000)}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-red-600 to-red-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Giá trị mất</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(45000000)}</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Lý do chính</p>
-                <p className="text-lg font-bold text-gray-900">Khách hủy</p>
-              </div>
-              <Users className="w-8 h-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-gray-600 to-gray-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Lý do chính</p>
+            <p className="text-3xl font-extrabold text-white mb-1">Khách hủy</p>
+          </div>
+        </div>
       </div>
 
       {/* Cancellation Reasons */}
@@ -1664,53 +2423,45 @@ export default function ReportsManagement() {
 
       {/* Customer Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tổng KH</p>
-                <p className="text-2xl font-bold text-blue-600">486</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Tổng KH</p>
+            <p className="text-4xl font-extrabold text-white mb-1">486</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">KH VIP</p>
-                <p className="text-2xl font-bold text-purple-600">23</p>
-              </div>
-              <Star className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">KH VIP</p>
+            <p className="text-4xl font-extrabold text-white mb-1">23</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">GTB/KH</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(5200000)}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">GTB/KH</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(5200000)}</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tần suất mua</p>
-                <p className="text-2xl font-bold text-orange-600">2.3</p>
-              </div>
-              <RefreshCw className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Tần suất mua</p>
+            <p className="text-4xl font-extrabold text-white mb-1">2.3</p>
+          </div>
+        </div>
       </div>
 
       {/* Customer Segmentation */}
@@ -2035,7 +2786,7 @@ export default function ReportsManagement() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 
   // Comparison Report Component
   const ComparisonReportComponent = () => (
@@ -2163,35 +2914,29 @@ export default function ReportsManagement() {
     </div>
   );
 
+  // KPI Tracking Component
+  const KPITrackingComponent = () => (
+    <div className="space-y-6">
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+          <TabsTrigger value="history">Lịch sử</TabsTrigger>
+        </TabsList>
 
-        <TabsContent value="performance" className="mt-6">
-          <SalesPerformanceComponent />
-        </TabsContent>
-
-        <TabsContent value="process" className="mt-6">
-          <SalesProcessComponent />
-        </TabsContent>
-
-        <TabsContent value="sources" className="mt-6">
-          <LeadSourceComponent />
-        </TabsContent>
-
-        <TabsContent value="cancellation" className="mt-6">
-          <CancellationReportComponent />
-        </TabsContent>
-
-        <TabsContent value="customer" className="mt-6">
-          <CustomerReportComponent />
-        </TabsContent>
-                      <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Tìm kiếm KPI..."
-                          value={kpiSearchTerm}
-                          onChange={(e) => setKpiSearchTerm(e.target.value)}
-                          className="pl-8"
-                        />
-                      </div>
+        <TabsContent value="overview" className="mt-6">
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Tìm kiếm KPI..."
+                        value={kpiSearchTerm}
+                        onChange={(e) => setKpiSearchTerm(e.target.value)}
+                        className="pl-8"
+                      />
                     </div>
                     <Select value={kpiCategoryFilter} onValueChange={setKpiCategoryFilter}>
                       <SelectTrigger className="w-[150px]">
@@ -2278,7 +3023,18 @@ export default function ReportsManagement() {
                     ))}
                   </div>
                 </div>
-              </TabsContent>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-6">
+          <div className="space-y-6">
+            <Tabs defaultValue="history" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="history">Lịch sử cập nhật</TabsTrigger>
+                <TabsTrigger value="reports">Báo cáo phân tích</TabsTrigger>
+              </TabsList>
 
               <TabsContent value="history" className="mt-6">
                 <div className="space-y-4">
@@ -2769,6 +3525,59 @@ export default function ReportsManagement() {
           </div>
         </div>
       )}
+    </div>
+  )
+
+  // Main return
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Báo cáo</h1>
+          <p className="text-gray-600">Phân tích và theo dõi hiệu quả kinh doanh</p>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          {[
+            { id: 'overview', name: 'Tổng quan', icon: <BarChart3 className="w-4 h-4" /> },
+            { id: 'sales', name: 'Doanh số', icon: <DollarSign className="w-4 h-4" /> },
+            { id: 'performance', name: 'Hiệu suất Sale', icon: <Users className="w-4 h-4" /> },
+            { id: 'process', name: 'Quy trình', icon: <Activity className="w-4 h-4" /> },
+            { id: 'sources', name: 'Nguồn Lead', icon: <Zap className="w-4 h-4" /> },
+            { id: 'cancellation', name: 'Hủy đơn', icon: <AlertTriangle className="w-4 h-4" /> },
+            { id: 'customer', name: 'Khách hàng', icon: <Users className="w-4 h-4" /> }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className={activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}>
+                {tab.icon}
+              </span>
+              <span>{tab.name}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="mt-6">
+        {activeTab === 'overview' && <ReportOverview />}
+        {activeTab === 'sales' && <SalesReportComponent />}
+        {activeTab === 'performance' && <SalesPerformanceComponent />}
+        {activeTab === 'process' && <SalesProcessComponent />}
+        {activeTab === 'sources' && <LeadSourceComponent />}
+        {activeTab === 'cancellation' && <CancellationReportComponent />}
+        {activeTab === 'customer' && <CustomerReportComponent />}
+      </div>
     </div>
   )
 }

@@ -3233,7 +3233,7 @@ export default function TaskManagement() {
 
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 px-6">
+        <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('tasks')}
             className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${

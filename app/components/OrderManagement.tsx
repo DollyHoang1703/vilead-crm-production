@@ -1402,26 +1402,26 @@ Trân trọng,
 
     return (
       <div className="space-y-6">
-        {/* Header with Help Icon */}
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-gray-900">Quản lý nhắc thanh toán</h3>
-          <div 
-            className="relative"
-            onMouseEnter={() => setShowReminderTooltip(true)}
-            onMouseLeave={() => setShowReminderTooltip(false)}
-          >
-            <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
-            {showReminderTooltip && (
-              <div className="absolute left-0 top-6 z-50 w-80 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg">
-                <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
-                Tính năng này giúp bạn tự động gửi nhắc thanh toán đến khách hàng (qua email/SMS) và thông báo cho người phụ trách để theo dõi các đơn hàng chưa thanh toán.
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Reminder Statistics */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
+          {/* Header with Help Icon */}
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Quản lý nhắc thanh toán</h3>
+            <div 
+              className="relative"
+              onMouseEnter={() => setShowReminderTooltip(true)}
+              onMouseLeave={() => setShowReminderTooltip(false)}
+            >
+              <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
+              {showReminderTooltip && (
+                <div className="absolute left-0 top-6 z-50 w-80 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg">
+                  <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                  Tính năng này giúp bạn tự động gửi nhắc thanh toán đến khách hàng (qua email/SMS) và thông báo cho người phụ trách để theo dõi các đơn hàng chưa thanh toán.
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex flex-col justify-center rounded-lg px-6 py-6 min-w-[180px] bg-gradient-to-br from-red-600 to-red-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
               <div className="absolute top-2 right-2">
@@ -1696,16 +1696,16 @@ Trân trọng,
 
   const renderOrders = () => (
     <div className="space-y-4">
-      {/* Tổng quan đơn hàng */}
-      <div className="flex items-center gap-2">
-        <h3 className="text-lg font-semibold text-gray-900">Tổng quan đơn hàng</h3>
-        <div className="relative">
-          <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
-        </div>
-      </div>
-
       {/* Statistics Cards */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* Tổng quan đơn hàng */}
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Tổng quan đơn hàng</h3>
+          <div className="relative">
+            <HelpCircle className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-help transition-colors" />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col justify-center rounded-lg px-6 py-6 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
             <div className="absolute top-2 right-2">
@@ -2414,7 +2414,7 @@ Trân trọng,
       {/* Navigation Tabs */}
       <div>
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+          <nav className="flex space-x-8">
             {[
               { id: 'orders', name: 'Đơn hàng', icon: <ShoppingCart className="w-4 h-4" /> },
               { id: 'reminders', name: 'Nhắc thanh toán', icon: <Bell className="w-4 h-4" /> }
@@ -2438,7 +2438,7 @@ Trân trọng,
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="mt-6">
           {activeTab === 'orders' && renderOrders()}
           {activeTab === 'reminders' && renderRemindersManagement()}
         </div>
