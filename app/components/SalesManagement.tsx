@@ -3600,7 +3600,9 @@ export default function SalesManagement() {
                                   }}
                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                                 >
-                                  <Edit className="w-4 h-4 text-gray-400" />
+                                  <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                                  </svg>
                                   <span>Chỉnh sửa</span>
                                 </button>
 
@@ -3861,7 +3863,9 @@ export default function SalesManagement() {
                                       className="p-1.5 text-slate-600 hover:text-white hover:bg-amber-500 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md" 
                                       title="Chỉnh sửa"
                                     >
-                                      <Edit className="w-3.5 h-3.5" />
+                                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                                      </svg>
                                     </button>
                                     
                                     <button 
@@ -5291,7 +5295,9 @@ export default function SalesManagement() {
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Sửa ghi chú"
                             >
-                              <Edit className="w-4 h-4" />
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                              </svg>
                             </button>
                             <button
                               onClick={() => setShowDeleteNoteConfirm(true)}
@@ -7700,7 +7706,9 @@ export default function SalesManagement() {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <Edit className="w-5 h-5 text-blue-600" />
+                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                </svg>
                 Sửa ghi chú
               </h3>
               <button

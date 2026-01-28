@@ -1316,7 +1316,9 @@ const RoleManagementNew = () => {
                           startEditRole()
                         }}
                       >
-                        <Pencil className="w-4 h-4" />
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                        </svg>
                         <span>Chỉnh sửa</span>
                       </div>
                       <div
@@ -2436,7 +2438,9 @@ export default function SettingsManagement() {
                       onClick={() => handleEditSalesStage(stage)}
                       title="Chỉnh sửa giai đoạn"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                      </svg>
                     </Button>
                     <Button 
                       variant="outline" 
@@ -3684,7 +3688,9 @@ export default function SettingsManagement() {
                             setSelectedUser(user)
                             setShowUserModal(true)
                           }}>
-                            <Edit2 className="w-4 h-4 mr-2" />
+                            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                            </svg>
                             Chỉnh sửa
                           </DropdownMenuItem>
                           <DropdownMenuItem>
@@ -4250,7 +4256,9 @@ export default function SettingsManagement() {
                   onClick={() => handleEdit(integration.id)}
                   title="Chỉnh sửa"
                 >
-                  <Edit2 className="h-4 w-4" />
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                  </svg>
                 </Button>
               </div>
             </div>
@@ -4829,7 +4837,9 @@ export default function SettingsManagement() {
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="sm">
-                        <Edit2 className="w-4 h-4" />
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                        </svg>
                       </Button>
                       <Button variant="ghost" size="sm">
                         <Copy className="w-4 h-4" />
@@ -5102,7 +5112,9 @@ export default function SettingsManagement() {
                         {rule.status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
                       </Badge>
                       <Button variant="ghost" size="sm">
-                        <Edit2 className="w-4 h-4" />
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                        </svg>
                       </Button>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Bell, User, LogOut, Crown, Mail, Phone, Camera, Eye, EyeOff, Upload, Save, X } from 'lucide-react'
+import { Search, Bell, User, LogOut, Crown, Mail, Phone, Camera, Eye, EyeOff, Upload, Save, X, Settings } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,71 +41,80 @@ const notifications = [
   {
     id: 1,
     type: "urgent",
-    category: "leads",
-    message: "Lead Nguyễn Văn A không tương tác 3 ngày",
-    time: "10 phút trước",
+    category: "customer",
+    title: "Chuyển tiếp nhận khách hàng",
+    message: "Khách hàng Phạm Thị Thơm - 0989595927 ...",
+    time: "9 giờ trước",
     read: false,
   },
   {
     id: 2,
     type: "important", 
-    category: "customer",
-    message: "Đơn #123 Chưa thanh toán 3 ngày",
-    time: "1 giờ trước",
+    category: "orders",
+    title: "Tạo mới đơn hàng",
+    message: "Đơn hàng DH-001 của sản phẩm Đào tạo k...",
+    time: "12 giờ trước",
     read: false,
   },
   {
     id: 3,
     type: "normal",
-    category: "leads",
-    message: "Lead Trần Thị B từ Fanpage",
-    time: "30 phút trước",
+    category: "orders",
+    title: "Tạo mới đơn hàng",
+    message: "Đơn hàng DH-26-0000003 của sản phẩm ...",
+    time: "1 ngày trước",
     read: true,
   },
   {
     id: 4,
     type: "urgent",
     category: "customer",
-    message: "Khách hàng VIP yêu cầu gọi lại ngay",
-    time: "5 phút trước", 
+    title: "Yêu cầu tiếp nhận khách hàng",
+    message: "Bạn có yêu cầu tiếp nhận khách hàng Trần ...",
+    time: "4 ngày trước", 
     read: false,
   },
   {
     id: 5,
-    type: "important",
-    category: "tasks",
-    message: "Báo cáo tuần cần phê duyệt",
-    time: "2 giờ trước",
+    type: "normal",
+    category: "customer",
+    title: "Yêu cầu tiếp nhận khách hàng",
+    message: "Bạn có yêu cầu tiếp nhận khách hàng Nguy...",
+    time: "4 ngày trước",
     read: false,
   },
   {
     id: 6,
     type: "normal",
-    category: "tasks",
-    message: "Task follow-up khách hàng ABC đến hạn",
-    time: "4 giờ trước",
+    category: "orders",
+    title: "Tạo mới đơn hàng",
+    message: "Đơn hàng DH-26-0000002 của sản phẩm ...",
+    time: "5 ngày trước",
     read: false,
   },
   {
     id: 7,
     type: "normal",
-    category: "leads",
-    message: "Lead mới từ website",
-    time: "hôm qua",
+    category: "customer",
+    title: "Yêu cầu tiếp nhận khách hàng",
+    message: "Bạn có yêu cầu tiếp nhận khách hàng ...",
+    time: "5 ngày trước",
     read: true,
   },
   {
     id: 8,
     type: "important",
-    category: "customer",
-    message: "Khách hàng yêu cầu hỗ trợ kỹ thuật",
-    time: "hôm qua",
+    category: "leads",
+    title: "Lead mới từ Website",
+    message: "Lead Nguyễn Văn A quan tâm gói dịch vụ",
+    time: "30 phút trước",
     read: false,
   },
   {
     id: 9,
     type: "normal",
     category: "tasks",
+    title: "Task đến hạn",
     message: "Hoàn thành báo cáo doanh số tháng",
     time: "2 ngày trước",
     read: true,
@@ -114,14 +123,16 @@ const notifications = [
     id: 10,
     type: "urgent",
     category: "leads",
-    message: "Lead hot cần xử lý trong ngày",
-    time: "3 ngày trước",
+    title: "Lead hot cần xử lý",
+    message: "Lead cần xử lý trong ngày hôm nay",
+    time: "3 giờ trước",
     read: false,
   },
   {
     id: 11,
     type: "important",
     category: "orders",
+    title: "Đơn hàng cần xác nhận",
     message: "Đơn hàng #DH001 cần xác nhận thanh toán",
     time: "15 phút trước",
     read: false,
@@ -130,6 +141,7 @@ const notifications = [
     id: 12,
     type: "normal", 
     category: "orders",
+    title: "Giao hàng thành công",
     message: "Đơn hàng #DH002 đã được giao thành công",
     time: "2 giờ trước",
     read: true,
@@ -138,6 +150,7 @@ const notifications = [
     id: 13,
     type: "urgent",
     category: "kpi",
+    title: "Cảnh báo KPI",
     message: "KPI doanh số tháng này đang thấp hơn mục tiêu 20%",
     time: "1 giờ trước",
     read: false,
@@ -146,6 +159,7 @@ const notifications = [
     id: 14,
     type: "important",
     category: "kpi", 
+    title: "Báo cáo KPI",
     message: "Báo cáo KPI tuần cần được cập nhật",
     time: "hôm qua",
     read: false,
@@ -154,6 +168,7 @@ const notifications = [
     id: 15,
     type: "normal",
     category: "orders",
+    title: "Đơn hàng VIP",
     message: "Đơn hàng mới từ khách hàng VIP",
     time: "6 giờ trước",
     read: true,
@@ -167,6 +182,13 @@ export default function Header() {
   
   // Notification tab state
   const [activeNotificationTab, setActiveNotificationTab] = useState('all')
+  const [showMoreTabsDropdown, setShowMoreTabsDropdown] = useState(false)
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+  
+  // Notifications state - make it stateful so we can update read status
+  const [notificationsList, setNotificationsList] = useState(notifications)
   
   // Notifications modal states
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
@@ -281,18 +303,37 @@ export default function Header() {
     setShowPasswordModal(false)
   }
 
-  // Filter notifications based on active tab (currently disabled, shows all)
+  // Filter notifications based on active tab
   const getFilteredNotifications = () => {
-    return notifications // Always show all notifications since tabs are hidden
-    // if (activeNotificationTab === 'all') {
-    //   return notifications
-    // }
-    // return notifications.filter(notification => notification.category === activeNotificationTab)
+    let filtered = notificationsList
+    
+    // Filter by category
+    if (activeNotificationTab !== 'all') {
+      filtered = filtered.filter(notification => notification.category === activeNotificationTab)
+    }
+    
+    // Filter by unread status
+    if (showUnreadOnly) {
+      filtered = filtered.filter(notification => !notification.read)
+    }
+    
+    return filtered
+  }
+  
+  // Handle notification click - mark as read
+  const handleNotificationClick = (notificationId: number) => {
+    setNotificationsList(notificationsList.map(n => 
+      n.id === notificationId ? { ...n, read: true } : n
+    ))
+    // Update unread count
+    const newUnreadCount = notificationsList.filter(n => !n.read && n.id !== notificationId).length
+    setUnreadCount(newUnreadCount)
   }
 
   // Filter notifications for modal popup
+  // Filter notifications for modal popup
   const getFilteredNotificationsForModal = () => {
-    let filtered = notifications
+    let filtered = notificationsList
 
     // Filter by type/category
     if (notificationTypeFilter !== 'all') {
@@ -373,7 +414,9 @@ export default function Header() {
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <Bell className="w-5 h-5" />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
+                  <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z" fill="currentColor"/>
+                </svg>
                 {unreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
@@ -384,142 +427,258 @@ export default function Header() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-96" align="end">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-3">
-                  <h3 className="font-semibold text-lg text-gray-800">🔔 Thông báo</h3>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm" className="hidden text-xs hover:bg-gray-100">
-                      🔽 Lọc
+            <PopoverContent className="w-[450px] p-0" align="end">
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-base text-gray-800">Thông Báo</h3>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-full p-0.5">
+                      <button 
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                          !showUnreadOnly ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                        onClick={() => setShowUnreadOnly(false)}
+                      >
+                        Tất cả
+                      </button>
+                      <button 
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                          showUnreadOnly ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                        onClick={() => setShowUnreadOnly(true)}
+                      >
+                        Chưa đọc
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => setShowNotificationSettings(!showNotificationSettings)}
+                    >
+                      <Settings className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-xs hover:bg-gray-100">
-                      ✅ Đánh dấu đã đọc
-                    </Button>
+                    
+                    {showNotificationSettings && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setShowNotificationSettings(false)}
+                        />
+                        <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              // Mark all as read
+                              setNotificationsList(notificationsList.map(n => ({ ...n, read: true })))
+                              setUnreadCount(0)
+                              setShowNotificationSettings(false)
+                            }}
+                          >
+                            Đánh dấu đọc tất cả
+                          </button>
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            onClick={() => {
+                              setShowNotificationSettings(false)
+                              setShowDeleteConfirmation(true)
+                            }}
+                          >
+                            Xóa tất cả
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="hidden flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={`flex-1 text-xs rounded-md ${
+                {/* Tabs */}
+                <div className="flex items-center gap-0 px-4 border-b">
+                  <button 
+                    className={`px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
                       activeNotificationTab === 'all' 
-                        ? 'bg-white shadow-sm' 
-                        : 'hover:bg-gray-200'
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-transparent text-gray-600 hover:text-gray-800'
                     }`}
                     onClick={() => setActiveNotificationTab('all')}
                   >
                     Tất cả
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex-1 text-xs hover:bg-gray-200 rounded-md">
-                    � Leads
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex-1 text-xs hover:bg-gray-200 rounded-md">
-                    � Khách hàng
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex-1 text-xs hover:bg-gray-200 rounded-md">
-                    📋 Công việc
-                  </Button>
+                  </button>
+                  <button 
+                    className={`px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
+                      activeNotificationTab === 'orders' 
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-transparent text-gray-600 hover:text-gray-800'
+                    }`}
+                    onClick={() => setActiveNotificationTab('orders')}
+                  >
+                    Đơn hàng
+                  </button>
+                  <button 
+                    className={`px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
+                      activeNotificationTab === 'customer' 
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-transparent text-gray-600 hover:text-gray-800'
+                    }`}
+                    onClick={() => setActiveNotificationTab('customer')}
+                  >
+                    Khách hàng
+                  </button>
+                  <button 
+                    className={`px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
+                      activeNotificationTab === 'tasks' 
+                        ? 'border-blue-600 text-blue-600' 
+                        : 'border-transparent text-gray-600 hover:text-gray-800'
+                    }`}
+                    onClick={() => setActiveNotificationTab('tasks')}
+                  >
+                    Công việc
+                  </button>
+                  
+                  {/* More tabs dropdown */}
+                  <div className="relative">
+                    <button 
+                      className="px-3 py-3 text-xs font-bold text-gray-600 hover:text-gray-800 border-b-2 border-transparent"
+                      onClick={() => setShowMoreTabsDropdown(!showMoreTabsDropdown)}
+                    >
+                      ...
+                    </button>
+                    
+                    {showMoreTabsDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setShowMoreTabsDropdown(false)}
+                        />
+                        <div className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setActiveNotificationTab('products')
+                              setShowMoreTabsDropdown(false)
+                            }}
+                          >
+                            Sản phẩm
+                          </button>
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setActiveNotificationTab('payment')
+                              setShowMoreTabsDropdown(false)
+                            }}
+                          >
+                            Thanh toán
+                          </button>
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setActiveNotificationTab('events')
+                              setShowMoreTabsDropdown(false)
+                            }}
+                          >
+                            Sự kiện
+                          </button>
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setActiveNotificationTab('link-notifications')
+                              setShowMoreTabsDropdown(false)
+                            }}
+                          >
+                            Thông báo link
+                          </button>
+                          <button
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setActiveNotificationTab('system')
+                              setShowMoreTabsDropdown(false)
+                            }}
+                          >
+                            Hệ thống
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+
+                {/* Notifications List */}
+                <div className="flex-1 overflow-y-auto max-h-[400px]">
                   {getFilteredNotifications().length === 0 ? (
-                    <div className="text-center py-8">
+                    <div className="text-center py-12">
                       <p className="text-gray-500 text-sm">Không có thông báo nào</p>
                     </div>
                   ) : (
-                    <>
-                      {/* Urgent Notifications */}
-                      {getFilteredNotifications().filter(n => n.type === 'urgent').length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
-                            🚨 Khẩn cấp - Cần xử lý ngay
-                          </h4>
-                          {getFilteredNotifications().filter(n => n.type === 'urgent').map((notification) => (
-                            <div key={notification.id} className="p-3 rounded-lg border-l-4 border-l-red-500 bg-red-50 mb-2 hover:bg-red-100 transition-colors">
-                              <div className="flex items-start justify-between">
+                    <div className="divide-y divide-gray-100">
+                      {getFilteredNotifications().map((notification) => (
+                        <div 
+                          key={notification.id} 
+                          className={`relative px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${
+                            !notification.read ? 'bg-blue-50/30' : ''
+                          }`}
+                          onClick={() => handleNotificationClick(notification.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Avatar */}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 min-w-0 pr-6">
+                              <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">
+                                  <p className="text-sm font-medium leading-relaxed">
+                                    <span className="text-blue-600">
+                                      {notification.category === 'customer' && 'Khách hàng'}
+                                      {notification.category === 'orders' && 'Đơn hàng'}
+                                      {notification.category === 'leads' && 'Cơ hội'}
+                                      {notification.category === 'tasks' && 'Công việc'}
+                                      {notification.category === 'kpi' && 'KPI'}
+                                      {notification.category === 'calendar' && 'Lịch hẹn'}
+                                      {notification.category === 'quote' && 'Báo giá'}
+                                    </span>
+                                    <span className="text-gray-400 mx-1">•</span>
+                                    <span className="text-gray-900">{notification.title}</span>
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-1 line-clamp-1">
                                     {notification.message}
                                   </p>
-                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                    🕐 {notification.time}
+                                  <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    {notification.time}
                                   </p>
                                 </div>
-                                <Button size="sm" variant="outline" className="ml-2 text-xs border-red-200 text-red-600 hover:bg-red-100">
-                                  👁️ Xem
-                                </Button>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
 
-                      {/* Important Notifications */}
-                      {getFilteredNotifications().filter(n => n.type === 'important').length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-yellow-600 mb-3 flex items-center gap-2">
-                            ⚠️ Quan trọng - Cần chú ý
-                          </h4>
-                          {getFilteredNotifications().filter(n => n.type === 'important').map((notification) => (
-                            <div key={notification.id} className="p-3 rounded-lg border-l-4 border-l-yellow-500 bg-yellow-50 mb-2 hover:bg-yellow-100 transition-colors">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                    🕐 {notification.time}
-                                  </p>
-                                </div>
-                                <Button size="sm" variant="outline" className="ml-2 text-xs border-yellow-200 text-yellow-600 hover:bg-yellow-100">
-                                  👁️ Xem
-                                </Button>
+                            {/* Close button */}
+                            <button 
+                              className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Handle remove notification
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            
+                            {/* Unread indicator dot */}
+                            {!notification.read && (
+                              <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                               </div>
-                            </div>
-                          ))}
+                            )}
+                          </div>
                         </div>
-                      )}
-
-                      {/* Normal Notifications */}
-                      {getFilteredNotifications().filter(n => n.type === 'normal').length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold text-blue-600 mb-3 flex items-center gap-2">
-                            ℹ️ Thông thường
-                          </h4>
-                          {getFilteredNotifications().filter(n => n.type === 'normal').map((notification) => (
-                            <div key={notification.id} className="p-3 rounded-lg border-l-4 border-l-blue-500 bg-blue-50 mb-2 hover:bg-blue-100 transition-colors">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                    🕐 {notification.time}
-                                  </p>
-                                </div>
-                                <Button size="sm" variant="outline" className="ml-2 text-xs border-blue-200 text-blue-600 hover:bg-blue-100">
-                                  👁️ Xem
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
+                      ))}
+                    </div>
                   )}
-                </div>
-                
-                <div className="border-t pt-3">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-sm text-blue-600 hover:bg-blue-50 font-medium"
-                    onClick={() => setShowNotificationsModal(true)}
-                  >
-                    📋 Xem tất cả thông báo →
-                  </Button>
                 </div>
               </div>
             </PopoverContent>
@@ -1972,7 +2131,7 @@ export default function Header() {
           {/* Footer */}
           <div className="flex items-center justify-between pt-4 border-t">
             <p className="text-sm text-gray-600">
-              Hiển thị {getFilteredNotificationsForModal().length} trong tổng số {notifications.length} thông báo
+              Hiển thị {getFilteredNotificationsForModal().length} trong tổng số {notificationsList.length} thông báo
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowNotificationsModal(false)}>
@@ -1983,6 +2142,41 @@ export default function Header() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete All Notifications Confirmation Dialog */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent className="max-w-sm rounded-[10px]">
+          <DialogHeader className="border-b border-[#e6ebf1] pb-4">
+            <DialogTitle className="text-lg font-semibold text-[#1a3353]">
+              Xác nhận xóa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-6 py-4">
+            <p className="text-sm text-gray-600">
+              Bạn có muốn xóa tất cả thông báo không?
+            </p>
+          </div>
+          <DialogFooter className="border-t border-[#e6ebf1] pt-4 flex-row justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteConfirmation(false)}
+              className="border-[#e6ebf1] text-[#455560] hover:bg-[#f0f7ff] hover:border-[#699dff] hover:text-[#699dff]"
+            >
+              Hủy
+            </Button>
+            <Button 
+              onClick={() => {
+                setNotificationsList([])
+                setUnreadCount(0)
+                setShowDeleteConfirmation(false)
+              }}
+              className="bg-[#ff6b72] text-white border border-[#ff6b72] hover:bg-[#ff9496] hover:border-[#ff9496] active:bg-[#d9505c] active:border-[#d9505c]"
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </header>
