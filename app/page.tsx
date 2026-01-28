@@ -63,7 +63,7 @@ export default function Home() {
       case 'company':   // Redirect to settings for backward compatibility
         return <SettingsManagement />
       case 'reports':
-        return <ReportsManagement />
+        return <ReportsManagement onNavigate={handleViewChange} />
       case 'settings':
         return <SettingsManagement />
       case 'chat':

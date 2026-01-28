@@ -495,35 +495,51 @@ const sampleSalesPerformance: SalesPerformanceReport[] = getSalesPerformanceData
 const sampleProcessAnalysis: SalesProcessAnalysis[] = [
   {
     id: '1',
-    stage: 'Tiếp nhận',
-    leadsCount: 150,
-    conversionRate: 85,
-    averageTimeInStage: 1,
-    dropoffRate: 15
+    stage: 'Mới',
+    leadsCount: 898,
+    conversionRate: 100,
+    averageTimeInStage: 0,
+    dropoffRate: 0
   },
   {
     id: '2',
-    stage: 'Tư vấn',
-    leadsCount: 128,
-    conversionRate: 75,
-    averageTimeInStage: 3,
-    dropoffRate: 25
+    stage: 'Đã liên hệ',
+    leadsCount: 39,
+    conversionRate: 4.3,
+    averageTimeInStage: 2.5,
+    dropoffRate: 95.7
   },
   {
     id: '3',
-    stage: 'Báo giá',
-    leadsCount: 96,
-    conversionRate: 60,
-    averageTimeInStage: 5,
-    dropoffRate: 40
+    stage: 'Đủ điều kiện',
+    leadsCount: 35,
+    conversionRate: 89.7,
+    averageTimeInStage: 1.2,
+    dropoffRate: 10.3
   },
   {
     id: '4',
-    stage: 'Chốt Deal',
-    leadsCount: 58,
-    conversionRate: 45,
-    averageTimeInStage: 7,
-    dropoffRate: 55
+    stage: 'Đang tư vấn',
+    leadsCount: 28,
+    conversionRate: 80,
+    averageTimeInStage: 3.8,
+    dropoffRate: 20
+  },
+  {
+    id: '5',
+    stage: 'Báo giá',
+    leadsCount: 22,
+    conversionRate: 78.6,
+    averageTimeInStage: 2.1,
+    dropoffRate: 21.4
+  },
+  {
+    id: '6',
+    stage: 'Chốt deal',
+    leadsCount: 18,
+    conversionRate: 81.8,
+    averageTimeInStage: 1.5,
+    dropoffRate: 18.2
   }
 ]
 
@@ -942,7 +958,7 @@ const sampleComparisonReports: ComparisonReport[] = [
   }
 ]
 
-export default function ReportsManagement() {
+export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: string) => void } = {}) {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedDateRange, setSelectedDateRange] = useState('this_week')
   const [selectedReport, setSelectedReport] = useState<any>(null)
@@ -2205,114 +2221,420 @@ export default function ReportsManagement() {
     }))
   }
 
-  // Sales Process Component
-  const SalesProcessComponent = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Phân tích Quy trình Bán hàng</h2>
-          <p className="text-gray-600">Theo dõi hiệu quả chuyển đổi qua các giai đoạn</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Xuất Excel
-          </Button>
-        </div>
-      </div>
+  // Helper function to detect bottleneck
+  const detectBottleneck = (stage: SalesProcessAnalysis): boolean => {
+    // Bottleneck criteria: conversion rate < 50% and drop rate > 50%
+    return stage.conversionRate < 50 && stage.dropoffRate > 50
+  }
 
-      {/* Funnel Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Phễu chuyển đổi</CardTitle>
-          <CardDescription>Số lượng leads qua các giai đoạn bán hàng</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {sampleProcessAnalysis.map((stage, index) => (
-              <div key={stage.id} className="relative">
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-2xl font-bold text-blue-600">{index + 1}</div>
-                    <div>
-                      <h3 className="font-semibold">{stage.stage}</h3>
-                      <p className="text-sm text-gray-500">{stage.leadsCount} leads</p>
+  // Function to generate process data based on filters
+  const getProcessData = (period: string, department: string, team: string): SalesProcessAnalysis[] => {
+    // Base data configurations for different scenarios
+    const dataConfigurations: { [key: string]: SalesProcessAnalysis[] } = {
+      // Scenario with bottleneck (default)
+      'bottleneck': [
+        { id: '1', stage: 'Mới', leadsCount: 898, conversionRate: 100, averageTimeInStage: 0, dropoffRate: 0 },
+        { id: '2', stage: 'Đã liên hệ', leadsCount: 39, conversionRate: 4.3, averageTimeInStage: 2.5, dropoffRate: 95.7 },
+        { id: '3', stage: 'Đủ điều kiện', leadsCount: 35, conversionRate: 89.7, averageTimeInStage: 1.2, dropoffRate: 10.3 },
+        { id: '4', stage: 'Đang tư vấn', leadsCount: 28, conversionRate: 80, averageTimeInStage: 3.8, dropoffRate: 20 },
+        { id: '5', stage: 'Báo giá', leadsCount: 22, conversionRate: 78.6, averageTimeInStage: 2.1, dropoffRate: 21.4 },
+        { id: '6', stage: 'Chốt deal', leadsCount: 18, conversionRate: 81.8, averageTimeInStage: 1.5, dropoffRate: 18.2 }
+      ],
+      // Good performance scenario
+      'good': [
+        { id: '1', stage: 'Mới', leadsCount: 650, conversionRate: 100, averageTimeInStage: 0, dropoffRate: 0 },
+        { id: '2', stage: 'Đã liên hệ', leadsCount: 520, conversionRate: 80, averageTimeInStage: 1.2, dropoffRate: 20 },
+        { id: '3', stage: 'Đủ điều kiện', leadsCount: 468, conversionRate: 90, averageTimeInStage: 0.8, dropoffRate: 10 },
+        { id: '4', stage: 'Đang tư vấn', leadsCount: 397, conversionRate: 85, averageTimeInStage: 2.5, dropoffRate: 15 },
+        { id: '5', stage: 'Báo giá', leadsCount: 337, conversionRate: 85, averageTimeInStage: 1.8, dropoffRate: 15 },
+        { id: '6', stage: 'Chốt deal', leadsCount: 270, conversionRate: 80, averageTimeInStage: 2.2, dropoffRate: 20 }
+      ],
+      // Multiple bottlenecks scenario
+      'critical': [
+        { id: '1', stage: 'Mới', leadsCount: 1200, conversionRate: 100, averageTimeInStage: 0, dropoffRate: 0 },
+        { id: '2', stage: 'Đã liên hệ', leadsCount: 240, conversionRate: 20, averageTimeInStage: 3.5, dropoffRate: 80 },
+        { id: '3', stage: 'Đủ điều kiện', leadsCount: 192, conversionRate: 80, averageTimeInStage: 1.5, dropoffRate: 20 },
+        { id: '4', stage: 'Đang tư vấn', leadsCount: 77, conversionRate: 40, averageTimeInStage: 5.2, dropoffRate: 60 },
+        { id: '5', stage: 'Báo giá', leadsCount: 62, conversionRate: 80, averageTimeInStage: 2.8, dropoffRate: 20 },
+        { id: '6', stage: 'Chốt deal', leadsCount: 50, conversionRate: 80, averageTimeInStage: 1.8, dropoffRate: 20 }
+      ],
+      // Average performance
+      'average': [
+        { id: '1', stage: 'Mới', leadsCount: 450, conversionRate: 100, averageTimeInStage: 0, dropoffRate: 0 },
+        { id: '2', stage: 'Đã liên hệ', leadsCount: 315, conversionRate: 70, averageTimeInStage: 1.8, dropoffRate: 30 },
+        { id: '3', stage: 'Đủ điều kiện', leadsCount: 252, conversionRate: 80, averageTimeInStage: 1.2, dropoffRate: 20 },
+        { id: '4', stage: 'Đang tư vấn', leadsCount: 189, conversionRate: 75, averageTimeInStage: 3.2, dropoffRate: 25 },
+        { id: '5', stage: 'Báo giá', leadsCount: 142, conversionRate: 75, averageTimeInStage: 2.5, dropoffRate: 25 },
+        { id: '6', stage: 'Chốt deal', leadsCount: 99, conversionRate: 70, averageTimeInStage: 2.8, dropoffRate: 30 }
+      ]
+    }
+
+    // Determine which data to return based on filters
+    let scenario = 'bottleneck'
+
+    // Logic to determine scenario based on filters
+    if (period === 'this_week' && department === 'sale_department_1') {
+      scenario = 'good'
+    } else if (period === 'this_month' && team === 'team_c') {
+      scenario = 'critical'
+    } else if (period === 'today' || (period === 'this_week' && team === 'team_a')) {
+      scenario = 'average'
+    } else if (department === 'sale_department_2' || team === 'team_b') {
+      scenario = 'bottleneck'
+    } else if (period === 'this_quarter') {
+      scenario = 'good'
+    } else if (period === 'this_year') {
+      scenario = 'average'
+    }
+
+    return dataConfigurations[scenario]
+  }
+
+  // Sales Process Component
+  const SalesProcessComponent = () => {
+    const [processFilter, setProcessFilter] = useState({
+      period: 'this_month',
+      department: '',
+      team: ''
+    })
+    const [currentProcessData, setCurrentProcessData] = useState<SalesProcessAnalysis[]>(sampleProcessAnalysis)
+
+    const handleApplyFilter = () => {
+      const newData = getProcessData(processFilter.period, processFilter.department, processFilter.team)
+      setCurrentProcessData(newData)
+    }
+
+    const bottlenecks = currentProcessData.filter(detectBottleneck)
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Phân tích Quy trình Bán hàng</h2>
+            <p className="text-gray-600">Theo dõi hiệu quả chuyển đổi qua các giai đoạn</p>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={processFilter.period}
+              onChange={(e) => setProcessFilter({ ...processFilter, period: e.target.value })}
+            >
+              <option value="today">Hôm nay</option>
+              <option value="this_week">Tuần này</option>
+              <option value="this_month">Tháng này</option>
+              <option value="this_quarter">Quý này</option>
+              <option value="this_year">Năm này</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={processFilter.department}
+              onChange={(e) => setProcessFilter({ ...processFilter, department: e.target.value })}
+            >
+              <option value="">Phòng sale</option>
+              <option value="sale_department_1">Phòng Sale 1</option>
+              <option value="sale_department_2">Phòng Sale 2</option>
+              <option value="sale_department_3">Phòng Sale 3</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={processFilter.team}
+              onChange={(e) => setProcessFilter({ ...processFilter, team: e.target.value })}
+            >
+              <option value="">Chọn team</option>
+              <option value="team_a">Team A</option>
+              <option value="team_b">Team B</option>
+              <option value="team_c">Team C</option>
+              <option value="team_d">Team D</option>
+            </select>
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApplyFilter}
+            >
+              Áp dụng bộ lọc
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </button>
+          </div>
+        </div>
+
+        {/* Funnel Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Phễu chuyển đổi</CardTitle>
+            <CardDescription>Số lượng leads qua các giai đoạn bán hàng</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {currentProcessData.map((stage, index) => {
+                const isBottleneck = detectBottleneck(stage)
+                return (
+                  <div key={stage.id} className="relative">
+                    <div className={`flex items-center justify-between p-4 rounded-lg ${
+                      isBottleneck
+                        ? 'border-2 border-red-500 bg-red-50'
+                        : 'border border-gray-200'
+                    }`}>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-2xl font-bold text-blue-600">{index + 1}</div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{stage.stage}</h3>
+                            {isBottleneck && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                Điểm tắc nghẽn
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">{stage.leadsCount} leads</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-6">
+                        {/* Tỷ lệ chuyển đổi */}
+                        <div className="text-right min-w-[140px]">
+                          <p className="font-semibold text-sm mb-1">Tỷ lệ chuyển đổi</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
+                                    stage.conversionRate >= 80 ? 'bg-green-500' :
+                                    stage.conversionRate >= 60 ? 'bg-blue-500' :
+                                    stage.conversionRate >= 40 ? 'bg-yellow-500' :
+                                    stage.conversionRate >= 20 ? 'bg-orange-500' :
+                                    'bg-red-500'
+                                  }`}
+                                  style={{ width: `${stage.conversionRate}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{stage.conversionRate}%</p>
+                          </div>
+                        </div>
+
+                        {/* Thời gian xử lý trung bình */}
+                        <div className="text-right min-w-[180px]">
+                          <p className="font-semibold text-sm mb-1">Thời gian xử lý trung bình</p>
+                          <p className="text-base font-bold text-gray-900">{stage.averageTimeInStage} ngày</p>
+                        </div>
+
+                        {/* Tỷ lệ rớt */}
+                        <div className="text-right min-w-[120px]">
+                          <p className="font-semibold text-sm mb-1">Tỷ lệ rớt</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
+                                    stage.dropoffRate >= 80 ? 'bg-red-500' :
+                                    stage.dropoffRate >= 60 ? 'bg-orange-500' :
+                                    stage.dropoffRate >= 40 ? 'bg-yellow-500' :
+                                    stage.dropoffRate >= 20 ? 'bg-blue-500' :
+                                    'bg-green-500'
+                                  }`}
+                                  style={{ width: `${stage.dropoffRate}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{stage.dropoffRate}%</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-semibold">Tỷ lệ chuyển đổi</p>
-                      <p className="text-lg font-bold text-green-600">{stage.conversionRate}%</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">Thời gian TB</p>
-                      <p className="text-lg font-bold text-orange-600">{stage.averageTimeInStage} ngày</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">Tỷ lệ rớt</p>
-                      <p className="text-lg font-bold text-red-600">{stage.dropoffRate}%</p>
-                    </div>
+                )
+              })}
+            </div>
+
+            {/* Bottleneck Warning */}
+            {bottlenecks.length > 0 && (
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-red-900 mb-1">
+                      Phát hiện Điểm tắc nghẽn nghiêm trọng
+                    </h4>
+                    <p className="text-sm text-red-800">
+                      {bottlenecks.map((stage, index) => (
+                        <span key={stage.id}>
+                          Giai đoạn "{stage.stage}" có tỷ lệ chuyển đổi chỉ {stage.conversionRate}% ({stage.dropoffRate}% leads bị mất).
+                          {index < bottlenecks.length - 1 && ' '}
+                        </span>
+                      ))}
+                      {' '}Đề xuất: Kiểm tra quy trình liên hệ, tăng tốc độ phản hồi lead mới.
+                    </p>
                   </div>
                 </div>
-                <Progress value={stage.conversionRate} className="w-full mt-2" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Function to generate lead source data based on filters
+  const getLeadSourceData = (period: string, department: string, team: string) => {
+    // Data configurations for different scenarios
+    const dataConfigurations: { [key: string]: any[] } = {
+      'default': [
+        { source: 'Facebook', leads: 8, conversion: 29.6, revenue: 6000000, quality: 85, roi: 150 },
+        { source: 'Zalo', leads: 45, conversion: 42, revenue: 185000000, quality: 92, roi: 180 },
+        { source: 'Nhập tay', leads: 11, conversion: 55, revenue: 80000000, quality: 78, roi: 220 }
+      ],
+      'good_performance': [
+        { source: 'Facebook', leads: 125, conversion: 68, revenue: 450000000, quality: 95, roi: 280 },
+        { source: 'Zalo', leads: 210, conversion: 72, revenue: 890000000, quality: 97, roi: 320 },
+        { source: 'Nhập tay', leads: 85, conversion: 80, revenue: 380000000, quality: 92, roi: 350 }
+      ],
+      'low_quality': [
+        { source: 'Facebook', leads: 5, conversion: 15, revenue: 2000000, quality: 45, roi: 80 },
+        { source: 'Zalo', leads: 18, conversion: 28, revenue: 8500000, quality: 55, roi: 95 },
+        { source: 'Nhập tay', leads: 3, conversion: 33, revenue: 1500000, quality: 60, roi: 110 }
+      ],
+      'mixed': [
+        { source: 'Facebook', leads: 52, conversion: 48, revenue: 125000000, quality: 78, roi: 185 },
+        { source: 'Zalo', leads: 98, conversion: 55, revenue: 420000000, quality: 88, roi: 210 },
+        { source: 'Nhập tay', leads: 35, conversion: 62, revenue: 180000000, quality: 82, roi: 240 }
+      ]
+    }
+
+    // Determine which data to return based on filters
+    let scenario = 'default'
+
+    if (period === 'this_quarter' || (period === 'this_month' && department === 'sale_department_1')) {
+      scenario = 'good_performance'
+    } else if (period === 'today' || (department === 'sale_department_3' && team === 'team_d')) {
+      scenario = 'low_quality'
+    } else if (period === 'this_week' || team === 'team_b') {
+      scenario = 'mixed'
+    }
+
+    return dataConfigurations[scenario]
+  }
 
   // Lead Source Component
-  const LeadSourceComponent = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Báo cáo Nguồn Lead</h2>
-          <p className="text-gray-600">Phân tích hiệu quả các kênh marketing</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Xuất Excel
-          </Button>
-        </div>
-      </div>
+  const LeadSourceComponent = () => {
+    const [sourceFilter, setSourceFilter] = useState({
+      period: 'this_month',
+      department: '',
+      team: ''
+    })
+    const [currentSourceData, setCurrentSourceData] = useState(getLeadSourceData('this_month', '', ''))
 
-      {/* Source Performance */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { source: 'Zalo', leads: 45, conversion: 42, revenue: 185000000, color: 'blue' },
-          { source: 'Facebook', leads: 27, conversion: 38, revenue: 120000000, color: 'purple' },
-          { source: 'Nhập tay', leads: 11, conversion: 55, revenue: 80000000, color: 'green' }
-        ].map((source) => (
-          <Card key={source.source}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-lg">{source.source}</h3>
-                <Badge className={`bg-${source.color}-100 text-${source.color}-800`}>
-                  {source.conversion}% chuyển đổi
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Số leads:</span>
-                  <span className="font-bold">{source.leads}</span>
+    const handleApplySourceFilter = () => {
+      const newData = getLeadSourceData(sourceFilter.period, sourceFilter.department, sourceFilter.team)
+      setCurrentSourceData(newData)
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Báo cáo Nguồn Lead</h2>
+            <p className="text-gray-600">Phân tích hiệu quả các kênh marketing</p>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={sourceFilter.period}
+              onChange={(e) => setSourceFilter({ ...sourceFilter, period: e.target.value })}
+            >
+              <option value="today">Hôm nay</option>
+              <option value="this_week">Tuần này</option>
+              <option value="this_month">Tháng này</option>
+              <option value="this_quarter">Quý này</option>
+              <option value="this_year">Năm này</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={sourceFilter.department}
+              onChange={(e) => setSourceFilter({ ...sourceFilter, department: e.target.value })}
+            >
+              <option value="">Phòng sale</option>
+              <option value="sale_department_1">Phòng Sale 1</option>
+              <option value="sale_department_2">Phòng Sale 2</option>
+              <option value="sale_department_3">Phòng Sale 3</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={sourceFilter.team}
+              onChange={(e) => setSourceFilter({ ...sourceFilter, team: e.target.value })}
+            >
+              <option value="">Chọn team</option>
+              <option value="team_a">Team A</option>
+              <option value="team_b">Team B</option>
+              <option value="team_c">Team C</option>
+              <option value="team_d">Team D</option>
+            </select>
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApplySourceFilter}
+            >
+              Áp dụng bộ lọc
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </button>
+          </div>
+        </div>
+
+        {/* Source Performance */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {currentSourceData.map((source) => (
+            <Card key={source.source} className="border border-[#e6ebf1]">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-lg text-[#455560]">{source.source}</h3>
+                  <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-green-50 text-green-700">
+                    {source.conversion}% chuyển đổi
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Doanh số:</span>
-                  <span className="font-bold text-green-600">{formatCurrency(source.revenue)}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Số leads:</span>
+                    <span className="font-bold text-gray-900">{source.leads}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Doanh số:</span>
+                    <span className="font-bold text-gray-900">{formatCurrency(source.revenue)}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Chất lượng lead:</span>
+                      <span className="font-bold text-gray-900">{source.quality}%</span>
+                    </div>
+                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
+                          source.quality >= 90 ? 'bg-green-500' :
+                          source.quality >= 80 ? 'bg-green-500' :
+                          source.quality >= 70 ? 'bg-yellow-500' :
+                          source.quality >= 60 ? 'bg-orange-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${source.quality}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">ROI:</span>
+                    <span className="font-bold text-green-600">{source.roi}%</span>
+                  </div>
                 </div>
-                <Progress value={source.conversion} className="w-full" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   // Cancellation Report Component  
   const CancellationReportComponent = () => (
@@ -2404,32 +2726,262 @@ export default function ReportsManagement() {
     </div>
   )
 
+  // Function to generate customer data based on filters
+  const getCustomerData = (period: string, department: string, team: string) => {
+    const dataConfigurations: { [key: string]: any } = {
+      'default': {
+        stats: {
+          total: 486,
+          enterprise: 156,
+          individual: 307,
+          new: 23,
+          avgValue: 5200000
+        },
+        retention: {
+          returnRate: 39,
+          returnChange: 5.2,
+          churnRate: 8.5,
+          churnChange: -2.1,
+          avgFrequency: 2.3,
+          frequencyChange: 8,
+          frequency1: 298,
+          frequency2to5: 152,
+          frequency5plus: 39
+        },
+        newVsReturning: {
+          newCustomers: 45,
+          newChange: 15,
+          returningCustomers: 82,
+          returningChange: 8,
+          newRevenuePct: 35,
+          returningRevenuePct: 65
+        },
+        topCustomers: [
+          { rank: 1, name: 'Công ty ABC Corp', segment: 'VIP', orders: 24, frequency: '2.4/tháng', lastPurchase: '5 ngày', spent: 320000000 },
+          { rank: 2, name: 'Tập đoàn XYZ', segment: 'VIP', orders: 18, frequency: '1.8/tháng', lastPurchase: '12 ngày', spent: 285000000 },
+          { rank: 3, name: 'Công ty DEF Ltd', segment: 'VIP', orders: 15, frequency: '1.5/tháng', lastPurchase: '8 ngày', spent: 245000000 },
+          { rank: 4, name: 'Nguyễn Văn Minh', segment: 'DN', orders: 12, frequency: '1.2/tháng', lastPurchase: '15 ngày', spent: 180000000 },
+          { rank: 5, name: 'Công ty GHI', segment: 'DN', orders: 10, frequency: '1.0/tháng', lastPurchase: '22 ngày', spent: 165000000 }
+        ]
+      },
+      'high_performance': {
+        stats: {
+          total: 850,
+          enterprise: 280,
+          individual: 520,
+          new: 50,
+          avgValue: 8500000
+        },
+        retention: {
+          returnRate: 58,
+          returnChange: 12.5,
+          churnRate: 4.2,
+          churnChange: -5.8,
+          avgFrequency: 3.8,
+          frequencyChange: 18,
+          frequency1: 180,
+          frequency2to5: 420,
+          frequency5plus: 250
+        },
+        newVsReturning: {
+          newCustomers: 95,
+          newChange: 28,
+          returningCustomers: 185,
+          returningChange: 22,
+          newRevenuePct: 25,
+          returningRevenuePct: 75
+        },
+        topCustomers: [
+          { rank: 1, name: 'Tập đoàn Hòa Phát', segment: 'VIP', orders: 48, frequency: '4.8/tháng', lastPurchase: '2 ngày', spent: 850000000 },
+          { rank: 2, name: 'Công ty Vinamilk', segment: 'VIP', orders: 42, frequency: '4.2/tháng', lastPurchase: '3 ngày', spent: 720000000 },
+          { rank: 3, name: 'FPT Corporation', segment: 'VIP', orders: 38, frequency: '3.8/tháng', lastPurchase: '5 ngày', spent: 680000000 },
+          { rank: 4, name: 'Viettel Group', segment: 'VIP', orders: 35, frequency: '3.5/tháng', lastPurchase: '7 ngày', spent: 650000000 },
+          { rank: 5, name: 'Masan Group', segment: 'VIP', orders: 32, frequency: '3.2/tháng', lastPurchase: '8 ngày', spent: 580000000 }
+        ]
+      },
+      'low_activity': {
+        stats: {
+          total: 280,
+          enterprise: 80,
+          individual: 185,
+          new: 15,
+          avgValue: 3200000
+        },
+        retention: {
+          returnRate: 22,
+          returnChange: -8.5,
+          churnRate: 18.5,
+          churnChange: 6.2,
+          avgFrequency: 1.5,
+          frequencyChange: -12,
+          frequency1: 220,
+          frequency2to5: 50,
+          frequency5plus: 10
+        },
+        newVsReturning: {
+          newCustomers: 28,
+          newChange: -5,
+          returningCustomers: 38,
+          returningChange: -12,
+          newRevenuePct: 45,
+          returningRevenuePct: 55
+        },
+        topCustomers: [
+          { rank: 1, name: 'Công ty TNHH An Phát', segment: 'DN', orders: 8, frequency: '0.8/tháng', lastPurchase: '28 ngày', spent: 85000000 },
+          { rank: 2, name: 'Trần Văn Bình', segment: 'DN', orders: 6, frequency: '0.6/tháng', lastPurchase: '32 ngày', spent: 65000000 },
+          { rank: 3, name: 'Công ty Minh Châu', segment: 'DN', orders: 5, frequency: '0.5/tháng', lastPurchase: '35 ngày', spent: 48000000 },
+          { rank: 4, name: 'Lê Thị Hoa', segment: 'DN', orders: 4, frequency: '0.4/tháng', lastPurchase: '40 ngày', spent: 32000000 },
+          { rank: 5, name: 'Nguyễn Đức Long', segment: 'DN', orders: 3, frequency: '0.3/tháng', lastPurchase: '45 ngày', spent: 28000000 }
+        ]
+      },
+      'mixed': {
+        stats: {
+          total: 620,
+          enterprise: 195,
+          individual: 400,
+          new: 25,
+          avgValue: 6800000
+        },
+        retention: {
+          returnRate: 45,
+          returnChange: 3.2,
+          churnRate: 10.5,
+          churnChange: -1.5,
+          avgFrequency: 2.8,
+          frequencyChange: 5,
+          frequency1: 250,
+          frequency2to5: 280,
+          frequency5plus: 90
+        },
+        newVsReturning: {
+          newCustomers: 68,
+          newChange: 12,
+          returningCustomers: 125,
+          returningChange: 8,
+          newRevenuePct: 30,
+          returningRevenuePct: 70
+        },
+        topCustomers: [
+          { rank: 1, name: 'Công ty Thiên Long', segment: 'VIP', orders: 32, frequency: '3.2/tháng', lastPurchase: '6 ngày', spent: 480000000 },
+          { rank: 2, name: 'Phạm Văn Nam', segment: 'VIP', orders: 28, frequency: '2.8/tháng', lastPurchase: '9 ngày', spent: 420000000 },
+          { rank: 3, name: 'Công ty Hoàng Gia', segment: 'DN', orders: 22, frequency: '2.2/tháng', lastPurchase: '12 ngày', spent: 350000000 },
+          { rank: 4, name: 'Võ Thị Mai', segment: 'DN', orders: 18, frequency: '1.8/tháng', lastPurchase: '18 ngày', spent: 280000000 },
+          { rank: 5, name: 'Công ty Bảo An', segment: 'DN', orders: 15, frequency: '1.5/tháng', lastPurchase: '20 ngày', spent: 240000000 }
+        ]
+      }
+    }
+
+    // Determine which data to return based on filters
+    let scenario = 'default'
+
+    if (period === 'this_quarter' || (period === 'this_month' && department === 'sale_department_1')) {
+      scenario = 'high_performance'
+    } else if (period === 'today' || (department === 'sale_department_3' && team === 'team_d')) {
+      scenario = 'low_activity'
+    } else if (period === 'this_week' || team === 'team_b') {
+      scenario = 'mixed'
+    } else if (department === 'sale_department_2' || team === 'team_c') {
+      scenario = 'default'
+    }
+
+    return dataConfigurations[scenario]
+  }
+
   // Customer Report Component
-  const CustomerReportComponent = () => (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Báo cáo Khách hàng</h2>
-          <p className="text-gray-600">Phân tích hành vi và giá trị khách hàng</p>
+  const CustomerReportComponent = () => {
+    const [customerFilter, setCustomerFilter] = useState({
+      period: 'this_month',
+      department: '',
+      team: ''
+    })
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
+    const [currentCustomerData, setCurrentCustomerData] = useState(getCustomerData('this_month', '', ''))
+
+    const handleApplyCustomerFilter = () => {
+      const newData = getCustomerData(customerFilter.period, customerFilter.department, customerFilter.team)
+      setCurrentCustomerData(newData)
+    }
+
+    const handleViewCustomerOrders = (customer: any) => {
+      setSelectedCustomer(customer)
+      setIsOrderModalOpen(true)
+    }
+
+    // Sample order data for selected customer
+    const getCustomerOrders = (customerName: string) => {
+      return [
+        { orderCode: 'DH001', total: 50000000, paymentMethod: 'Chuyển khoản', product: 'Sản phẩm A, Sản phẩm B' },
+        { orderCode: 'DH002', total: 35000000, paymentMethod: 'Tiền mặt', product: 'Sản phẩm C' },
+        { orderCode: 'DH003', total: 25000000, paymentMethod: 'Chuyển khoản', product: 'Sản phẩm D, Sản phẩm E, Sản phẩm F' },
+        { orderCode: 'DH004', total: 10000000, paymentMethod: 'Ví điện tử', product: 'Sản phẩm G' },
+        { orderCode: 'DH005', total: 5000000, paymentMethod: 'Chuyển khoản', product: 'Sản phẩm H, Sản phẩm I' }
+      ]
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Báo cáo Khách hàng</h2>
+            <p className="text-gray-600">Phân tích hành vi và giá trị khách hàng</p>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={customerFilter.period}
+              onChange={(e) => setCustomerFilter({ ...customerFilter, period: e.target.value })}
+            >
+              <option value="today">Hôm nay</option>
+              <option value="this_week">Tuần này</option>
+              <option value="this_month">Tháng này</option>
+              <option value="this_quarter">Quý này</option>
+              <option value="this_year">Năm này</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={customerFilter.department}
+              onChange={(e) => setCustomerFilter({ ...customerFilter, department: e.target.value })}
+            >
+              <option value="">Phòng sale</option>
+              <option value="sale_department_1">Phòng Sale 1</option>
+              <option value="sale_department_2">Phòng Sale 2</option>
+              <option value="sale_department_3">Phòng Sale 3</option>
+            </select>
+            <select
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              value={customerFilter.team}
+              onChange={(e) => setCustomerFilter({ ...customerFilter, team: e.target.value })}
+            >
+              <option value="">Chọn team</option>
+              <option value="team_a">Team A</option>
+              <option value="team_b">Team B</option>
+              <option value="team_c">Team C</option>
+              <option value="team_d">Team D</option>
+            </select>
+            <button
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApplyCustomerFilter}
+            >
+              Áp dụng bộ lọc
+            </button>
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </button>
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-3">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Xuất Excel
-          </Button>
-        </div>
-      </div>
 
       {/* Customer Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
           <div className="absolute top-2 right-2">
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <p className="text-base font-semibold text-white mb-2">Tổng KH</p>
-            <p className="text-4xl font-extrabold text-white mb-1">486</p>
+            <p className="text-base font-semibold text-white mb-2">Tổng khách hàng</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.total}</p>
           </div>
         </div>
 
@@ -2438,8 +2990,18 @@ export default function ReportsManagement() {
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <p className="text-base font-semibold text-white mb-2">KH VIP</p>
-            <p className="text-4xl font-extrabold text-white mb-1">23</p>
+            <p className="text-base font-semibold text-white mb-2">Khách hàng doanh nghiệp</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.enterprise}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-indigo-600 to-indigo-400">
+          <div className="absolute top-2 right-2">
+            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white mb-2">Khách hàng cá nhân</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.individual}</p>
           </div>
         </div>
 
@@ -2448,8 +3010,8 @@ export default function ReportsManagement() {
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <p className="text-base font-semibold text-white mb-2">GTB/KH</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(5200000)}</p>
+            <p className="text-base font-semibold text-white mb-2">Khách hàng mới</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.new}</p>
           </div>
         </div>
 
@@ -2458,65 +3020,271 @@ export default function ReportsManagement() {
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
           <div>
-            <p className="text-base font-semibold text-white mb-2">Tần suất mua</p>
-            <p className="text-4xl font-extrabold text-white mb-1">2.3</p>
+            <p className="text-base font-semibold text-white mb-2">Giá trị bán TB / khách hàng</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(currentCustomerData.stats.avgValue)}</p>
           </div>
         </div>
       </div>
 
-      {/* Customer Segmentation */}
+      {/* Retention & Churn and New vs Returning */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Retention & Churn Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Phân khúc khách hàng</CardTitle>
+            <CardTitle>Tần xuất mua hàng</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { segment: 'VIP', count: 23, percentage: 5, revenue: 180000000 },
-                { segment: 'Doanh nghiệp', count: 156, percentage: 32, revenue: 850000000 },
-                { segment: 'Cá nhân', count: 307, percentage: 63, revenue: 420000000 }
-              ].map((seg) => (
-                <div key={seg.segment} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{seg.segment}</p>
-                    <p className="text-sm text-gray-500">{seg.count} khách ({seg.percentage}%)</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600">{formatCurrency(seg.revenue)}</p>
+            {/* Top metrics */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-3xl font-bold text-green-600">39%</p>
+                <p className="text-sm text-gray-600 mt-1">Tỷ lệ quay lại</p>
+                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  +5.2%
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
+                <p className="text-3xl font-bold text-red-600">8.5%</p>
+                <p className="text-sm text-gray-600 mt-1">Tỷ lệ rời bỏ</p>
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <TrendingDown className="w-3 h-3" />
+                  -2.1%
+                </p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-3xl font-bold text-blue-600">2.3</p>
+                <p className="text-sm text-gray-600 mt-1">Tần suất mua TB</p>
+                <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" />
+                  +8%
+                </p>
+              </div>
+            </div>
+
+            {/* Frequency distribution */}
+            <div className="space-y-3">
+              <p className="font-semibold text-gray-900">Phân bổ tần suất mua</p>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">1 lần</span>
+                  <span className="text-sm text-gray-500">(61%)</span>
+                </div>
+                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="absolute top-0 left-0 h-full bg-gray-500 rounded-full flex items-center justify-end pr-2" style={{ width: '61%' }}>
+                    <span className="text-xs font-semibold text-white">298</span>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">2-5 lần</span>
+                  <span className="text-sm text-gray-500">(31%)</span>
+                </div>
+                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full flex items-center justify-end pr-2" style={{ width: '31%' }}>
+                    <span className="text-xs font-semibold text-white">152</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">&gt;5 lần</span>
+                  <span className="text-sm text-gray-500">(8%)</span>
+                </div>
+                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="absolute top-0 left-0 h-full bg-green-500 rounded-full flex items-center justify-end pr-2" style={{ width: '8%' }}>
+                    <span className="text-xs font-semibold text-white">39</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* New vs Returning Customers Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Tần suất mua hàng</CardTitle>
+            <CardTitle>Khách hàng mới và quay lại</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { frequency: '1 lần', count: 298, percentage: 61 },
-                { frequency: '2-5 lần', count: 152, percentage: 31 },
-                { frequency: '>5 lần', count: 36, percentage: 8 }
-              ].map((freq) => (
-                <div key={freq.frequency} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <span className="font-medium">{freq.frequency}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold">{freq.count}</span>
-                    <span className="text-sm text-gray-500">({freq.percentage}%)</span>
-                    <Progress value={freq.percentage} className="w-16" />
-                  </div>
+            {/* New vs Returning stats */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-green-50 rounded-lg p-6 text-center">
+                <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <p className="text-4xl font-bold text-green-600 mb-2">45</p>
+                <p className="text-sm text-gray-600 mb-1">Khách hàng mới</p>
+                <p className="text-xs text-green-600">+15% vs tháng trước</p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-6 text-center">
+                <RefreshCw className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-4xl font-bold text-blue-600 mb-2">82</p>
+                <p className="text-sm text-gray-600 mb-1">KH quay lại</p>
+                <p className="text-xs text-blue-600">+8% vs tháng trước</p>
+              </div>
+            </div>
+
+            {/* Revenue distribution */}
+            <div className="space-y-3">
+              <p className="font-semibold text-gray-900">Tỷ lệ doanh thu</p>
+              <div className="relative h-12 bg-gray-200 rounded-full overflow-hidden flex">
+                <div className="h-full bg-green-500 flex items-center justify-center text-white font-semibold" style={{ width: '35%' }}>
+                  KH mới 35%
                 </div>
-              ))}
+                <div className="h-full bg-blue-500 flex items-center justify-center text-white font-semibold" style={{ width: '65%' }}>
+                  KH cũ 65%
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Top 10 Customers Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Top 10 khách hàng giá trị nhất</CardTitle>
+            <button
+              onClick={() => onNavigate?.('customers')}
+              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            >
+              Xem tất cả
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Khách hàng</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phân khúc</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tổng đơn</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tần suất</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Lần mua gần nhất</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng chi tiêu</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { rank: 1, name: 'Công ty ABC Corp', segment: 'VIP', orders: 24, frequency: '2.4/tháng', lastPurchase: '5 ngày', spent: 320000000 },
+                  { rank: 2, name: 'Tập đoàn XYZ', segment: 'VIP', orders: 18, frequency: '1.8/tháng', lastPurchase: '12 ngày', spent: 285000000 },
+                  { rank: 3, name: 'Công ty DEF Ltd', segment: 'VIP', orders: 15, frequency: '1.5/tháng', lastPurchase: '8 ngày', spent: 245000000 },
+                  { rank: 4, name: 'Nguyễn Văn Minh', segment: 'DN', orders: 12, frequency: '1.2/tháng', lastPurchase: '15 ngày', spent: 180000000 },
+                  { rank: 5, name: 'Công ty GHI', segment: 'DN', orders: 10, frequency: '1.0/tháng', lastPurchase: '22 ngày', spent: 165000000 }
+                ].map((customer) => (
+                  <tr key={customer.rank} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="text-gray-900 font-medium">{customer.rank}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="font-medium text-gray-900">{customer.name}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        customer.segment === 'VIP' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {customer.segment}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-gray-900">{customer.orders}</td>
+                    <td className="py-3 px-4 text-center text-blue-600">{customer.frequency}</td>
+                    <td className="py-3 px-4 text-center text-orange-600">{customer.lastPurchase}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(customer.spent)}</td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() => handleViewCustomerOrders(customer)}
+                      >
+                        <Eye className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Order Details Modal */}
+      {isOrderModalOpen && selectedCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                Chi tiết hiệu suất - {selectedCustomer.name}
+              </h2>
+              <button
+                onClick={() => setIsOrderModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Export Button */}
+              <div className="flex justify-end mb-4">
+                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+                  <Download className="w-4 h-4 mr-2" />
+                  Xuất dữ liệu
+                </button>
+              </div>
+
+              {/* Orders Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Mã đơn hàng</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Sản phẩm</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phương thức thanh toán</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getCustomerOrders(selectedCustomer.name).map((order, index) => (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4 text-gray-900">{index + 1}</td>
+                        <td className="py-3 px-4 text-gray-900">{order.orderCode}</td>
+                        <td className="py-3 px-4 text-gray-600">{order.product}</td>
+                        <td className="py-3 px-4 text-gray-900">{order.paymentMethod}</td>
+                        <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(order.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-50 border-t-2 border-gray-300">
+                      <td colSpan={4} className="py-3 px-4 text-right font-semibold text-gray-900">
+                        Tổng doanh số:
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-green-600 text-lg">
+                        {formatCurrency(
+                          getCustomerOrders(selectedCustomer.name).reduce((sum, order) => sum + order.total, 0)
+                        )}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+    )
+  }
 
   // Custom Report Component
   const CustomReportComponent = () => (
@@ -3547,7 +4315,7 @@ export default function ReportsManagement() {
             { id: 'performance', name: 'Hiệu suất Sale', icon: <Users className="w-4 h-4" /> },
             { id: 'process', name: 'Quy trình', icon: <Activity className="w-4 h-4" /> },
             { id: 'sources', name: 'Nguồn Lead', icon: <Zap className="w-4 h-4" /> },
-            { id: 'cancellation', name: 'Hủy đơn', icon: <AlertTriangle className="w-4 h-4" /> },
+            // { id: 'cancellation', name: 'Hủy đơn', icon: <AlertTriangle className="w-4 h-4" /> },
             { id: 'customer', name: 'Khách hàng', icon: <Users className="w-4 h-4" /> }
           ].map((tab) => (
             <button
