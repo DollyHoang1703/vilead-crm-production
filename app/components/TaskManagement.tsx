@@ -248,6 +248,7 @@ export default function TaskManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCreateEventModal, setShowCreateEventModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null)
 
   // Filters
@@ -1011,6 +1012,11 @@ export default function TaskManagement() {
     setCalendarEvents(prev => [...prev, taskEvent])
   }
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId))
+    setCalendarEvents(prev => prev.filter(e => e.id !== `task-${taskId}`))
+  }
+  
   const handleUpdateTask = (updatedTask: Task) => {
     setTasks(prev => prev.map(task => task.id === updatedTask.id ? updatedTask : task))
     
