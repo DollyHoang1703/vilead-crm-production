@@ -1768,7 +1768,8 @@ export default function ChatManagement() {
 
                   {/* Tags - Only show when synced with CRM */}
                   {(() => {
-                    const connectedCustomerId = conversationCustomerMap.get(selectedConversation.id)
+                    const connectionInfo = conversationCustomerMap.get(selectedConversation.id)
+                    const connectedCustomerId = connectionInfo?.customerId
                     const syncedCustomer = syncedCustomers.get(selectedConversation.id)
                     const crmCustomer = syncedCustomer || (connectedCustomerId 
                       ? demoCRMCustomers.find(c => c.id === connectedCustomerId)
@@ -3571,7 +3572,8 @@ export default function ChatManagement() {
                   setConversationCustomerMap(prev => {
                     const newMap = new Map(prev)
                     // Remove conversations connected through this account
-                    for (const [convId, connection] of newMap.entries()) {
+                    const entries = Array.from(newMap.entries())
+                    entries.forEach(([convId, connection]) => {
                       if (connection.accountId === deletedAccountId) {
                         newMap.delete(convId)
                         // Update customer connection count
@@ -3599,7 +3601,7 @@ export default function ChatManagement() {
                           return newCountMap
                         })
                       }
-                    }
+                    })
                     return newMap
                   })
                   
@@ -3999,14 +4001,39 @@ export default function ChatManagement() {
                     newSyncedMap.set(selectedConversation.id, newCustomer)
                     setSyncedCustomers(newSyncedMap)
                     
-                    // Also update conversation customer map
+                    // Also update conversation customer map with proper ConversationConnection object
+                    const connectionInfo: ConversationConnection = {
+                      customerId: newCustomer.id,
+                      platform: selectedChannel,
+                      accountId: selectedAccount.id,
+                      accountName: selectedAccount.name,
+                      connectedAt: new Date().toISOString()
+                    }
                     const newMap = new Map(conversationCustomerMap)
-                    newMap.set(selectedConversation.id, newCustomer.id)
+                    newMap.set(selectedConversation.id, connectionInfo)
                     setConversationCustomerMap(newMap)
                     
                     const newConnected = new Set(connectedCustomers)
                     newConnected.add(newCustomer.id)
                     setConnectedCustomers(newConnected)
+                    
+                    // Update customer connection count
+                    setCustomerConnectionCount(prev => {
+                      const newCountMap = new Map(prev)
+                      const current = newCountMap.get(newCustomer.id) || {
+                        'zalo-personal': 0,
+                        'zalo-oa': 0,
+                        'facebook': 0,
+                        total: 0
+                      }
+                      const updated = {
+                        ...current,
+                        [selectedChannel]: current[selectedChannel] + 1,
+                        total: current.total + 1
+                      }
+                      newCountMap.set(newCustomer.id, updated)
+                      return newCountMap
+                    })
                   }
                   
                   // Close modal and reset form
