@@ -62,7 +62,7 @@ interface Lead {
   product: string
   tags: string[]
   content: string
-  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'converted' | 'lost'
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'payment_pending' | 'converted' | 'lost'
   stage: string
   notes: string
   assignedTo: string
@@ -1372,13 +1372,14 @@ export default function SalesManagement() {
         return {
           ...lead,
           status: actualStatus as Lead['status'],
+          stage: actualStatus === 'payment_pending' ? 'payment_pending' : lead.stage,
           updatedAt: new Date().toISOString()
         }
       }
       return lead
     })
     
-    setLeads(updatedLeads)
+    setLeads([...updatedLeads])
     
     const statusMessage = bulkConvertTargetStatus === 'converted' 
       ? `Đã chuyển ${selectedLeadIds.length} leads sang "Chờ thanh toán" với ${selectedProducts.length} sản phẩm được chọn. Sau khi xác nhận thanh toán, leads sẽ tự động chuyển sang "Chuyển đổi thành công".`
@@ -3306,6 +3307,16 @@ export default function SalesManagement() {
                       <Download className="w-4 h-4" />
                       Xuất leads
                     </button>
+                    <button
+                      onClick={() => {
+                        setBulkConvertTargetStatus('payment_pending')
+                        setShowBulkConvertModal(true)
+                      }}
+                      className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-md hover:bg-teal-700 transition-colors flex items-center gap-1"
+                    >
+                      <User className="w-4 h-4" />
+                      Chuyển đổi khách hàng
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3639,7 +3650,10 @@ export default function SalesManagement() {
                                   </button>
                                   <button
                                     onClick={() => {
-                                      handleConvertLead(lead)
+                                      // Set the single lead as selected
+                                      setSelectedLeadIds([lead.id])
+                                      setBulkConvertTargetStatus('payment_pending')
+                                      setShowBulkConvertModal(true)
                                       setOpenActionMenuId(null)
                                     }}
                                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -7047,7 +7061,10 @@ export default function SalesManagement() {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
             <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                Chuyển đổi {selectedLeadIds.length} leads sang "{getStatusName(bulkConvertTargetStatus)}"
+                {selectedLeadIds.length > 1 
+                  ? `Chuyển đổi hàng loạt - ${bulkConvertTargetStatus === 'payment_pending' ? 'Chờ thanh toán' : getStatusName(bulkConvertTargetStatus)}`
+                  : `Chuyển đổi sang ${bulkConvertTargetStatus === 'payment_pending' ? 'chờ thanh toán' : getStatusName(bulkConvertTargetStatus).toLowerCase()}`
+                }
               </h3>
               {bulkConvertTargetStatus === 'converted' && (
                 <p className="text-sm text-amber-600 mt-1">

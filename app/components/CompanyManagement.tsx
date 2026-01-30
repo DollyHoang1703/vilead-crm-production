@@ -808,7 +808,7 @@ export default function CompanyManagement() {
     }
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 px-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="name">Họ tên *</Label>
@@ -979,7 +979,7 @@ export default function CompanyManagement() {
           </p>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="px-6">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>
@@ -1023,7 +1023,7 @@ export default function CompanyManagement() {
     }
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+      <form onSubmit={handleSubmit} className="space-y-4 pt-2 px-6">
         <div className="space-y-2">
           <Label htmlFor="deptName">Tên phòng ban <span className="text-red-500">*</span></Label>
           <Input
@@ -1077,7 +1077,7 @@ export default function CompanyManagement() {
             </SelectContent>
           </Select>
         </div>
-        <DialogFooter className="pt-4">
+        <DialogFooter className="pt-4 px-6">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>
@@ -1124,7 +1124,7 @@ export default function CompanyManagement() {
     }
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 px-6">
         <div>
           <Label htmlFor="teamName">Tên nhóm *</Label>
           <Input
@@ -1202,7 +1202,7 @@ export default function CompanyManagement() {
             </SelectContent>
           </Select>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-6">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>
@@ -2761,7 +2761,7 @@ export default function CompanyManagement() {
               Thay đổi vị trí cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <Label htmlFor="position">Vị trí mới</Label>
               <Input
@@ -2772,7 +2772,7 @@ export default function CompanyManagement() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowPositionModal(false)}>
               Hủy
             </Button>
@@ -2792,7 +2792,7 @@ export default function CompanyManagement() {
               Chuyển phòng ban cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <Label htmlFor="department">Phòng ban mới</Label>
               <Select value={newDepartmentId} onValueChange={setNewDepartmentId}>
@@ -2809,7 +2809,7 @@ export default function CompanyManagement() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowDepartmentModal(false)}>
               Hủy
             </Button>
@@ -2829,7 +2829,7 @@ export default function CompanyManagement() {
               Thay đổi trạng thái cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <Label htmlFor="status">Trạng thái mới</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
@@ -2844,7 +2844,7 @@ export default function CompanyManagement() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowStatusModal(false)}>
               Hủy
             </Button>
@@ -2864,7 +2864,7 @@ export default function CompanyManagement() {
               Cập nhật ngày lên chính thức cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <Label htmlFor="officialDate">Ngày chính thức</Label>
               <Input
@@ -2875,7 +2875,7 @@ export default function CompanyManagement() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowOfficialDateModal(false)}>
               Hủy
             </Button>
@@ -2895,7 +2895,7 @@ export default function CompanyManagement() {
               Điều chỉnh lương cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <Label htmlFor="salary">Lương mới (VND)</Label>
               <Input
@@ -2907,7 +2907,7 @@ export default function CompanyManagement() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowSalaryModal(false)}>
               Hủy
             </Button>
@@ -2927,7 +2927,7 @@ export default function CompanyManagement() {
               Khi ngừng hoạt động nhân viên <strong>{selectedEmployee?.name}</strong>, bạn có thể chuyển dữ liệu của họ cho nhân viên khác.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="space-y-6 px-6">
             {/* Select employee to transfer to */}
             <div>
               <Label htmlFor="transferTo">Chuyển dữ liệu cho nhân viên</Label>
@@ -2998,7 +2998,7 @@ export default function CompanyManagement() {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -3027,7 +3027,7 @@ export default function CompanyManagement() {
             <DialogTitle>Chi tiết nhân viên</DialogTitle>
           </DialogHeader>
           {selectedEmployee && (
-            <div className="space-y-6">
+            <div className="space-y-6 px-6">
               <div className="flex items-center space-x-4">
                 <Avatar className="w-16 h-16">
                   <AvatarImage src={selectedEmployee.avatar} />
@@ -3130,7 +3130,7 @@ export default function CompanyManagement() {
               Cập nhật thông tin cho nhân viên: {selectedEmployee?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 px-6">
             <div>
               <Label htmlFor="edit-name">Họ tên</Label>
               <Input
@@ -3320,7 +3320,7 @@ export default function CompanyManagement() {
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
               Hủy
             </Button>

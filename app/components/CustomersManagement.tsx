@@ -5324,11 +5324,12 @@ export default function CustomersManagement() {
                   className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                 >
                   <option value="">Tất cả trạng thái</option>
-                  <option value="active">Hoạt động</option>
-                  <option value="inactive">Không hoạt động</option>
-                  <option value="at-risk">Có nguy cơ</option>
-                  <option value="churned">Đã churn</option>
-                  <option value="dormant">Tạm ngưng</option>
+                  <option value="vip">💎 VIP</option>
+                  <option value="active">✅ Hoạt động</option>
+                  <option value="inactive">⏸️ Không hoạt động</option>
+                  <option value="at-risk">⚠️ Có nguy cơ</option>
+                  <option value="churned">❌ Đã churn</option>
+                  <option value="dormant">💤 Tạm ngưng</option>
                 </select>
                 <select 
                   value={filterCustomerType} 

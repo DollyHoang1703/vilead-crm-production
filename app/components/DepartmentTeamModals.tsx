@@ -260,7 +260,7 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button type="button" variant="outline" onClick={onClose}>
               Hủy
             </Button>
@@ -330,7 +330,7 @@ export function TeamModal({ isOpen, onClose, onSave, departments, employees, tea
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="teamName">Tên team</Label>
@@ -460,7 +460,7 @@ export function TeamModal({ isOpen, onClose, onSave, departments, employees, tea
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="px-6">
             <Button type="button" variant="outline" onClick={onClose}>
               Hủy
             </Button>
