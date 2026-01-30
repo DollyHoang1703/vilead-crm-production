@@ -137,6 +137,21 @@ interface GroupMember {
   email?: string
 }
 
+interface ConversationConnection {
+  customerId: string
+  platform: 'zalo-personal' | 'zalo-oa' | 'facebook'
+  accountId: string
+  accountName: string
+  connectedAt: string
+}
+
+interface CustomerConnectionCount {
+  'zalo-personal': number
+  'zalo-oa': number
+  'facebook': number
+  total: number
+}
+
 interface CRMCustomer {
   id: string
   name: string
@@ -163,17 +178,29 @@ interface ZaloConversation {
   assignedTo?: string
   tags: string[]
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  channel: 'zalo'
+  channel: 'zalo' | 'facebook'
   conversationType: 'individual' | 'group'
   members?: GroupMember[]
   memberCount?: number
+  accountId?: string
+  platform?: 'zalo-personal' | 'zalo-oa' | 'facebook'
 }
 
 // ===== GENERATE DEMO DATA =====
 
-const vietnameseNames = [
+const vietnameseNamesZaloPersonal = [
   'Nguyễn Hải Yến', 'Nguyễn Văn Tiến', 'Cộng đồng Omichat', 'Vũ Trần Digital',
   'Lê Thị Trang', 'ABQ Startup Com', 'TunVN - HỖ TRỢ TÀI CHÍNH'
+]
+
+const vietnameseNamesZaloOA = [
+  'Phạm Minh Tuấn', 'Trần Thu Hương', 'Hoàng Văn Long', 'Đỗ Thị Mai',
+  'Bùi Công Danh', 'Phan Thị Lan', 'Võ Quốc Khánh'
+]
+
+const vietnameseNamesFacebook = [
+  'Ngô Thanh Tùng', 'Đinh Hồng Nhung', 'Lý Văn Thành', 'Dương Thị Thảo',
+  'Cao Minh Đức', 'Hồ Thanh Bình', 'Trịnh Thị Hoa'
 ]
 
 const companies = [
@@ -221,16 +248,19 @@ interface ZaloAccount {
 }
 
 const connectedZaloAccounts: ZaloAccount[] = [
-  // Zalo Personal accounts
-  { id: '1', name: 'Chính Nghĩa', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChinhNghia', unreadCount: 9, type: 'personal', platform: 'zalo-personal' },
-  { id: '2', name: 'Hải Yến Shop', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HaiYen', unreadCount: 25, type: 'personal', platform: 'zalo-personal' },
-  { id: '4', name: 'Sale Team', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SaleTeam', unreadCount: 0, type: 'personal', platform: 'zalo-personal' },
-  // Zalo OA accounts
-  { id: '3', name: 'Tech Support OA', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSupport', unreadCount: 3, type: 'oa', platform: 'zalo-oa' },
-  { id: '5', name: 'Vilead CRM Official', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadOA', unreadCount: 1, type: 'oa', platform: 'zalo-oa' },
-  // Facebook accounts
-  { id: '6', name: 'Vilead CRM Fanpage', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadFB', unreadCount: 5, type: 'personal', platform: 'facebook' },
-  { id: '7', name: 'Tech Solutions VN', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSolFB', unreadCount: 2, type: 'personal', platform: 'facebook' },
+  // Zalo Personal accounts (có cả individual và group conversations)
+  { id: 'zp-1', name: 'Nguyễn Chính Nghĩa - Zalo', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ChinhNghia', unreadCount: 9, type: 'personal', platform: 'zalo-personal' },
+  { id: 'zp-2', name: 'Hải Yến Shop - Zalo', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HaiYenShop', unreadCount: 25, type: 'personal', platform: 'zalo-personal' },
+  { id: 'zp-3', name: 'Công ty CP Tập Đoàn Vitech', avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Vitech', unreadCount: 15, type: 'personal', platform: 'zalo-personal' },
+  { id: 'zp-4', name: 'Sale Team - Marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SaleTeam', unreadCount: 0, type: 'personal', platform: 'zalo-personal' },
+  // Zalo OA accounts (CHỈ có individual conversations, KHÔNG có nhóm)
+  { id: 'oa-1', name: 'OA Tech Support Official', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSupportOA', unreadCount: 3, type: 'oa', platform: 'zalo-oa' },
+  { id: 'oa-2', name: 'OA Vilead CRM Official', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadOA', unreadCount: 8, type: 'oa', platform: 'zalo-oa' },
+  { id: 'oa-3', name: 'OA Dịch Vụ Khách Hàng 24/7', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=CustomerService', unreadCount: 12, type: 'oa', platform: 'zalo-oa' },
+  // Facebook accounts (CHỈ có individual conversations, KHÔNG có nhóm)
+  { id: 'fb-1', name: 'Fanpage Vilead CRM Solutions', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VileadFanpage', unreadCount: 5, type: 'personal', platform: 'facebook' },
+  { id: 'fb-2', name: 'Fanpage Tech Solutions Vietnam', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TechSolutionsVN', unreadCount: 7, type: 'personal', platform: 'facebook' },
+  { id: 'fb-3', name: 'Fanpage Marketing Agency Pro', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MarketingPro', unreadCount: 2, type: 'personal', platform: 'facebook' },
 ]
 
 // Demo shared files data
@@ -281,6 +311,22 @@ const demoCRMCustomers: CRMCustomer[] = [
   { id: 'crm-5', name: 'Lê Thị Trang', phone: '0901234571', email: 'trang@company.vn', company: 'Công ty TNHH ABC', source: 'Referral', status: 'customer', tags: ['VIP', 'Gia hạn'], createdAt: '2024-01-08T13:15:00Z', lastContactedAt: '2024-01-22T10:20:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LeThiTrang' },
   { id: 'crm-6', name: 'ABQ Startup Com', phone: '0901234572', email: 'contact@abqstartup.com', company: 'ABQ Startup Community', source: 'Facebook', status: 'lead', tags: ['Startup', 'Tech'], createdAt: '2024-01-20T10:45:00Z', lastContactedAt: '2024-01-21T14:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ABQStartup' },
   { id: 'crm-7', name: 'TunVN - Hỗ Trợ Tài Chính', phone: '0901234573', email: 'tun@finance.vn', company: 'Financial Services Ltd', source: 'Zalo', status: 'potential', tags: ['Báo giá', 'Hỗ trợ kỹ thuật'], createdAt: '2024-01-16T16:00:00Z', lastContactedAt: '2024-01-19T11:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TunVN' },
+  // Zalo OA Customers
+  { id: 'crm-8', name: 'Phạm Minh Tuấn', phone: '0901234574', email: 'tuan@business.vn', company: 'Công ty CP XYZ', source: 'Zalo OA', status: 'lead', tags: ['Tư vấn'], createdAt: '2024-01-21T08:00:00Z', lastContactedAt: '2024-01-22T11:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PhamMinhTuan' },
+  { id: 'crm-9', name: 'Trần Thu Hương', phone: '0901234575', email: 'huong@trade.vn', company: 'Công ty Thương mại GHI', source: 'Zalo OA', status: 'potential', tags: ['Quan tâm'], createdAt: '2024-01-19T10:30:00Z', lastContactedAt: '2024-01-23T08:20:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TranThuHuong' },
+  { id: 'crm-10', name: 'Hoàng Văn Long', phone: '0901234576', email: 'long@enterprise.vn', company: 'Tập đoàn JKL', source: 'Zalo OA', status: 'customer', tags: ['Khách hàng thân thiết'], createdAt: '2024-01-17T14:45:00Z', lastContactedAt: '2024-01-22T16:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HoangVanLong' },
+  { id: 'crm-11', name: 'Đỗ Thị Mai', phone: '0901234577', email: 'mai@company.vn', company: 'Công ty TNHH MTV MNO', source: 'Zalo OA', status: 'lead', tags: ['Demo'], createdAt: '2024-01-22T09:15:00Z', lastContactedAt: '2024-01-23T10:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DoThiMai' },
+  { id: 'crm-12', name: 'Bùi Công Danh', phone: '0901234578', email: 'danh@investment.vn', company: 'Quỹ đầu tư ABC', source: 'Zalo OA', status: 'potential', tags: ['Đầu tư'], createdAt: '2024-01-20T15:30:00Z', lastContactedAt: '2024-01-22T17:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=BuiCongDanh' },
+  { id: 'crm-13', name: 'Phan Thị Lan', phone: '0901234579', email: 'lan@retail.vn', company: 'Hệ thống bán lẻ MNO', source: 'Zalo OA', status: 'customer', tags: ['Bán lẻ'], createdAt: '2024-01-18T12:00:00Z', lastContactedAt: '2024-01-23T11:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PhanThiLan' },
+  { id: 'crm-14', name: 'Võ Quốc Khánh', phone: '0901234580', email: 'khanh@logistics.vn', company: 'Công ty Logistics PQR', source: 'Zalo OA', status: 'lead', tags: ['Logistics'], createdAt: '2024-01-19T09:45:00Z', lastContactedAt: '2024-01-22T13:15:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=VoQuocKhanh' },
+  // Facebook Customers  
+  { id: 'crm-15', name: 'Ngô Thanh Tùng', phone: '0901234581', email: 'tung@innovation.vn', company: 'Startup Innovation', source: 'Facebook', status: 'potential', tags: ['Tech', 'Startup'], createdAt: '2024-01-20T11:20:00Z', lastContactedAt: '2024-01-22T15:45:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NgoThanhTung' },
+  { id: 'crm-16', name: 'Đinh Hồng Nhung', phone: '0901234582', email: 'nhung@corp.vn', company: 'Công ty CP PQR', source: 'Facebook', status: 'customer', tags: ['VIP'], createdAt: '2024-01-18T13:30:00Z', lastContactedAt: '2024-01-23T09:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DinhHongNhung' },
+  { id: 'crm-17', name: 'Lý Văn Thành', phone: '0901234583', email: 'thanh@business.com', company: 'Doanh nghiệp tư nhân DEF', source: 'Facebook', status: 'lead', tags: ['Quan tâm sản phẩm'], createdAt: '2024-01-21T10:00:00Z', lastContactedAt: '2024-01-22T14:15:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=LyVanThanh' },
+  { id: 'crm-18', name: 'Dương Thị Thảo', phone: '0901234584', email: 'thao@education.vn', company: 'Trung tâm đào tạo STU', source: 'Facebook', status: 'potential', tags: ['Giáo dục'], createdAt: '2024-01-19T14:00:00Z', lastContactedAt: '2024-01-22T16:45:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DuongThiThao' },
+  { id: 'crm-19', name: 'Cao Minh Đức', phone: '0901234585', email: 'duc@manufacture.vn', company: 'Nhà máy sản xuất VWX', source: 'Facebook', status: 'customer', tags: ['Sản xuất'], createdAt: '2024-01-17T11:30:00Z', lastContactedAt: '2024-01-23T08:00:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=CaoMinhDuc' },
+  { id: 'crm-20', name: 'Hồ Thanh Bình', phone: '0901234586', email: 'binh@consulting.vn', company: 'Công ty Tư vấn YZA', source: 'Facebook', status: 'lead', tags: ['Tư vấn chiến lược'], createdAt: '2024-01-20T16:15:00Z', lastContactedAt: '2024-01-22T12:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HoThanhBinh' },
+  { id: 'crm-21', name: 'Trịnh Thị Hoa', phone: '0901234587', email: 'hoa@healthcare.vn', company: 'Phòng khám đa khoa BCD', source: 'Facebook', status: 'potential', tags: ['Y tế'], createdAt: '2024-01-18T10:45:00Z', lastContactedAt: '2024-01-23T07:30:00Z', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TrinhThiHoa' },
 ]
 
 // Sales Pipeline Stages
@@ -294,10 +340,10 @@ const salesStages = [
   { id: 'lost', name: 'Thất bại', color: 'bg-red-100 text-red-700', icon: X },
 ]
 
-function generateDemoContacts(): ZaloContact[] {
-  return vietnameseNames.map((name, index) => ({
-    id: String(index + 1),
-    zaloId: `zalo-${String(index + 1).padStart(3, '0')}`,
+function generateDemoContacts(names: string[], platform: string): ZaloContact[] {
+  return names.map((name, index) => ({
+    id: `${platform}-${String(index + 1)}`,
+    zaloId: `${platform}-${String(index + 1).padStart(3, '0')}`,
     name,
     displayName: name,
     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(/\s/g, '')}`,
@@ -331,27 +377,36 @@ function generateDemoContacts(): ZaloContact[] {
   }))
 }
 
-const demoContacts = generateDemoContacts()
+const demoContactsZaloPersonal = generateDemoContacts(vietnameseNamesZaloPersonal, 'zalo-personal')
+const demoContactsZaloOA = generateDemoContacts(vietnameseNamesZaloOA, 'zalo-oa')
+const demoContactsFacebook = generateDemoContacts(vietnameseNamesFacebook, 'facebook')
 
-function generateDemoMessages(conversationId: string): ZaloMessage[] {
+// Use Zalo Personal contacts as default for backwards compatibility
+const demoContacts = demoContactsZaloPersonal
+
+function generateDemoMessages(contactId: string): ZaloMessage[] {
   const messageCount = Math.floor(Math.random() * 10) + 5
   const messages: ZaloMessage[] = []
+  
+  // Find contact across all platforms
+  const allContacts = [...demoContactsZaloPersonal, ...demoContactsZaloOA, ...demoContactsFacebook]
+  const contact = allContacts.find(c => c.id === contactId)
 
   for (let i = 0; i < messageCount; i++) {
     const isIncoming = i % 2 === 0
     const timestamp = new Date(Date.now() - (messageCount - i) * 3600000).toISOString()
 
     messages.push({
-      id: `msg-${conversationId}-${i}`,
-      conversationId,
+      id: `msg-${contactId}-${i}`,
+      conversationId: contactId,
       content: lastMessages[Math.floor(Math.random() * lastMessages.length)],
       messageType: 'text',
       direction: isIncoming ? 'incoming' : 'outgoing',
       timestamp,
       sender: {
-        id: isIncoming ? conversationId : 'agent-1',
-        name: isIncoming ? demoContacts[parseInt(conversationId) - 1]?.name || 'Khách hàng' : 'Tư vấn viên',
-        avatar: isIncoming ? demoContacts[parseInt(conversationId) - 1]?.avatar : undefined,
+        id: isIncoming ? contactId : 'agent-1',
+        name: isIncoming ? (contact?.name || 'Khách hàng') : 'Tư vấn viên',
+        avatar: isIncoming ? contact?.avatar : undefined,
         type: isIncoming ? 'customer' : 'agent'
       },
       status: isIncoming ? 'read' : (['sent', 'delivered', 'read'][Math.floor(Math.random() * 3)] as any)
@@ -362,39 +417,115 @@ function generateDemoMessages(conversationId: string): ZaloMessage[] {
 }
 
 const demoMessages: Record<string, ZaloMessage[]> = {}
-demoContacts.forEach((contact, index) => {
+// Generate messages for all platform contacts
+demoContactsZaloPersonal.forEach((contact) => {
+  demoMessages[contact.id] = generateDemoMessages(contact.id)
+})
+demoContactsZaloOA.forEach((contact) => {
+  demoMessages[contact.id] = generateDemoMessages(contact.id)
+})
+demoContactsFacebook.forEach((contact) => {
   demoMessages[contact.id] = generateDemoMessages(contact.id)
 })
 
 function generateDemoConversations(): ZaloConversation[] {
-  return demoContacts.map((contact, index) => {
-    const messages = demoMessages[contact.id]
-    const lastMessage = messages[messages.length - 1]
-
-    // Tạo thời gian từ 12 giờ trước đến 30 ngày trước
-    const hoursAgo = index < 3 ? index * 4 : Math.floor(Math.random() * 24 * 30)
-    const lastMessageAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
-
-    // Các conversation có index 2, 4, 6 sẽ là group
-    const isGroup = index % 3 === 2
-    
-    return {
-      id: contact.id,
-      contactId: contact.id,
-      contact,
-      lastMessage,
-      lastMessageAt,
-      unreadCount: index < 5 ? Math.floor(Math.random() * 50) + 1 : 0,
-      status: 'active',
-      assignedTo: index % 3 === 0 ? 'Tư vấn viên A' : index % 3 === 1 ? 'Tư vấn viên B' : undefined,
-      tags: contact.tags,
-      priority: ['low', 'medium', 'high', 'urgent'][index % 4] as any,
-      channel: 'zalo',
-      conversationType: isGroup ? 'group' : 'individual',
-      members: isGroup ? demoGroupMembers : undefined,
-      memberCount: isGroup ? demoGroupMembers.length : undefined
-    }
+  const allConversations: ZaloConversation[] = []
+  
+  // Generate Zalo Personal conversations for each account
+  const zaloPersonalAccounts = connectedZaloAccounts.filter(acc => acc.platform === 'zalo-personal')
+  zaloPersonalAccounts.forEach((account, accountIndex) => {
+    demoContactsZaloPersonal.slice(0, 3).forEach((contact, index) => {
+      const contactIndex = accountIndex * 3 + index
+      const messages = demoMessages[contact.id] || []
+      const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+      const hoursAgo = contactIndex < 3 ? contactIndex * 4 : Math.floor(Math.random() * 24 * 30)
+      const lastMessageAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
+      const isGroup = index === 2 // Only third contact is a group
+      
+      allConversations.push({
+        id: `${account.id}-conv-${contact.id}`,
+        contactId: contact.id,
+        contact,
+        lastMessage,
+        lastMessageAt,
+        unreadCount: contactIndex < 5 ? Math.floor(Math.random() * 10) + 1 : 0,
+        status: 'active',
+        assignedTo: contactIndex % 3 === 0 ? 'Tư vấn viên A' : contactIndex % 3 === 1 ? 'Tư vấn viên B' : undefined,
+        tags: contact.tags,
+        priority: ['low', 'medium', 'high', 'urgent'][contactIndex % 4] as any,
+        channel: 'zalo',
+        conversationType: isGroup ? 'group' : 'individual',
+        members: isGroup ? demoGroupMembers : undefined,
+        memberCount: isGroup ? demoGroupMembers.length : undefined,
+        accountId: account.id,
+        platform: 'zalo-personal'
+      })
+    })
   })
+  
+  // Generate Zalo OA conversations (individual only)
+  const zaloOAAccounts = connectedZaloAccounts.filter(acc => acc.platform === 'zalo-oa')
+  zaloOAAccounts.forEach((account, accountIndex) => {
+    demoContactsZaloOA.slice(0, 3).forEach((contact, index) => {
+      const contactIndex = accountIndex * 3 + index
+      const messages = demoMessages[contact.id] || []
+      const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+      const hoursAgo = contactIndex < 3 ? contactIndex * 4 : Math.floor(Math.random() * 24 * 30)
+      const lastMessageAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
+      
+      allConversations.push({
+        id: `${account.id}-conv-${contact.id}`,
+        contactId: contact.id,
+        contact,
+        lastMessage,
+        lastMessageAt,
+        unreadCount: contactIndex < 4 ? Math.floor(Math.random() * 8) + 1 : 0,
+        status: 'active',
+        assignedTo: contactIndex % 2 === 0 ? 'Tư vấn viên C' : undefined,
+        tags: contact.tags,
+        priority: ['low', 'medium', 'high'][contactIndex % 3] as any,
+        channel: 'zalo',
+        conversationType: 'individual', // OA only has individual
+        members: undefined,
+        memberCount: undefined,
+        accountId: account.id,
+        platform: 'zalo-oa'
+      })
+    })
+  })
+  
+  // Generate Facebook conversations (individual only)
+  const facebookAccounts = connectedZaloAccounts.filter(acc => acc.platform === 'facebook')
+  facebookAccounts.forEach((account, accountIndex) => {
+    demoContactsFacebook.slice(0, 3).forEach((contact, index) => {
+      const contactIndex = accountIndex * 3 + index
+      const messages = demoMessages[contact.id] || []
+      const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+      const hoursAgo = contactIndex < 3 ? contactIndex * 4 : Math.floor(Math.random() * 24 * 30)
+      const lastMessageAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString()
+      
+      allConversations.push({
+        id: `${account.id}-conv-${contact.id}`,
+        contactId: contact.id,
+        contact,
+        lastMessage,
+        lastMessageAt,
+        unreadCount: contactIndex < 3 ? Math.floor(Math.random() * 6) + 1 : 0,
+        status: 'active',
+        assignedTo: contactIndex % 2 === 0 ? 'Tư vấn viên D' : undefined,
+        tags: contact.tags,
+        priority: ['medium', 'high'][contactIndex % 2] as any,
+        channel: 'facebook',
+        conversationType: 'individual', // Facebook only has individual
+        members: undefined,
+        memberCount: undefined,
+        accountId: account.id,
+        platform: 'facebook'
+      })
+    })
+  })
+  
+  return allConversations
 }
 
 const demoConversations = generateDemoConversations()
@@ -564,13 +695,24 @@ export default function ChatManagement() {
   const [qrCheckStatus, setQRCheckStatus] = useState<'pending' | 'checking' | 'success' | 'error'>('pending')
   const [qrCheckInterval, setQRCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [connectedCustomers, setConnectedCustomers] = useState<Set<string>>(new Set())
-  const [conversationCustomerMap, setConversationCustomerMap] = useState<Map<string, string>>(new Map())
+  const [conversationCustomerMap, setConversationCustomerMap] = useState<Map<string, ConversationConnection>>(new Map())
   const [customerStageMap, setCustomerStageMap] = useState<Map<string, string>>(new Map())
+  const [customerConnectionCount, setCustomerConnectionCount] = useState<Map<string, CustomerConnectionCount>>(new Map())
   const [selectedLeadDetail, setSelectedLeadDetail] = useState<CRMCustomer | null>(null)
   const [leadDetailTab, setLeadDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
 
   const messageScrollRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Check if a customer already has a connection in the same platform
+  const checkExistingConnectionInSamePlatform = (customerId: string, platform: 'zalo-personal' | 'zalo-oa' | 'facebook'): boolean => {
+    for (const [_, connection] of conversationCustomerMap.entries()) {
+      if (connection.customerId === customerId && connection.platform === platform) {
+        return true // Already has a connection in this platform
+      }
+    }
+    return false
+  }
 
   // Toggle account connection status
   const toggleAccountConnection = (accountId: string) => {
@@ -602,13 +744,13 @@ export default function ChatManagement() {
   // Select conversation and load messages
   const handleSelectConversation = (conversation: ZaloConversation) => {
     setSelectedConversation(conversation)
-    setMessages(demoMessages[conversation.id] || [])
+    setMessages(demoMessages[conversation.contactId] || [])
     
-    // Auto switch to community tab if it's a group conversation
-    if (conversation.conversationType === 'group') {
+    // Auto switch to community tab if it's a Zalo Personal group conversation
+    if (conversation.conversationType === 'group' && selectedChannel === 'zalo-personal') {
       setRightPanelTab('community')
     } else {
-      // Reset to zalo tab for individual conversations
+      // Reset to zalo tab for individual conversations or non-Zalo-Personal groups
       setRightPanelTab('zalo')
     }
     
@@ -693,12 +835,17 @@ export default function ChatManagement() {
                           conv.lastMessage?.content.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesUnread = !filterUnread || conv.unreadCount > 0
     
-    // For Facebook, only show individual conversations (no groups/communities)
-    const matchesChannel = selectedChannel === 'facebook' 
+    // Filter by selected account and platform
+    const matchesAccount = conv.accountId === selectedAccount.id
+    const matchesPlatform = conv.platform === selectedChannel
+    
+    // Zalo OA and Facebook only show individual conversations (no groups)
+    // Zalo Personal can show both individual and group conversations
+    const matchesChannel = (selectedChannel === 'zalo-oa' || selectedChannel === 'facebook')
       ? conv.conversationType === 'individual'
       : true
     
-    return matchesSearch && matchesUnread && matchesChannel
+    return matchesSearch && matchesUnread && matchesChannel && matchesAccount && matchesPlatform
   })
 
   const unreadCount = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
@@ -814,17 +961,24 @@ export default function ChatManagement() {
               >
                 <div className="flex items-center gap-2">
                   <Avatar className="w-6 h-6">
-                    <AvatarImage src="https://api.dicebear.com/7.x/initials/svg?seed=Vitech" />
-                    <AvatarFallback className="bg-orange-500 text-white text-[10px]">
-                      VT
+                    <AvatarImage src={selectedAccount.avatar} />
+                    <AvatarFallback className="bg-blue-500 text-white text-[10px]">
+                      {selectedAccount.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-gray-900 truncate max-w-[180px]">
-                    Công ty CP Tập Doàn Vitech
+                    {selectedAccount.name}
                   </span>
-                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    1
-                  </span>
+                  {(() => {
+                    const totalUnreadForPlatform = connectedAccounts
+                      .filter(a => a.platform === selectedChannel)
+                      .reduce((sum, a) => sum + a.unreadCount, 0)
+                    return totalUnreadForPlatform > 0 ? (
+                      <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">
+                        {totalUnreadForPlatform > 99 ? '99+' : totalUnreadForPlatform}
+                      </span>
+                    ) : null
+                  })()}
                 </div>
                 <ChevronDown className={cn(
                   "w-4 h-4 text-gray-400 transition-transform flex-shrink-0",
@@ -1181,20 +1335,23 @@ export default function ChatManagement() {
                           `Hoạt động ${formatConversationTime(selectedConversation.contact.lastContactedAt)} trước`
                         )}
                       </p>
-                      {conversationCustomerMap.has(selectedConversation.id) && (
+                      {conversationCustomerMap.has(selectedConversation.id) && (() => {
+                        const connectionInfo = conversationCustomerMap.get(selectedConversation.id)
+                        const customerId = connectionInfo?.customerId || ''
+                        return (
                         <div className="hidden md:flex items-center gap-2">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button 
                                 className={cn(
                                   "inline-flex items-center rounded-full border px-2.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-xs py-0 h-5 cursor-pointer hover:opacity-80 whitespace-nowrap",
-                                  salesStages.find(s => s.id === (customerStageMap.get(selectedConversation.contact.id) || 'new-lead'))?.color || "bg-gray-100 text-gray-700"
+                                  salesStages.find(s => s.id === (customerStageMap.get(customerId) || 'new-lead'))?.color || "bg-gray-100 text-gray-700"
                                 )}
                               >
                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                 </svg>
-                                {salesStages.find(s => s.id === (customerStageMap.get(selectedConversation.contact.id) || 'new-lead'))?.name || 'Lead mới'}
+                                {salesStages.find(s => s.id === (customerStageMap.get(customerId) || 'new-lead'))?.name || 'Lead mới'}
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56">
@@ -1203,13 +1360,13 @@ export default function ChatManagement() {
                               </div>
                               {salesStages.map((stage) => {
                                 const StageIcon = stage.icon
-                                const isSelected = (customerStageMap.get(selectedConversation.contact.id) || 'new-lead') === stage.id
+                                const isSelected = (customerStageMap.get(customerId) || 'new-lead') === stage.id
                                 return (
                                   <DropdownMenuItem 
                                     key={stage.id}
                                     onClick={() => {
                                       const newMap = new Map(customerStageMap)
-                                      newMap.set(selectedConversation.contact.id, stage.id)
+                                      newMap.set(customerId, stage.id)
                                       setCustomerStageMap(newMap)
                                     }}
                                     className="flex items-center gap-2 cursor-pointer"
@@ -1225,7 +1382,8 @@ export default function ChatManagement() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      )}
+                        )
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1442,7 +1600,8 @@ export default function ChatManagement() {
               >
                 {selectedChannel === 'facebook' ? 'Facebook' : 'Zalo'}
               </button>
-              {selectedConversation.conversationType === 'group' ? (
+              {/* Only show Community tab for Zalo Personal groups */}
+              {selectedConversation.conversationType === 'group' && selectedChannel === 'zalo-personal' ? (
                 <button
                   onClick={() => setRightPanelTab('community')}
                   className={cn(
@@ -1719,7 +1878,8 @@ export default function ChatManagement() {
             {rightPanelTab === 'sync' && (
               <>
                 {(() => {
-                  const connectedCustomerId = conversationCustomerMap.get(selectedConversation.id)
+                  const connectionInfo = conversationCustomerMap.get(selectedConversation.id)
+                  const connectedCustomerId = connectionInfo?.customerId
                   
                   // Check if we have a synced customer for this specific conversation
                   const syncedCustomer = syncedCustomers.get(selectedConversation.id)
@@ -1728,6 +1888,9 @@ export default function ChatManagement() {
                   const customerToShow = syncedCustomer || (connectedCustomerId 
                     ? demoCRMCustomers.find(c => c.id === connectedCustomerId)
                     : null)
+
+                  // Get connection count for this customer if connected
+                  const connectionCount = customerToShow ? customerConnectionCount.get(customerToShow.id) : null
 
                   if (customerToShow) {
                     return (
@@ -1744,6 +1907,28 @@ export default function ChatManagement() {
                                 <p className="text-xs text-green-700 mt-0.5">
                                   Hội thoại này đã được liên kết với khách hàng trong hệ thống CRM
                                 </p>
+                                {connectionCount && connectionCount.total > 0 && (
+                                  <div className="flex gap-2 mt-2 flex-wrap">
+                                    {connectionCount['zalo-personal'] > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium">
+                                        <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">ZL</span>
+                                        {connectionCount['zalo-personal']} Zalo
+                                      </span>
+                                    )}
+                                    {connectionCount['zalo-oa'] > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium">
+                                        <span className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">OA</span>
+                                        {connectionCount['zalo-oa']} Zalo OA
+                                      </span>
+                                    )}
+                                    {connectionCount['facebook'] > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-medium">
+                                        <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">FB</span>
+                                        {connectionCount['facebook']} Facebook
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -1858,31 +2043,116 @@ export default function ChatManagement() {
                                         <MoreVertical className="w-4 h-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => {
-                                        if (selectedConversation) {
-                                          // Remove from syncedCustomers Map
-                                          const newSyncedMap = new Map(syncedCustomers)
-                                          newSyncedMap.delete(selectedConversation.id)
-                                          setSyncedCustomers(newSyncedMap)
-                                          
-                                          // Remove from conversationCustomerMap
-                                          const newConvMap = new Map(conversationCustomerMap)
-                                          const customerId = newConvMap.get(selectedConversation.id)
-                                          newConvMap.delete(selectedConversation.id)
-                                          setConversationCustomerMap(newConvMap)
-                                          
-                                          // Remove from connectedCustomers if exists
-                                          if (customerId) {
-                                            const newConnected = new Set(connectedCustomers)
-                                            newConnected.delete(customerId)
-                                            setConnectedCustomers(newConnected)
+                                    <DropdownMenuContent align="end" className="w-56">
+                                      {connectionCount && connectionCount.total > 1 ? (
+                                        <>
+                                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+                                            Quản lý kết nối ({connectionCount.total})
+                                          </div>
+                                          {Array.from(conversationCustomerMap.entries())
+                                            .filter(([_, conn]) => conn.customerId === customerToShow.id)
+                                            .map(([convId, conn]) => (
+                                              <DropdownMenuItem
+                                                key={convId}
+                                                onClick={() => {
+                                                  // Only disconnect this specific conversation
+                                                  const newConvMap = new Map(conversationCustomerMap)
+                                                  newConvMap.delete(convId)
+                                                  setConversationCustomerMap(newConvMap)
+                                                  
+                                                  // Update customer connection count
+                                                  setCustomerConnectionCount(prev => {
+                                                    const newMap = new Map(prev)
+                                                    const current = newMap.get(customerToShow.id)
+                                                    if (current) {
+                                                      const updated = {
+                                                        ...current,
+                                                        [conn.platform]: Math.max(0, current[conn.platform] - 1),
+                                                        total: Math.max(0, current.total - 1)
+                                                      }
+                                                      if (updated.total === 0) {
+                                                        newMap.delete(customerToShow.id)
+                                                        setConnectedCustomers(prev => {
+                                                          const newSet = new Set(prev)
+                                                          newSet.delete(customerToShow.id)
+                                                          return newSet
+                                                        })
+                                                      } else {
+                                                        newMap.set(customerToShow.id, updated)
+                                                      }
+                                                    }
+                                                    return newMap
+                                                  })
+                                                  
+                                                  // If disconnecting current conversation, also remove from syncedCustomers
+                                                  if (convId === selectedConversation.id) {
+                                                    setSyncedCustomers(prev => {
+                                                      const newMap = new Map(prev)
+                                                      newMap.delete(convId)
+                                                      return newMap
+                                                    })
+                                                  }
+                                                }}
+                                                className="text-xs"
+                                              >
+                                                <div className="flex items-center gap-2 w-full">
+                                                  <span className={cn(
+                                                    "w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0",
+                                                    conn.platform === 'zalo-personal' ? "bg-blue-600" :
+                                                    conn.platform === 'zalo-oa' ? "bg-blue-500" : "bg-blue-600"
+                                                  )}>
+                                                    {conn.platform === 'zalo-personal' ? 'ZL' : 
+                                                     conn.platform === 'zalo-oa' ? 'OA' : 'FB'}
+                                                  </span>
+                                                  <span className="flex-1 truncate">{conn.accountName}</span>
+                                                  <X className="w-3 h-3 text-red-600 flex-shrink-0" />
+                                                </div>
+                                              </DropdownMenuItem>
+                                            ))
                                           }
-                                        }
-                                      }}>
-                                        <X className="w-4 h-4 mr-2" />
-                                        Ngắt kết nối
-                                      </DropdownMenuItem>
+                                        </>
+                                      ) : (
+                                        <DropdownMenuItem onClick={() => {
+                                          if (selectedConversation && connectionInfo) {
+                                            // Remove from syncedCustomers Map
+                                            const newSyncedMap = new Map(syncedCustomers)
+                                            newSyncedMap.delete(selectedConversation.id)
+                                            setSyncedCustomers(newSyncedMap)
+                                            
+                                            // Remove from conversationCustomerMap
+                                            const newConvMap = new Map(conversationCustomerMap)
+                                            newConvMap.delete(selectedConversation.id)
+                                            setConversationCustomerMap(newConvMap)
+                                            
+                                            // Update customer connection count
+                                            setCustomerConnectionCount(prev => {
+                                              const newMap = new Map(prev)
+                                              const current = newMap.get(customerToShow.id)
+                                              if (current) {
+                                                const updated = {
+                                                  ...current,
+                                                  [connectionInfo.platform]: Math.max(0, current[connectionInfo.platform] - 1),
+                                                  total: Math.max(0, current.total - 1)
+                                                }
+                                                if (updated.total === 0) {
+                                                  newMap.delete(customerToShow.id)
+                                                  setConnectedCustomers(prev => {
+                                                    const newSet = new Set(prev)
+                                                    newSet.delete(customerToShow.id)
+                                                    return newSet
+                                                  })
+                                                } else {
+                                                  newMap.set(customerToShow.id, updated)
+                                                }
+                                              }
+                                              return newMap
+                                            })
+                                          }
+                                        }}>
+                                          <X className="w-4 h-4 mr-2" />
+                                          Ngắt kết nối
+                                        </DropdownMenuItem>
+                                      )}
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
@@ -2015,63 +2285,246 @@ export default function ChatManagement() {
                                         </p>
                                       </div>
                                     </div>
-                                    {connectedCustomers.has(customer.id) ? (
-                                      <div className="flex items-center gap-2 flex-shrink-0">
-                                        <div className="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg">
-                                          <Check className="w-4 h-4 text-green-600" />
-                                          <span className="text-xs font-medium text-green-700">Đã kết nối</span>
-                                        </div>
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button size="sm" className="h-8 text-xs">
-                                              Thao tác
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end" className="w-48">
-                                            <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
-                                              <Eye className="w-4 h-4 mr-2" />
-                                              Xem chi tiết
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => {
-                                              if (selectedConversation) {
-                                                // Remove from connectedCustomers Set
+                                    {(() => {
+                                      const currentConnectionInfo = conversationCustomerMap.get(selectedConversation.id)
+                                      const isThisConversationConnected = currentConnectionInfo?.customerId === customer.id
+                                      const customerConnCount = customerConnectionCount.get(customer.id)
+                                      const hasOtherConnections = connectedCustomers.has(customer.id) && !isThisConversationConnected
+                                      const hasConnectionInCurrentPlatform = checkExistingConnectionInSamePlatform(customer.id, selectedChannel)
+
+                                      if (isThisConversationConnected) {
+                                        // This specific conversation is connected to this customer
+                                        return (
+                                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                            <div className="flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg">
+                                              <Check className="w-4 h-4 text-green-600" />
+                                              <span className="text-xs font-medium text-green-700">Đã kết nối</span>
+                                            </div>
+                                            {customerConnCount && customerConnCount.total > 1 && (
+                                              <div className="flex gap-1">
+                                                {customerConnCount['zalo-personal'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
+                                                    {customerConnCount['zalo-personal']}ZL
+                                                  </span>
+                                                )}
+                                                {customerConnCount['zalo-oa'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
+                                                    {customerConnCount['zalo-oa']}OA
+                                                  </span>
+                                                )}
+                                                {customerConnCount['facebook'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">
+                                                    {customerConnCount['facebook']}FB
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button size="sm" className="h-8 text-xs">
+                                                  Thao tác
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end" className="w-48">
+                                                <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
+                                                  <Eye className="w-4 h-4 mr-2" />
+                                                  Xem chi tiết
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  if (selectedConversation && currentConnectionInfo) {
+                                                    // Remove this specific conversation connection
+                                                    const newConvMap = new Map(conversationCustomerMap)
+                                                    newConvMap.delete(selectedConversation.id)
+                                                    setConversationCustomerMap(newConvMap)
+                                                    
+                                                    // Remove from syncedCustomers Map
+                                                    const newSyncedMap = new Map(syncedCustomers)
+                                                    newSyncedMap.delete(selectedConversation.id)
+                                                    setSyncedCustomers(newSyncedMap)
+                                                    
+                                                    // Update customer connection count
+                                                    setCustomerConnectionCount(prev => {
+                                                      const newMap = new Map(prev)
+                                                      const current = newMap.get(customer.id)
+                                                      if (current) {
+                                                        const updated = {
+                                                          ...current,
+                                                          [currentConnectionInfo.platform]: Math.max(0, current[currentConnectionInfo.platform] - 1),
+                                                          total: Math.max(0, current.total - 1)
+                                                        }
+                                                        if (updated.total === 0) {
+                                                          newMap.delete(customer.id)
+                                                          setConnectedCustomers(prev => {
+                                                            const newSet = new Set(prev)
+                                                            newSet.delete(customer.id)
+                                                            return newSet
+                                                          })
+                                                        } else {
+                                                          newMap.set(customer.id, updated)
+                                                        }
+                                                      }
+                                                      return newMap
+                                                    })
+                                                  }
+                                                }}>
+                                                  <X className="w-4 h-4 mr-2" />
+                                                  Hủy liên kết
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        )
+                                      } else if (hasConnectionInCurrentPlatform) {
+                                        // Customer already has a connection in the same platform - show "Already Connected" state
+                                        const platformName = selectedChannel === 'zalo-personal' ? 'Zalo' :
+                                                            selectedChannel === 'zalo-oa' ? 'Zalo OA' : 'Facebook'
+                                        return (
+                                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                            {customerConnCount && (
+                                              <div className="flex gap-1">
+                                                {customerConnCount['zalo-personal'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['zalo-personal']}ZL
+                                                  </span>
+                                                )}
+                                                {customerConnCount['zalo-oa'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['zalo-oa']}OA
+                                                  </span>
+                                                )}
+                                                {customerConnCount['facebook'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['facebook']}FB
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+                                            <div className="flex items-center gap-1 bg-yellow-50 px-3 py-1.5 rounded-lg">
+                                              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                                              <span className="text-xs font-medium text-yellow-700">Đã kết nối</span>
+                                            </div>
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button size="sm" variant="outline" className="h-8 text-xs">
+                                                  Thao tác
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end" className="w-48">
+                                                <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
+                                                  <Eye className="w-4 h-4 mr-2" />
+                                                  Xem chi tiết
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        )
+                                      } else if (hasOtherConnections) {
+                                        // Customer is connected to other platforms (not current one), show connection info + allow linking
+                                        return (
+                                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                            {customerConnCount && (
+                                              <div className="flex gap-1">
+                                                {customerConnCount['zalo-personal'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['zalo-personal']}ZL
+                                                  </span>
+                                                )}
+                                                {customerConnCount['zalo-oa'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['zalo-oa']}OA
+                                                  </span>
+                                                )}
+                                                {customerConnCount['facebook'] > 0 && (
+                                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                                                    {customerConnCount['facebook']}FB
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+                                            <Button 
+                                              size="sm" 
+                                              className="h-8 text-xs px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                                              onClick={() => {
                                                 const newConnected = new Set(connectedCustomers)
-                                                newConnected.delete(customer.id)
+                                                newConnected.add(customer.id)
                                                 setConnectedCustomers(newConnected)
                                                 
-                                                // Remove from conversationCustomerMap
-                                                const newConvMap = new Map(conversationCustomerMap)
-                                                newConvMap.delete(selectedConversation.id)
-                                                setConversationCustomerMap(newConvMap)
+                                                const connectionInfo: ConversationConnection = {
+                                                  customerId: customer.id,
+                                                  platform: selectedChannel,
+                                                  accountId: selectedAccount.id,
+                                                  accountName: selectedAccount.name,
+                                                  connectedAt: new Date().toISOString()
+                                                }
                                                 
-                                                // Remove from syncedCustomers Map
-                                                const newSyncedMap = new Map(syncedCustomers)
-                                                newSyncedMap.delete(selectedConversation.id)
-                                                setSyncedCustomers(newSyncedMap)
+                                                const newMap = new Map(conversationCustomerMap)
+                                                newMap.set(selectedConversation.id, connectionInfo)
+                                                setConversationCustomerMap(newMap)
+                                                
+                                                // Update customer connection count
+                                                setCustomerConnectionCount(prev => {
+                                                  const newMap = new Map(prev)
+                                                  const current = newMap.get(customer.id) || {
+                                                    'zalo-personal': 0,
+                                                    'zalo-oa': 0,
+                                                    'facebook': 0,
+                                                    total: 0
+                                                  }
+                                                  const updated = {
+                                                    ...current,
+                                                    [selectedChannel]: current[selectedChannel] + 1,
+                                                    total: current.total + 1
+                                                  }
+                                                  newMap.set(customer.id, updated)
+                                                  return newMap
+                                                })
+                                              }}
+                                            >
+                                              Liên kết
+                                            </Button>
+                                          </div>
+                                        )
+                                      } else {
+                                        // Not connected at all
+                                        return (
+                                          <Button 
+                                            size="sm" 
+                                            className="h-8 text-xs px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex-shrink-0"
+                                            onClick={() => {
+                                              const newConnected = new Set(connectedCustomers)
+                                              newConnected.add(customer.id)
+                                              setConnectedCustomers(newConnected)
+                                              
+                                              const connectionInfo: ConversationConnection = {
+                                                customerId: customer.id,
+                                                platform: selectedChannel,
+                                                accountId: selectedAccount.id,
+                                                accountName: selectedAccount.name,
+                                                connectedAt: new Date().toISOString()
                                               }
-                                            }}>
-                                              <X className="w-4 h-4 mr-2" />
-                                              Hủy liên kết
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      </div>
-                                    ) : (
-                                      <Button 
-                                        size="sm" 
-                                        className="h-8 text-xs px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
-                                        onClick={() => {
-                                          const newConnected = new Set(connectedCustomers)
-                                          newConnected.add(customer.id)
-                                          setConnectedCustomers(newConnected)
-                                          const newMap = new Map(conversationCustomerMap)
-                                          newMap.set(selectedConversation.id, customer.id)
-                                          setConversationCustomerMap(newMap)
-                                        }}
-                                      >
-                                        Liên kết
-                                      </Button>
-                                    )}
+                                              
+                                              const newMap = new Map(conversationCustomerMap)
+                                              newMap.set(selectedConversation.id, connectionInfo)
+                                              setConversationCustomerMap(newMap)
+                                              
+                                              // Initialize customer connection count
+                                              setCustomerConnectionCount(prev => {
+                                                const newMap = new Map(prev)
+                                                newMap.set(customer.id, {
+                                                  'zalo-personal': selectedChannel === 'zalo-personal' ? 1 : 0,
+                                                  'zalo-oa': selectedChannel === 'zalo-oa' ? 1 : 0,
+                                                  'facebook': selectedChannel === 'facebook' ? 1 : 0,
+                                                  total: 1
+                                                })
+                                                return newMap
+                                              })
+                                            }}
+                                          >
+                                            Liên kết
+                                          </Button>
+                                        )
+                                      }
+                                    })()}
                                   </div>
                                 </div>
                               ))}
@@ -2086,7 +2539,8 @@ export default function ChatManagement() {
             )}
 
             {/* Tab Content: Thông tin cộng đồng */}
-            {rightPanelTab === 'community' && selectedConversation.conversationType === 'group' && (
+            {/* Only show for Zalo Personal groups */}
+            {rightPanelTab === 'community' && selectedConversation.conversationType === 'group' && selectedChannel === 'zalo-personal' && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Search Members */}
                 <div className="p-4 border-b border-gray-200 flex-shrink-0">
@@ -3101,16 +3555,72 @@ export default function ChatManagement() {
               className="bg-red-600 hover:bg-red-700 text-white border-0"
               onClick={() => {
                 if (accountToDelete) {
+                  const deletedAccountPlatform = accountToDelete.platform
+                  const deletedAccountId = accountToDelete.id
+                  
                   // Remove account from the list
-                  setConnectedAccounts(prev => 
-                    prev.filter(acc => acc.id !== accountToDelete.id)
-                  )
+                  const updatedAccounts = connectedAccounts.filter(acc => acc.id !== deletedAccountId)
+                  setConnectedAccounts(updatedAccounts)
+                  
                   // Remove from connection status
                   setAccountConnectionStatus(prev => {
                     const newMap = new Map(prev)
-                    newMap.delete(accountToDelete.id)
+                    newMap.delete(deletedAccountId)
                     return newMap
                   })
+                  
+                  // Remove all connections related to this account
+                  setConversationCustomerMap(prev => {
+                    const newMap = new Map(prev)
+                    // Remove conversations connected through this account
+                    for (const [convId, connection] of newMap.entries()) {
+                      if (connection.accountId === deletedAccountId) {
+                        newMap.delete(convId)
+                        // Update customer connection count
+                        setCustomerConnectionCount(prevCount => {
+                          const newCountMap = new Map(prevCount)
+                          const currentCount = newCountMap.get(connection.customerId)
+                          if (currentCount) {
+                            const platform = connection.platform
+                            const updatedCount = {
+                              ...currentCount,
+                              [platform]: Math.max(0, currentCount[platform] - 1),
+                              total: Math.max(0, currentCount.total - 1)
+                            }
+                            if (updatedCount.total === 0) {
+                              newCountMap.delete(connection.customerId)
+                              setConnectedCustomers(prevConnected => {
+                                const newSet = new Set(prevConnected)
+                                newSet.delete(connection.customerId)
+                                return newSet
+                              })
+                            } else {
+                              newCountMap.set(connection.customerId, updatedCount)
+                            }
+                          }
+                          return newCountMap
+                        })
+                      }
+                    }
+                    return newMap
+                  })
+                  
+                  // Auto-select another account if the deleted one was selected
+                  if (selectedAccount.id === deletedAccountId) {
+                    // Try to find another account in the same platform
+                    const sameplatformAccount = updatedAccounts.find(acc => acc.platform === deletedAccountPlatform)
+                    
+                    if (sameplatformAccount) {
+                      setSelectedAccount(sameplatformAccount)
+                    } else {
+                      // Switch to another platform that has accounts
+                      const anyAccount = updatedAccounts[0]
+                      if (anyAccount) {
+                        setSelectedAccount(anyAccount)
+                        setSelectedChannel(anyAccount.platform)
+                      }
+                    }
+                  }
                 }
                 setShowDeleteAccountModal(false)
                 setAccountToDelete(null)
