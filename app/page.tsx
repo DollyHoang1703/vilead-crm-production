@@ -39,7 +39,7 @@ export default function Home() {
         if (userRole === 'accountant') {
           return <AccountantDashboard />
         }
-        return <Dashboard />
+        return <Dashboard onNavigate={handleViewChange} />
       case 'sales':
         return <SalesManagement />
       case 'customers':

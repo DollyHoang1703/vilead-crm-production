@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   BarChart3,
   PieChart,
@@ -971,11 +971,20 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
   const [modalSearchTerm, setModalSearchTerm] = useState('')
   const [showPerformanceDetailModal, setShowPerformanceDetailModal] = useState(false)
   const [selectedSalesForDetail, setSelectedSalesForDetail] = useState<SalesPerformanceReport | null>(null)
-  
-  // Pending filters for Sales tab (only applied when clicking "Áp dụng bộ lọc")
-  const [pendingDateRange, setPendingDateRange] = useState('this_week')
-  const [pendingSalesDepartment, setPendingSalesDepartment] = useState('')
-  const [pendingTeam, setPendingTeam] = useState('')
+
+  // Listen for tab switching events from Dashboard
+  useEffect(() => {
+    const handleSetTab = (event: any) => {
+      if (event.detail?.tab) {
+        setActiveTab(event.detail.tab)
+        if (event.detail.filter === 'today') {
+          setSelectedDateRange('today')
+        }
+      }
+    }
+    window.addEventListener('setReportTab', handleSetTab)
+    return () => window.removeEventListener('setReportTab', handleSetTab)
+  }, [])
   
   // Collapsible sections state
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
@@ -1335,8 +1344,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         
         <div className="flex items-center space-x-3">
           <select 
-            value={pendingDateRange}
-            onChange={(e) => setPendingDateRange(e.target.value)}
+            value={selectedDateRange}
+            onChange={(e) => setSelectedDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="today">Hôm nay</option>
@@ -1347,8 +1356,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </select>
           
           <select 
-            value={pendingSalesDepartment}
-            onChange={(e) => setPendingSalesDepartment(e.target.value)}
+            value={salesPersonFilter}
+            onChange={(e) => setSalesPersonFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="">Phòng sale</option>
@@ -1358,8 +1367,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </select>
           
           <select 
-            value={pendingTeam}
-            onChange={(e) => setPendingTeam(e.target.value)}
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="">Chọn team</option>
@@ -1368,18 +1377,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             <option value="team_c">Team C</option>
             <option value="team_d">Team D</option>
           </select>
-          
-          <Button 
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => {
-              // Apply pending filters to actual state
-              setSelectedDateRange(pendingDateRange)
-              setSalesPersonFilter(pendingSalesDepartment)
-              // Team filter can be added here when needed
-            }}
-          >
-            Áp dụng bộ lọc
-          </Button>
         </div>
       </div>
 
@@ -1897,8 +1894,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         
         <div className="flex items-center space-x-3">
           <select 
-            value={pendingDateRange}
-            onChange={(e) => setPendingDateRange(e.target.value)}
+            value={selectedDateRange}
+            onChange={(e) => setSelectedDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="today">Hôm nay</option>
@@ -1909,8 +1906,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </select>
           
           <select 
-            value={pendingSalesDepartment}
-            onChange={(e) => setPendingSalesDepartment(e.target.value)}
+            value={salesPersonFilter}
+            onChange={(e) => setSalesPersonFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="">Phòng sale</option>
@@ -1920,8 +1917,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </select>
           
           <select 
-            value={pendingTeam}
-            onChange={(e) => setPendingTeam(e.target.value)}
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
           >
             <option value="">Chọn team</option>
@@ -1931,16 +1928,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             <option value="team_d">Team D</option>
           </select>
           
-          <Button 
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => {
-              // Apply pending filters to actual state
-              setSelectedDateRange(pendingDateRange)
-              setSalesPersonFilter(pendingSalesDepartment)
-            }}
-          >
-            Áp dụng bộ lọc
-          </Button>
         </div>
       </div>
 
@@ -2304,6 +2291,11 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       setCurrentProcessData(newData)
     }
 
+    // Auto-apply filters when they change
+    useEffect(() => {
+      handleApplyFilter()
+    }, [processFilter.period, processFilter.department, processFilter.team])
+
     const bottlenecks = currentProcessData.filter(detectBottleneck)
 
     return (
@@ -2347,12 +2339,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="team_c">Team C</option>
               <option value="team_d">Team D</option>
             </select>
-            <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApplyFilter}
-            >
-              Áp dụng bộ lọc
-            </button>
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -2531,6 +2517,11 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       setCurrentSourceData(newData)
     }
 
+    // Auto-apply filters when they change
+    useEffect(() => {
+      handleApplySourceFilter()
+    }, [sourceFilter.period, sourceFilter.department, sourceFilter.team])
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -2572,12 +2563,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="team_c">Team C</option>
               <option value="team_d">Team D</option>
             </select>
-            <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApplySourceFilter}
-            >
-              Áp dụng bộ lọc
-            </button>
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -2622,10 +2607,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         style={{ width: `${source.quality}%` }}
                       ></div>
                     </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">ROI:</span>
-                    <span className="font-bold text-green-600">{source.roi}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -2903,6 +2884,11 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       setCurrentCustomerData(newData)
     }
 
+    // Auto-apply filters when they change
+    useEffect(() => {
+      handleApplyCustomerFilter()
+    }, [customerFilter.period, customerFilter.department, customerFilter.team])
+
     const handleViewCustomerOrders = (customer: any) => {
       setSelectedCustomer(customer)
       setIsOrderModalOpen(true)
@@ -2960,12 +2946,6 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="team_c">Team C</option>
               <option value="team_d">Team D</option>
             </select>
-            <button
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApplyCustomerFilter}
-            >
-              Áp dụng bộ lọc
-            </button>
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -3035,21 +3015,13 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </CardHeader>
           <CardContent>
             {/* Top metrics */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="bg-green-50 rounded-lg p-4">
                 <p className="text-3xl font-bold text-green-600">39%</p>
                 <p className="text-sm text-gray-600 mt-1">Tỷ lệ quay lại</p>
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   +5.2%
-                </p>
-              </div>
-              <div className="bg-red-50 rounded-lg p-4">
-                <p className="text-3xl font-bold text-red-600">8.5%</p>
-                <p className="text-sm text-gray-600 mt-1">Tỷ lệ rời bỏ</p>
-                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                  <TrendingDown className="w-3 h-3" />
-                  -2.1%
                 </p>
               </div>
               <div className="bg-blue-50 rounded-lg p-4">

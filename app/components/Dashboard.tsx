@@ -18,7 +18,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import EnhancedDashboardFilters from './EnhancedDashboardFilters'
 // import VileadRevenueChart from './VileadRevenueChart'
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void } = {}) {
   // State for time period selection
   const [selectedPeriod, setSelectedPeriod] = useState<'thismonth' | '6months' | '12months' | 'custom'>('thismonth')
   const [showCustomModal, setShowCustomModal] = useState(false)
@@ -418,7 +418,16 @@ export default function Dashboard() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+        <div 
+          className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+          onClick={() => {
+            onNavigate?.('reports')
+            setTimeout(() => {
+              const event = new CustomEvent('setReportTab', { detail: { tab: 'sales' } })
+              window.dispatchEvent(event)
+            }, 100)
+          }}
+        >
           <div className="absolute top-2 right-2">
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
@@ -432,7 +441,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+        <div 
+          className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+          onClick={() => {
+            onNavigate?.('reports')
+            setTimeout(() => {
+              const event = new CustomEvent('setReportTab', { detail: { tab: 'sources' } })
+              window.dispatchEvent(event)
+            }, 100)
+          }}
+        >
           <div className="absolute top-2 right-2">
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
@@ -446,7 +464,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+        <div 
+          className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-orange-600 to-orange-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+          onClick={() => {
+            onNavigate?.('reports')
+            setTimeout(() => {
+              const event = new CustomEvent('setReportTab', { detail: { tab: 'sales' } })
+              window.dispatchEvent(event)
+            }, 100)
+          }}
+        >
           <div className="absolute top-2 right-2">
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
@@ -460,7 +487,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+        <div 
+          className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+          onClick={() => onNavigate?.('tasks')}
+        >
           <div className="absolute top-2 right-2">
             <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
           </div>
@@ -498,7 +528,16 @@ export default function Dashboard() {
           
           {/* Enhanced Summary Cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
+            <div 
+              className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+              onClick={() => {
+                onNavigate?.('reports')
+                setTimeout(() => {
+                  const event = new CustomEvent('setReportTab', { detail: { tab: 'sales', filter: 'today' } })
+                  window.dispatchEvent(event)
+                }, 100)
+              }}
+            >
               <div className="absolute top-2 right-2">
                 <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
               </div>
@@ -658,7 +697,12 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Công việc quan trọng</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">Xem tất cả</button>
+            <button 
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              onClick={() => onNavigate?.('tasks')}
+            >
+              Xem tất cả
+            </button>
           </div>
           
           <div className="space-y-3">
@@ -824,7 +868,18 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Nguồn Leads & Phân tích</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">Chi tiết</button>
+            <button 
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              onClick={() => {
+                onNavigate?.('reports')
+                setTimeout(() => {
+                  const event = new CustomEvent('setReportTab', { detail: { tab: 'sources' } })
+                  window.dispatchEvent(event)
+                }, 100)
+              }}
+            >
+              Xem báo cáo đầy đủ
+            </button>
           </div>
           
           {/* Lead Sources Performance */}
@@ -1171,7 +1226,18 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Top nhân viên kinh doanh</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm">Xem báo cáo đầy đủ</button>
+            <button 
+              className="text-blue-600 hover:text-blue-700 text-sm"
+              onClick={() => {
+                onNavigate?.('reports')
+                setTimeout(() => {
+                  const event = new CustomEvent('setReportTab', { detail: { tab: 'sales' } })
+                  window.dispatchEvent(event)
+                }, 100)
+              }}
+            >
+              Xem báo cáo đầy đủ
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -1216,7 +1282,18 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Top sản phẩm</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm">Xem báo cáo đầy đủ</button>
+            <button 
+              className="text-blue-600 hover:text-blue-700 text-sm"
+              onClick={() => {
+                onNavigate?.('reports')
+                setTimeout(() => {
+                  const event = new CustomEvent('setReportTab', { detail: { tab: 'sales' } })
+                  window.dispatchEvent(event)
+                }, 100)
+              }}
+            >
+              Xem báo cáo đầy đủ
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
