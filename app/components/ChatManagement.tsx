@@ -706,12 +706,10 @@ export default function ChatManagement() {
 
   // Check if a customer already has a connection in the same platform
   const checkExistingConnectionInSamePlatform = (customerId: string, platform: 'zalo-personal' | 'zalo-oa' | 'facebook'): boolean => {
-    for (const [_, connection] of conversationCustomerMap.entries()) {
-      if (connection.customerId === customerId && connection.platform === platform) {
-        return true // Already has a connection in this platform
-      }
-    }
-    return false
+    const connections = Array.from(conversationCustomerMap.values())
+    return connections.some(connection => 
+      connection.customerId === customerId && connection.platform === platform
+    )
   }
 
   // Toggle account connection status
