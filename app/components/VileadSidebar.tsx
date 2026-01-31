@@ -16,7 +16,8 @@ import {
   ChevronRight,
   X,
   CreditCard,
-  MessageSquare
+  MessageSquare,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -111,6 +112,15 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "💬",
       tooltip: "Quản lý Chat: Tin nhắn và hội thoại với khách hàng",
       roles: ["admin", "ceo", "leader", "sale"],
+      disabled: false
+    },
+    {
+      id: 'email-marketing',
+      icon: Mail,
+      label: "Email Marketing",
+      iconText: "📧",
+      tooltip: "Email Marketing: Chiến dịch và mẫu email",
+      roles: ["admin", "leader", "sale"],
       disabled: false
     },
     {
