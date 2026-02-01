@@ -576,7 +576,7 @@ export default function EmailMarketing() {
       const campaign = campaigns.find(c => c.id === campaignId)
       if (campaign) {
         setSelectedCampaign(campaign)
-        setCampaignDetailOpen(true)
+        setShowCampaignDetail(true)
       }
     }
 
