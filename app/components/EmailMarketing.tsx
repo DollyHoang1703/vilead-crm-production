@@ -57,6 +57,13 @@ import {
   Zap
 } from 'lucide-react'
 
+// Import new email configuration components
+import { SenderEmailConfig, EmailLimitsConfig, TemplateLibrary } from './email-marketing'
+import { CampaignList, NormalCampaignEditor, ABCampaignEditor, CampaignDetailModal as CampaignDetailView } from './email-marketing/campaigns'
+import { EmailReportsDashboard } from './email-marketing/reports'
+import { useCampaigns } from './email-marketing/hooks'
+import type { Campaign as CampaignType, CampaignFormData, SendType, BatchSchedule } from './email-marketing/types'
+
 // ==================== INTERFACES ====================
 interface SenderEmail {
   id: string
@@ -451,204 +458,97 @@ export default function EmailMarketing() {
     return matchesSearch && matchesType
   })
 
+  // ==================== CAMPAIGN EDITOR STATE ====================
+  const [showCampaignEditor, setShowCampaignEditor] = useState(false)
+  const [showABEditor, setShowABEditor] = useState(false)
+  const [editingCampaign, setEditingCampaign] = useState<CampaignType | null>(null)
+  const [campaignEditorMode, setCampaignEditorMode] = useState<'create' | 'edit'>('create')
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
+
+  // Campaign hooks for editor actions
+  const campaignsHook = useCampaigns()
+
+  // Handle open campaign editor (normal or A/B)
+  const handleOpenCampaignEditor = (campaign?: CampaignType, mode?: 'create' | 'edit', type?: 'normal' | 'ab') => {
+    setEditingCampaign(campaign || null)
+    setCampaignEditorMode(mode || 'create')
+    if (type === 'ab' || campaign?.type === 'ab') {
+      setShowABEditor(true)
+      setShowCampaignEditor(false)
+    } else {
+      setShowCampaignEditor(true)
+      setShowABEditor(false)
+    }
+  }
+
+  // Handle open A/B editor
+  const handleOpenABEditor = () => {
+    setEditingCampaign(null)
+    setCampaignEditorMode('create')
+    setShowABEditor(true)
+    setShowCampaignEditor(false)
+  }
+
+  // Handle view campaign detail
+  const handleViewCampaignDetail = (campaign: CampaignType) => {
+    setSelectedCampaignId(campaign.id)
+    setShowCampaignDetail(true)
+  }
+
+  // Handle save campaign
+  const handleSaveCampaign = async (data: Partial<CampaignFormData>) => {
+    if (campaignEditorMode === 'create') {
+      return await campaignsHook.createCampaign(data as CampaignFormData)
+    } else if (editingCampaign) {
+      return await campaignsHook.updateCampaign(editingCampaign.id, data as CampaignFormData)
+    }
+    return { success: false, message: 'Invalid state' }
+  }
+
+  // Handle start campaign
+  const handleStartCampaign = async (id: string, sendType: SendType, scheduledAt?: Date | null, batches?: BatchSchedule[]) => {
+    return await campaignsHook.startCampaign(id, sendType, scheduledAt, batches)
+  }
+
   // ==================== RENDER CAMPAIGNS TAB ====================
   const renderCampaignsTab = () => (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Chiến dịch Email</h2>
-          <p className="text-sm text-gray-500 mt-1">Quản lý và theo dõi các chiến dịch email marketing</p>
-        </div>
-        <button
-          onClick={() => setShowCreateCampaignModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tạo chiến dịch mới</span>
-        </button>
-      </div>
-
-      {/* Status Filter Tabs */}
-      <div className="flex items-center space-x-1 border-b border-gray-200">
-        {[
-          { id: 'all', label: 'Tất cả' },
-          { id: 'draft', label: 'Mới' },
-          { id: 'scheduled', label: 'Đang chờ' },
-          { id: 'running', label: 'Đang chạy' },
-          { id: 'paused', label: 'Tạm dừng' },
-          { id: 'sent', label: 'Đã gửi' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setStatusFilter(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              statusFilter === tab.id
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tên chiến dịch..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Campaigns Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tên chiến dịch
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Trạng thái
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ngày tạo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Người nhận
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thành công
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Đã mở
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Đã click
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCampaigns.map((campaign) => (
-              <tr 
-                key={campaign.id} 
-                className={`hover:bg-gray-50 ${campaign.status === 'running' ? 'bg-blue-50' : ''}`}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    {campaign.type === 'ab' && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 mr-2">
-                        A/B
-                      </span>
-                    )}
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                      <div className="text-xs text-gray-500 truncate max-w-[200px]">{campaign.subject}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
-                    {campaign.status === 'running' && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-1.5 animate-pulse"></span>}
-                    {getStatusLabel(campaign.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(campaign.createdAt)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {campaign.validEmailCount.toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {campaign.stats.delivered > 0 ? (
-                    <span className="text-green-600">{campaign.stats.delivered.toLocaleString()}</span>
-                  ) : '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {campaign.stats.opened > 0 ? (
-                    <div className="flex items-center">
-                      <span className="text-blue-600">{campaign.stats.opened.toLocaleString()}</span>
-                      <span className="text-gray-400 ml-1">
-                        ({campaign.stats.delivered > 0 ? Math.round(campaign.stats.opened / campaign.stats.delivered * 100) : 0}%)
-                      </span>
-                    </div>
-                  ) : '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {campaign.stats.clicked > 0 ? (
-                    <div className="flex items-center">
-                      <span className="text-purple-600">{campaign.stats.clicked.toLocaleString()}</span>
-                      <span className="text-gray-400 ml-1">
-                        ({campaign.stats.delivered > 0 ? Math.round(campaign.stats.clicked / campaign.stats.delivered * 100) : 0}%)
-                      </span>
-                    </div>
-                  ) : '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedCampaign(campaign)
-                        setShowCampaignDetail(true)
-                      }}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                      title="Xem chi tiết"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {(campaign.status === 'draft' || campaign.status === 'scheduled') && (
-                      <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded" title="Chỉnh sửa">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    )}
-                    {campaign.status === 'running' && (
-                      <button className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Tạm dừng">
-                        <Pause className="w-4 h-4" />
-                      </button>
-                    )}
-                    {campaign.status === 'paused' && (
-                      <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded" title="Tiếp tục">
-                        <Play className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded" title="Tạo bản sao">
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    {campaign.status === 'draft' && (
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Xóa">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filteredCampaigns.length === 0 && (
-          <div className="text-center py-12">
-            <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Chưa có chiến dịch nào</p>
-            <button
-              onClick={() => setShowCreateCampaignModal(true)}
-              className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              + Tạo chiến dịch đầu tiên
-            </button>
-          </div>
-        )}
-      </div>
+      {showCampaignEditor ? (
+        <NormalCampaignEditor
+          campaign={editingCampaign}
+          mode={campaignEditorMode}
+          onSave={handleSaveCampaign}
+          onStart={handleStartCampaign}
+          onClose={() => {
+            setShowCampaignEditor(false)
+            setEditingCampaign(null)
+          }}
+        />
+      ) : showABEditor ? (
+        <ABCampaignEditor
+          campaign={editingCampaign}
+          onClose={() => {
+            setShowABEditor(false)
+            setEditingCampaign(null)
+          }}
+          onSave={(campaign) => {
+            campaignsHook.createCampaign(campaign as any)
+            setShowABEditor(false)
+            setEditingCampaign(null)
+          }}
+          onStart={(campaign) => {
+            campaignsHook.createCampaign(campaign as any)
+            setShowABEditor(false)
+            setEditingCampaign(null)
+          }}
+        />
+      ) : (
+        <CampaignList
+          onOpenEditor={handleOpenCampaignEditor}
+          onOpenABEditor={handleOpenABEditor}
+          onViewStats={handleViewCampaignDetail}
+        />
+      )}
     </div>
   )
 
@@ -663,371 +563,30 @@ export default function EmailMarketing() {
         </div>
       </div>
 
-      {/* Template Type Tabs */}
-      <div className="flex items-center space-x-1 border-b border-gray-200">
-        <button
-          onClick={() => setTemplateTab('system')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            templateTab === 'system'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Mẫu Email có sẵn
-        </button>
-        <button
-          onClick={() => setTemplateTab('user')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            templateTab === 'user'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          Mẫu Email của bạn
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Tìm kiếm theo tên mẫu..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Template Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {/* Create New Template Card */}
-        {templateTab === 'user' && (
-          <div className="group relative bg-white border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[280px]">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-              <Plus className="w-8 h-8 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Tạo mẫu mới</h3>
-            <p className="text-sm text-gray-500 text-center">Thỏa sức sáng tạo nội dung email của bạn</p>
-          </div>
-        )}
-
-        {/* Template Cards */}
-        {filteredTemplates.map((template) => (
-          <div
-            key={template.id}
-            className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all"
-          >
-            {/* Thumbnail */}
-            <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full h-full p-4 flex items-center justify-center">
-                  <div className="w-full h-full bg-white rounded shadow-sm border flex flex-col p-3">
-                    <div className="h-3 w-3/4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-2 w-full bg-gray-100 rounded mb-1"></div>
-                    <div className="h-2 w-5/6 bg-gray-100 rounded mb-1"></div>
-                    <div className="h-2 w-4/6 bg-gray-100 rounded mb-3"></div>
-                    <div className="h-6 w-1/3 bg-blue-500 rounded mt-auto"></div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Hover Actions */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                <button
-                  onClick={() => {
-                    setSelectedTemplate(template)
-                    setShowTemplatePreview(true)
-                  }}
-                  className="px-3 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>Xem trước</span>
-                </button>
-                <button className="px-3 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-1">
-                  <Copy className="w-4 h-4" />
-                  <span>Tạo bản sao</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Template Info */}
-            <div className="p-4">
-              <h3 className="font-medium text-gray-900 truncate">{template.name}</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                {template.type === 'system' ? 'Mẫu hệ thống' : `Cập nhật: ${formatDate(template.updatedAt)}`}
-              </p>
-            </div>
-
-            {/* User Template Actions */}
-            {template.type === 'user' && (
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center space-x-1">
-                  <button className="p-1.5 bg-white rounded-lg shadow hover:bg-gray-100" title="Chỉnh sửa">
-                    <Edit className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button className="p-1.5 bg-white rounded-lg shadow hover:bg-red-50" title="Xóa">
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {filteredTemplates.length === 0 && templateTab === 'user' && (
-        <div className="text-center py-12 bg-gray-50 rounded-xl">
-          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 mb-2">Bạn chưa có mẫu email nào</p>
-          <p className="text-sm text-gray-400">Tạo mẫu mới hoặc sao chép từ mẫu có sẵn</p>
-        </div>
-      )}
+      {/* Template Library Component */}
+      <TemplateLibrary />
     </div>
   )
 
-  // ==================== RENDER REPORTS TAB ====================
+  // ==================== RENDER REPORTS TAB (Enhanced - Task 10.5) ====================
   const renderReportsTab = () => {
-    const totalSent = campaigns.reduce((sum, c) => sum + c.stats.totalSent, 0)
-    const totalDelivered = campaigns.reduce((sum, c) => sum + c.stats.delivered, 0)
-    const totalOpened = campaigns.reduce((sum, c) => sum + c.stats.opened, 0)
-    const totalClicked = campaigns.reduce((sum, c) => sum + c.stats.clicked, 0)
-    const totalBounced = campaigns.reduce((sum, c) => sum + c.stats.bounced, 0)
-    
-    const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent * 100) : 0
-    const openRate = totalDelivered > 0 ? (totalOpened / totalDelivered * 100) : 0
-    const clickRate = totalDelivered > 0 ? (totalClicked / totalDelivered * 100) : 0
-    const bounceRate = totalSent > 0 ? (totalBounced / totalSent * 100) : 0
+    // Handler to navigate to campaign detail when clicking on a campaign in reports
+    const handleViewCampaignFromReport = (campaignId: string) => {
+      // Find the campaign and open detail view
+      const campaign = campaigns.find(c => c.id === campaignId)
+      if (campaign) {
+        setSelectedCampaign(campaign)
+        setCampaignDetailOpen(true)
+      }
+    }
 
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Báo cáo chất lượng Email</h2>
-            <p className="text-sm text-gray-500 mt-1">Thống kê và phân tích hiệu quả chiến dịch email</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-              <option>Tháng này</option>
-              <option>Tuần này</option>
-              <option>7 ngày qua</option>
-              <option>30 ngày qua</option>
-              <option>Quý này</option>
-            </select>
-            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
-              <Download className="w-4 h-4" />
-              <span>Xuất báo cáo</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Tổng gửi</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{totalSent.toLocaleString()}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Send className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <div className="flex items-center mt-2 text-xs">
-              <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-              <span className="text-green-600">+15%</span>
-              <span className="text-gray-400 ml-1">so với kỳ trước</span>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Thành công</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">{deliveryRate.toFixed(1)}%</p>
-              </div>
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <div className="flex items-center mt-2 text-xs">
-              <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-              <span className="text-green-600">+0.5%</span>
-              <span className="text-gray-400 ml-1">so với kỳ trước</span>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Tỷ lệ mở</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">{openRate.toFixed(1)}%</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <MailOpen className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-            <div className="flex items-center mt-2 text-xs">
-              <TrendingDown className="w-3 h-3 text-red-500 mr-1" />
-              <span className="text-red-600">-2.1%</span>
-              <span className="text-gray-400 ml-1">so với kỳ trước</span>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Tỷ lệ click</p>
-                <p className="text-2xl font-bold text-purple-600 mt-1">{clickRate.toFixed(1)}%</p>
-              </div>
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <MousePointer className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <div className="flex items-center mt-2 text-xs">
-              <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
-              <span className="text-green-600">+1.2%</span>
-              <span className="text-gray-400 ml-1">so với kỳ trước</span>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Tỷ lệ bounce</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">{bounceRate.toFixed(1)}%</p>
-              </div>
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-            </div>
-            <div className="flex items-center mt-2 text-xs">
-              <TrendingDown className="w-3 h-3 text-green-500 mr-1" />
-              <span className="text-green-600">-0.3%</span>
-              <span className="text-gray-400 ml-1">so với kỳ trước</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Trend Chart */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xu hướng theo ngày</h3>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">Biểu đồ xu hướng</p>
-                <p className="text-gray-400 text-xs">(Tích hợp chart library sau)</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">Đã gửi</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">Đã mở</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                <span className="text-gray-600">Đã click</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Campaign Comparison */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">So sánh chiến dịch</h3>
-            <div className="space-y-4">
-              {campaigns.filter(c => c.stats.totalSent > 0).slice(0, 5).map((campaign, index) => (
-                <div key={campaign.id} className="flex items-center">
-                  <div className="w-32 truncate text-sm text-gray-600">{campaign.name}</div>
-                  <div className="flex-1 mx-4">
-                    <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
-                      <div 
-                        className="bg-green-500 h-full"
-                        style={{ width: `${campaign.stats.delivered / campaign.stats.totalSent * 100}%` }}
-                      ></div>
-                      <div 
-                        className="bg-red-500 h-full"
-                        style={{ width: `${campaign.stats.bounced / campaign.stats.totalSent * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div className="w-20 text-right text-sm">
-                    <span className="text-green-600 font-medium">
-                      {Math.round(campaign.stats.delivered / campaign.stats.totalSent * 100)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Chi tiết theo chiến dịch</h3>
-            <button className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700">
-              <Download className="w-4 h-4" />
-              <span>Xuất Excel</span>
-            </button>
-          </div>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chiến dịch</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Đã gửi</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Thành công</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Đã mở</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Đã click</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Bounce</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unsubscribe</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {campaigns.filter(c => c.stats.totalSent > 0).map((campaign) => (
-                <tr key={campaign.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{campaign.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 text-right">{campaign.stats.totalSent.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-sm text-green-600 text-right">
-                    {campaign.stats.delivered.toLocaleString()}
-                    <span className="text-gray-400 ml-1">
-                      ({Math.round(campaign.stats.delivered / campaign.stats.totalSent * 100)}%)
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-blue-600 text-right">
-                    {campaign.stats.opened.toLocaleString()}
-                    <span className="text-gray-400 ml-1">
-                      ({Math.round(campaign.stats.opened / campaign.stats.delivered * 100)}%)
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-purple-600 text-right">
-                    {campaign.stats.clicked.toLocaleString()}
-                    <span className="text-gray-400 ml-1">
-                      ({Math.round(campaign.stats.clicked / campaign.stats.delivered * 100)}%)
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-red-600 text-right">
-                    {campaign.stats.bounced.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-orange-600 text-right">
-                    {campaign.stats.unsubscribed}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <EmailReportsDashboard onViewCampaign={handleViewCampaignFromReport} />
     )
   }
 
   // ==================== RENDER SETTINGS TAB ====================
+  // ==================== RENDER SETTINGS TAB (Enhanced) ====================
   const renderSettingsTab = () => (
     <div className="space-y-6">
       {/* Header */}
@@ -1040,7 +599,7 @@ export default function EmailMarketing() {
       <div className="flex items-center space-x-1 border-b border-gray-200">
         <button
           onClick={() => setSettingsTab('sender')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             settingsTab === 'sender'
               ? 'border-blue-500 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1050,7 +609,7 @@ export default function EmailMarketing() {
         </button>
         <button
           onClick={() => setSettingsTab('limits')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             settingsTab === 'limits'
               ? 'border-blue-500 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1060,167 +619,11 @@ export default function EmailMarketing() {
         </button>
       </div>
 
-      {/* Sender Emails */}
-      {settingsTab === 'sender' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">Quản lý danh sách email dùng để gửi chiến dịch</p>
-            <button
-              onClick={() => setShowAddSenderModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Thêm mới</span>
-            </button>
-          </div>
+      {/* Sender Emails - Using Enhanced Component */}
+      {settingsTab === 'sender' && <SenderEmailConfig />}
 
-          {/* Sender Emails Table */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Người gửi</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quyền sử dụng</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {senderEmails.map((sender) => (
-                  <tr key={sender.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{sender.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{sender.senderName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sender.createdAt)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(sender.status)}`}>
-                        {getStatusLabel(sender.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {sender.permission === 'all' ? 'Toàn bộ thành viên' : 
-                       sender.permission === 'me' ? 'Chỉ tôi' : 'Thành viên cụ thể'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Chỉnh sửa">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {sender.status === 'pending' && (
-                          <button className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded" title="Gửi lại xác thực">
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Xóa">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Email Limits */}
-      {settingsTab === 'limits' && (
-        <div className="space-y-6 max-w-2xl">
-          {/* Daily Limit */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="font-medium text-gray-900 mb-4">Giới hạn gửi theo ngày</h3>
-            <div className="flex items-center space-x-4 mb-3">
-              <input
-                type="number"
-                value={emailLimits.dailyLimit}
-                onChange={(e) => setEmailLimits({...emailLimits, dailyLimit: parseInt(e.target.value)})}
-                className="w-32 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-600">email/ngày</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Đã sử dụng hôm nay:</span>
-                <span className="font-medium">{emailLimits.dailyUsed} / {emailLimits.dailyLimit}</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all ${
-                    emailLimits.dailyUsed / emailLimits.dailyLimit > 0.9 ? 'bg-red-500' :
-                    emailLimits.dailyUsed / emailLimits.dailyLimit > 0.8 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${(emailLimits.dailyUsed / emailLimits.dailyLimit) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-gray-500">{Math.round(emailLimits.dailyUsed / emailLimits.dailyLimit * 100)}% đã sử dụng</p>
-            </div>
-          </div>
-
-          {/* Monthly Limit */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="font-medium text-gray-900 mb-4">Giới hạn gửi theo tháng</h3>
-            <div className="flex items-center space-x-4 mb-3">
-              <input
-                type="number"
-                value={emailLimits.monthlyLimit}
-                onChange={(e) => setEmailLimits({...emailLimits, monthlyLimit: parseInt(e.target.value)})}
-                className="w-32 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-600">email/tháng</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Đã sử dụng tháng này:</span>
-                <span className="font-medium">{emailLimits.monthlyUsed.toLocaleString()} / {emailLimits.monthlyLimit.toLocaleString()}</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all ${
-                    emailLimits.monthlyUsed / emailLimits.monthlyLimit > 0.9 ? 'bg-red-500' :
-                    emailLimits.monthlyUsed / emailLimits.monthlyLimit > 0.8 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${(emailLimits.monthlyUsed / emailLimits.monthlyLimit) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-gray-500">{Math.round(emailLimits.monthlyUsed / emailLimits.monthlyLimit * 100)}% đã sử dụng</p>
-            </div>
-          </div>
-
-          {/* Per Sender Limit */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="font-medium text-gray-900 mb-4">Giới hạn theo email người gửi</h3>
-            <div className="flex items-center space-x-4">
-              <input
-                type="number"
-                value={emailLimits.perSenderDailyLimit}
-                onChange={(e) => setEmailLimits({...emailLimits, perSenderDailyLimit: parseInt(e.target.value)})}
-                className="w-32 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-600">email/ngày/email gửi</span>
-            </div>
-          </div>
-
-          {/* Delay Between Emails */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <h3 className="font-medium text-gray-900 mb-4">Khoảng cách giữa các email</h3>
-            <div className="flex items-center space-x-4">
-              <input
-                type="number"
-                value={emailLimits.delayBetweenEmails}
-                onChange={(e) => setEmailLimits({...emailLimits, delayBetweenEmails: parseInt(e.target.value)})}
-                className="w-32 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-gray-600">giây</span>
-            </div>
-          </div>
-
-          <button className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-            Lưu thay đổi
-          </button>
-        </div>
-      )}
+      {/* Email Limits - Using Enhanced Component */}
+      {settingsTab === 'limits' && <EmailLimitsConfig />}
     </div>
   )
 
@@ -1579,7 +982,15 @@ export default function EmailMarketing() {
       {showCreateCampaignModal && <CreateCampaignModal />}
       {showAddSenderModal && <AddSenderModal />}
       {showTemplatePreview && selectedTemplate && <TemplatePreviewModal />}
-      {showCampaignDetail && selectedCampaign && <CampaignDetailModal />}
+      {showCampaignDetail && selectedCampaignId && (
+        <CampaignDetailView
+          campaignId={selectedCampaignId}
+          onClose={() => {
+            setShowCampaignDetail(false)
+            setSelectedCampaignId(null)
+          }}
+        />
+      )}
     </div>
   )
 }
