@@ -700,9 +700,17 @@ export default function ChatManagement() {
   const [customerConnectionCount, setCustomerConnectionCount] = useState<Map<string, CustomerConnectionCount>>(new Map())
   const [selectedLeadDetail, setSelectedLeadDetail] = useState<CRMCustomer | null>(null)
   const [leadDetailTab, setLeadDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
+  
+  // Chat input expansion and attachment states
+  const [isInputExpanded, setIsInputExpanded] = useState(false)
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
 
   const messageScrollRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Check if a customer already has a connection in the same platform
   const checkExistingConnectionInSamePlatform = (customerId: string, platform: 'zalo-personal' | 'zalo-oa' | 'facebook'): boolean => {
@@ -824,6 +832,64 @@ export default function ChatManagement() {
     })
 
     setNewNote('')
+  }
+
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      const newImages = Array.from(files)
+      setSelectedImages(prev => [...prev, ...newImages])
+      
+      // Create preview URLs
+      newImages.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setImagePreviewUrls(prev => [...prev, e.target?.result as string])
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+    // Reset input
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      const newFiles = Array.from(files)
+      setSelectedFiles(prev => [...prev, ...newFiles])
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // Remove selected image
+  const removeSelectedImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Remove selected file
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Toggle input expansion
+  const toggleInputExpansion = () => {
+    setIsInputExpanded(prev => !prev)
+  }
+
+  // Clear all attachments
+  const clearAttachments = () => {
+    setSelectedImages([])
+    setSelectedFiles([])
+    setImagePreviewUrls([])
   }
 
   // Filter conversations
@@ -1417,7 +1483,10 @@ export default function ChatManagement() {
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 bg-white" ref={messageScrollRef}>
+              <div className={cn(
+                "overflow-y-auto p-4 bg-white transition-all duration-300",
+                isInputExpanded ? "flex-shrink-0 h-[120px] border-b border-gray-100" : "flex-1"
+              )} ref={messageScrollRef}>
                 {groupMessagesByDate(messages).map((group, groupIdx) => (
                   <div key={groupIdx}>
                     {/* Messages - Group consecutive messages from same sender */}
@@ -1478,20 +1547,108 @@ export default function ChatManagement() {
               </div>
 
               {/* Message Input - Fixed at bottom */}
-              <div className="border-t border-gray-200 bg-white flex-shrink-0">
+              <div className={cn(
+                "border-t border-gray-200 bg-white transition-all duration-300",
+                isInputExpanded ? "flex-1 flex flex-col min-h-0" : "flex-shrink-0"
+              )}>
+                {/* Hidden file inputs */}
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  multiple
+                  className="hidden"
+                />
+
                 {/* Message Writer Container */}
-                <div className="p-3">
+                <div className={cn("p-3", isInputExpanded && "flex-1 flex flex-col min-h-0")}>
+                  {/* Expanded Header */}
+                  {isInputExpanded && (
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
+                      <span className="text-sm font-medium text-gray-700">Soạn tin nhắn</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleInputExpansion}
+                        className="h-8 w-8 p-0 hover:bg-gray-100"
+                        title="Thu nhỏ"
+                      >
+                        <X className="w-4 h-4 text-gray-600" />
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Input Chat Box Container */}
-                  <div className="border border-gray-200 rounded-lg bg-white">
+                  <div className={cn(
+                    "border border-gray-200 rounded-lg bg-white",
+                    isInputExpanded && "flex-1 flex flex-col min-h-0"
+                  )}>
+                    {/* Attachments Preview */}
+                    {(selectedImages.length > 0 || selectedFiles.length > 0) && (
+                      <div className="p-2 border-b border-gray-100">
+                        {/* Image Previews */}
+                        {selectedImages.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {imagePreviewUrls.map((url, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={url}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                />
+                                <button
+                                  onClick={() => removeSelectedImage(index)}
+                                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* File Previews */}
+                        {selectedFiles.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedFiles.map((file, index) => (
+                              <div key={index} className="flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-lg group">
+                                <Paperclip className="w-3 h-3 text-gray-500" />
+                                <span className="text-xs text-gray-700 max-w-[100px] truncate">{file.name}</span>
+                                <button
+                                  onClick={() => removeSelectedFile(index)}
+                                  className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Large Textarea Editor Area */}
-                    <div className="min-h-[100px] max-h-[200px] overflow-y-auto">
+                    <div className={cn(
+                      "overflow-y-auto",
+                      isInputExpanded ? "flex-1 min-h-0" : "min-h-[100px] max-h-[200px]"
+                    )}>
                       <Textarea
                         placeholder="Nhập tin nhắn..."
                         value={messageInput}
                         onChange={(e) => setMessageInput(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        className="w-full resize-none min-h-[100px] border-0 focus-visible:ring-0 text-sm p-3"
-                        rows={4}
+                        className={cn(
+                          "w-full resize-none border-0 focus-visible:ring-0 text-sm p-3",
+                          isInputExpanded ? "h-full min-h-full" : "min-h-[100px]"
+                        )}
+                        rows={isInputExpanded ? 15 : 4}
                       />
                     </div>
 
@@ -1502,19 +1659,33 @@ export default function ChatManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-50"
+                          className={cn(
+                            "h-8 w-8 p-0 hover:bg-gray-50",
+                            selectedImages.length > 0 && "bg-blue-50 text-blue-600"
+                          )}
                           title="Gửi hình ảnh"
+                          onClick={() => imageInputRef.current?.click()}
                         >
-                          <ImageIcon className="w-4 h-4 text-gray-600" />
+                          <ImageIcon className={cn(
+                            "w-4 h-4",
+                            selectedImages.length > 0 ? "text-blue-600" : "text-gray-600"
+                          )} />
                         </Button>
 
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-50"
+                          className={cn(
+                            "h-8 w-8 p-0 hover:bg-gray-50",
+                            selectedFiles.length > 0 && "bg-blue-50 text-blue-600"
+                          )}
                           title="Tải lên tệp"
+                          onClick={() => fileInputRef.current?.click()}
                         >
-                          <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="64 64 896 896">
+                          <svg className={cn(
+                            "w-4 h-4",
+                            selectedFiles.length > 0 ? "text-blue-600" : "text-gray-600"
+                          )} fill="currentColor" viewBox="64 64 896 896">
                             <path d="M400 317.7h73.9V656c0 4.4 3.6 8 8 8h60c4.4 0 8-3.6 8-8V317.7H624c6.7 0 10.4-7.7 6.3-12.9L518.3 163a8 8 0 00-12.6 0l-112 141.7c-4.1 5.3-.4 13 6.3 13zM878 626h-60c-4.4 0-8 3.6-8 8v154H214V634c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v198c0 17.7 14.3 32 32 32h684c17.7 0 32-14.3 32-32V634c0-4.4-3.6-8-8-8z" />
                           </svg>
                         </Button>
@@ -1522,42 +1693,44 @@ export default function ChatManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-50"
-                          title="Highlight/Vẽ"
+                          className={cn(
+                            "h-8 w-8 p-0 hover:bg-gray-50",
+                            isInputExpanded && "bg-blue-50"
+                          )}
+                          title={isInputExpanded ? "Thu nhỏ" : "Mở rộng"}
+                          onClick={toggleInputExpansion}
                         >
-                          <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="64 64 896 896">
-                            <path d="M957.6 507.4L603.2 158.2a7.9 7.9 0 00-11.2 0L353.3 393.4a8.03 8.03 0 00-.1 11.3l.1.1 40 39.4-117.2 115.3a8.03 8.03 0 00-.1 11.3l.1.1 39.5 38.9-189.1 187H72.1c-4.4 0-8.1 3.6-8.1 8V860c0 4.4 3.6 8 8 8h344.9c2.1 0 4.1-.8 5.6-2.3l76.1-75.6 40.4 39.8a7.9 7.9 0 0011.2 0l117.1-115.6 40.1 39.5a7.9 7.9 0 0011.2 0l238.7-235.2c3.4-3 3.4-8 .3-11.2zM389.8 796.2H229.6l134.4-133 80.1 78.9-54.3 54.1zm154.8-62.1L373.2 565.2l68.6-67.6 171.4 168.9-68.6 67.6zM713.1 658L450.3 399.1 597.6 254l262.8 259-147.3 145z" />
-                          </svg>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-50"
-                          title="Mở rộng"
-                        >
-                          <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="64 64 896 896">
-                            <path d="M855 160.1l-189.2 23.5c-6.6.8-9.3 8.8-4.7 13.5l54.7 54.7-153.5 153.5a8.03 8.03 0 000 11.3l45.1 45.1c3.1 3.1 8.2 3.1 11.3 0l153.6-153.6 54.7 54.7a7.94 7.94 0 0013.5-4.7L863.9 169a7.9 7.9 0 00-8.9-8.9zM416.6 562.3a8.03 8.03 0 00-11.3 0L251.8 715.9l-54.7-54.7a7.94 7.94 0 00-13.5 4.7L160.1 855c-.6 5.2 3.7 9.5 8.9 8.9l189.2-23.5c6.6-.8 9.3-8.8 4.7-13.5l-54.7-54.7 153.6-153.6c3.1-3.1 3.1-8.2 0-11.3l-45.2-45z" />
-                          </svg>
+                          {isInputExpanded ? (
+                            <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="64 64 896 896">
+                              <path d="M881 442.4H519.7v-148c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v148H92c-4.4 0-8 3.6-8 8v60c0 4.4 3.6 8 8 8h351.7v148c0 4.4 3.6 8 8 8h60c4.4 0 8-3.6 8-8v-148H881c4.4 0 8-3.6 8-8v-60c0-4.4-3.6-8-8-8zM319.5 650.3L136 827.9l-0.1-141.4c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v232c0.1 6 4.4 11.8 10 13.4l0.4 0.1c1.6 0.4 3.2 0.5 4.8 0.5h232c4.4 0 8-3.6 8-8v-60c0-4.4-3.6-8-8-8H165.9l183.5-177.6c3.1-3 3.2-8 0.2-11.2l-42.4-43.4c-3.1-3.2-8.2-3.2-11.3-0.2l0 0zM703.5 373.7L887 196.1l0.1 141.4c0 4.4 3.6 8 8 8h60c4.4 0 8-3.6 8-8v-232c-0.1-6-4.4-11.8-10-13.4l-0.4-0.1c-1.6-0.4-3.2-0.5-4.8-0.5h-232c-4.4 0-8 3.6-8 8v60c0 4.4 3.6 8 8 8h141.1L674.3 337.5c-3.1 3-3.2 8-0.2 11.2l42.4 43.4c3.1 3.2 8.2 3.2 11.3 0.2l0 0z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="64 64 896 896">
+                              <path d="M855 160.1l-189.2 23.5c-6.6.8-9.3 8.8-4.7 13.5l54.7 54.7-153.5 153.5a8.03 8.03 0 000 11.3l45.1 45.1c3.1 3.1 8.2 3.1 11.3 0l153.6-153.6 54.7 54.7a7.94 7.94 0 0013.5-4.7L863.9 169a7.9 7.9 0 00-8.9-8.9zM416.6 562.3a8.03 8.03 0 00-11.3 0L251.8 715.9l-54.7-54.7a7.94 7.94 0 00-13.5 4.7L160.1 855c-.6 5.2 3.7 9.5 8.9 8.9l189.2-23.5c6.6-.8 9.3-8.8 4.7-13.5l-54.7-54.7 153.6-153.6c3.1-3.1 3.1-8.2 0-11.3l-45.2-45z" />
+                            </svg>
+                          )}
                         </Button>
                       </div>
 
                       {/* Right Actions */}
                       <div className="flex items-center gap-2">
-                        {/* <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-gray-50"
-                          title="Trợ lý AI"
-                        >
-                          <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                          </svg>
-                        </Button> */}
+                        {/* Clear attachments button */}
+                        {(selectedImages.length > 0 || selectedFiles.length > 0) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAttachments}
+                            className="h-8 px-2 text-xs text-gray-500 hover:text-red-500"
+                            title="Xóa tất cả đính kèm"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Xóa đính kèm
+                          </Button>
+                        )}
 
                         <Button
                           onClick={handleSendMessage}
-                          disabled={!messageInput.trim()}
+                          disabled={!messageInput.trim() && selectedImages.length === 0 && selectedFiles.length === 0}
                           className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Gửi tin nhắn"
                         >

@@ -57,7 +57,7 @@ export default function EmailLimitsConfig() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6">
       {/* Toast Notification */}
       {toast.show && (
         <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg bg-green-500 text-white flex items-center space-x-2 animate-slide-in">
@@ -71,75 +71,78 @@ export default function EmailLimitsConfig() {
         Cấu hình giới hạn gửi email để tối ưu hóa hiệu suất và tránh bị đánh dấu spam
       </p>
 
-      {/* Daily Limit */}
-      <LimitCard
-        title="Giới hạn gửi theo ngày"
-        value={formData.daily_limit}
-        onChange={(value) => setFormData({ ...formData, daily_limit: value })}
-        unit="email/ngày"
-        usage={usage?.daily}
-        min={100}
-        max={10000}
-        description="Số lượng email tối đa có thể gửi trong một ngày"
-        resetTime={usage?.reset_daily_in}
-      />
+      {/* 2x2 Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Row 1, Col 1: Daily Limit */}
+        <LimitCard
+          title="Giới hạn gửi theo ngày"
+          value={formData.daily_limit}
+          onChange={(value) => setFormData({ ...formData, daily_limit: value })}
+          unit="email/ngày"
+          usage={usage?.daily}
+          min={100}
+          max={10000}
+          description="Số lượng email tối đa có thể gửi trong một ngày"
+          resetTime={usage?.reset_daily_in}
+        />
 
-      {/* Monthly Limit */}
-      <LimitCard
-        title="Giới hạn gửi theo tháng"
-        value={formData.monthly_limit}
-        onChange={(value) => setFormData({ ...formData, monthly_limit: value })}
-        unit="email/tháng"
-        usage={usage?.monthly}
-        min={1000}
-        max={100000}
-        description="Số lượng email tối đa có thể gửi trong một tháng"
-        resetTime={usage?.reset_monthly_in}
-      />
+        {/* Row 1, Col 2: Monthly Limit */}
+        <LimitCard
+          title="Giới hạn gửi theo tháng"
+          value={formData.monthly_limit}
+          onChange={(value) => setFormData({ ...formData, monthly_limit: value })}
+          unit="email/tháng"
+          usage={usage?.monthly}
+          min={1000}
+          max={100000}
+          description="Số lượng email tối đa có thể gửi trong một tháng"
+          resetTime={usage?.reset_monthly_in}
+        />
 
-      {/* Per Sender Limit */}
-      <LimitCard
-        title="Giới hạn theo email người gửi"
-        value={formData.per_sender_daily_limit}
-        onChange={(value) => setFormData({ ...formData, per_sender_daily_limit: value })}
-        unit="email/ngày/email gửi"
-        min={10}
-        max={1000}
-        description="Số lượng email tối đa mỗi địa chỉ email người gửi có thể gửi trong một ngày"
-      />
+        {/* Row 2, Col 1: Per Sender Limit */}
+        <LimitCard
+          title="Giới hạn theo email người gửi"
+          value={formData.per_sender_daily_limit}
+          onChange={(value) => setFormData({ ...formData, per_sender_daily_limit: value })}
+          unit="email/ngày/email gửi"
+          min={10}
+          max={1000}
+          description="Số lượng email tối đa mỗi địa chỉ email người gửi có thể gửi trong một ngày"
+        />
 
-      {/* Delay Between Emails */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h3 className="font-medium text-gray-900 mb-4">Khoảng cách giữa các email</h3>
-        
-        <div className="flex items-center gap-4 mb-3">
-          <input
-            type="number"
-            value={formData.delay_between_emails}
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || 0
-              if (value >= 1 && value <= 60) {
-                setFormData({ ...formData, delay_between_emails: value })
-              }
-            }}
-            min={1}
-            max={60}
-            className="w-32 px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-medium"
-          />
-          <span className="text-gray-600">giây</span>
-        </div>
-        
-        <p className="text-sm text-gray-500">
-          Thời gian chờ tối thiểu giữa mỗi email gửi đi. Giá trị từ 1-60 giây.
-          Tăng thời gian chờ giúp giảm nguy cơ bị đánh dấu spam.
-        </p>
-        
-        {/* Delay visualization */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700">
-            💡 Với cấu hình hiện tại, hệ thống có thể gửi tối đa{' '}
-            <strong>{Math.floor(3600 / formData.delay_between_emails)}</strong> email/giờ
+        {/* Row 2, Col 2: Delay Between Emails */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="font-medium text-gray-900 mb-4">Khoảng cách giữa các email</h3>
+          
+          <div className="flex items-center gap-4 mb-3">
+            <input
+              type="number"
+              value={formData.delay_between_emails}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 0
+                if (value >= 1 && value <= 60) {
+                  setFormData({ ...formData, delay_between_emails: value })
+                }
+              }}
+              min={1}
+              max={60}
+              className="w-32 px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right font-medium"
+            />
+            <span className="text-gray-600">giây</span>
+          </div>
+          
+          <p className="text-sm text-gray-500">
+            Thời gian chờ tối thiểu giữa mỗi email gửi đi. Giá trị từ 1-60 giây.
+            Tăng thời gian chờ giúp giảm nguy cơ bị đánh dấu spam.
           </p>
+          
+          {/* Delay visualization */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700">
+              💡 Với cấu hình hiện tại, hệ thống có thể gửi tối đa{' '}
+              <strong>{Math.floor(3600 / formData.delay_between_emails)}</strong> email/giờ
+            </p>
+          </div>
         </div>
       </div>
 

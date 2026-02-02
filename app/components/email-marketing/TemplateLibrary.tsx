@@ -10,7 +10,8 @@ import {
   User, 
   Inbox,
   FileCode,
-  RefreshCw
+  RefreshCw,
+  Mail
 } from 'lucide-react';
 import { useTemplates } from './hooks';
 import { TemplateCard, CreateNewTemplateCard } from './TemplateCard';
@@ -83,6 +84,17 @@ export function TemplateLibrary() {
         >
           <Folder className="w-4 h-4" />
           Mẫu Email có sẵn
+        </button>
+        <button
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'notification'
+              ? 'text-indigo-600 border-indigo-600'
+              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+          }`}
+          onClick={() => setActiveTab('notification')}
+        >
+          <Mail className="w-4 h-4" />
+          Mẫu email hệ thống
         </button>
         <button
           className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -166,17 +178,21 @@ export function TemplateLibrary() {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {activeTab === 'user' 
               ? 'Bạn chưa có mẫu email nào' 
-              : searchQuery 
-                ? 'Không tìm thấy mẫu' 
-                : 'Chưa có mẫu email có sẵn'
+              : activeTab === 'notification'
+                ? searchQuery ? 'Không tìm thấy mẫu' : 'Chưa có mẫu email hệ thống'
+                : searchQuery 
+                  ? 'Không tìm thấy mẫu' 
+                  : 'Chưa có mẫu email có sẵn'
             }
           </h3>
           <p className="text-gray-500 mb-6 max-w-sm">
             {activeTab === 'user' 
               ? 'Tạo mẫu đầu tiên hoặc clone từ mẫu có sẵn' 
-              : searchQuery 
-                ? 'Thử tìm với từ khóa khác' 
-                : 'Hệ thống sẽ cập nhật mẫu có sẵn sớm'
+              : activeTab === 'notification'
+                ? searchQuery ? 'Thử tìm với từ khóa khác' : 'Các mẫu email thông báo hệ thống (OTP, đổi mật khẩu, v.v.)'
+                : searchQuery 
+                  ? 'Thử tìm với từ khóa khác' 
+                  : 'Hệ thống sẽ cập nhật mẫu có sẵn sớm'
             }
           </p>
           {activeTab === 'user' && (

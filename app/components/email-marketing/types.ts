@@ -144,7 +144,7 @@ export interface TemplateVersion {
 export interface EmailTemplate {
   id: string;
   name: string;
-  type: 'system' | 'user';
+  type: 'system' | 'user' | 'notification';
   
   // Content
   content_html: string;
@@ -181,7 +181,7 @@ export interface TemplateVariable {
 
 export interface TemplatesFilters {
   search: string;
-  activeTab: 'system' | 'user';
+  activeTab: 'system' | 'user' | 'notification';
 }
 
 export interface CreateTemplateFormData {

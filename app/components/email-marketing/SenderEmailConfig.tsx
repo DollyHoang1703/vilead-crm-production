@@ -49,6 +49,20 @@ export default function SenderEmailConfig() {
     type: 'success'
   })
 
+  const [openDropdownId, setOpenDropdownId] = React.useState<string | null>(null)
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.action-dropdown')) {
+        setOpenDropdownId(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ show: true, message, type })
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000)
@@ -216,71 +230,96 @@ export default function SenderEmailConfig() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end space-x-1">
-                        {canEdit && (
+                      <div className="flex items-center justify-end">
+                        {/* Dropdown Menu for all actions */}
+                        <div className="relative action-dropdown">
                           <button
-                            onClick={() => {
-                              setSelectedEmail(email)
-                              toggleModal('edit', true)
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setOpenDropdownId(openDropdownId === email.id ? null : email.id)
                             }}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        )}
-                        
-                        {/* Dropdown Menu for more actions */}
-                        <div className="relative group">
-                          <button
                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 hidden group-hover:block">
-                            {canResend && (
-                              <button
-                                onClick={() => handleResendVerification(email.id)}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                              >
-                                <RefreshCw className="w-4 h-4 mr-3 text-gray-400" />
-                                Gửi lại xác thực
-                              </button>
-                            )}
-                            {canDisable && (
-                              <button
-                                onClick={() => handleDisableEmail(email.id)}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                              >
-                                <Ban className="w-4 h-4 mr-3 text-gray-400" />
-                                Vô hiệu hóa
-                              </button>
-                            )}
-                            {canEnable && (
-                              <button
-                                onClick={() => handleEnableEmail(email.id)}
-                                className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-3" />
-                                Kích hoạt lại
-                              </button>
-                            )}
-                            {canDelete && (
-                              <>
-                                <div className="border-t border-gray-100 my-1"></div>
+                          {openDropdownId === email.id && (
+                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                              {/* Chỉnh sửa */}
+                              {canEdit && (
                                 <button
                                   onClick={() => {
                                     setSelectedEmail(email)
-                                    toggleModal('delete', true)
+                                    toggleModal('edit', true)
+                                    setOpenDropdownId(null)
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
                                 >
-                                  <Trash2 className="w-4 h-4 mr-3" />
-                                  Xóa
+                                  <Edit className="w-4 h-4 mr-3 text-gray-400" />
+                                  Chỉnh sửa
                                 </button>
-                              </>
-                            )}
-                          </div>
+                              )}
+                              
+                              {/* Vô hiệu hóa - only for activated emails */}
+                              {canDisable && (
+                                <button
+                                  onClick={() => {
+                                    handleDisableEmail(email.id)
+                                    setOpenDropdownId(null)
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                                >
+                                  <Ban className="w-4 h-4 mr-3 text-gray-400" />
+                                  Vô hiệu hóa
+                                </button>
+                              )}
+                              
+                              {/* Gửi lại mã xác thực - only for pending emails */}
+                              {canResend && (
+                                <button
+                                  onClick={() => {
+                                    handleResendVerification(email.id)
+                                    setOpenDropdownId(null)
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                                >
+                                  <RefreshCw className="w-4 h-4 mr-3 text-gray-400" />
+                                  Gửi lại mã xác thực
+                                </button>
+                              )}
+                              
+                              {/* Kích hoạt lại - only for disabled emails */}
+                              {canEnable && (
+                                <button
+                                  onClick={() => {
+                                    handleEnableEmail(email.id)
+                                    setOpenDropdownId(null)
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-3" />
+                                  Kích hoạt lại
+                                </button>
+                              )}
+                              
+                              {/* Xóa */}
+                              {canDelete && (
+                                <>
+                                  <div className="border-t border-gray-100 my-1"></div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedEmail(email)
+                                      toggleModal('delete', true)
+                                      setOpenDropdownId(null)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-3" />
+                                    Xóa
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

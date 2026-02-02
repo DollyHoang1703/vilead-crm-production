@@ -128,36 +128,6 @@ export function CampaignList({ onOpenEditor, onOpenABEditor, onViewStats }: Camp
         </button>
       </div>
 
-      {/* Status Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-1">
-        {STATUS_TABS.map(tab => {
-          const count = statusCounts[tab.key];
-          const isActive = filters.status === tab.key;
-          
-          return (
-            <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={`
-                flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-lg transition-colors
-                ${isActive 
-                  ? 'text-blue-600 border-b-2 border-blue-600 -mb-[3px]' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }
-              `}
-            >
-              {tab.label}
-              <span className={`
-                px-1.5 py-0.5 text-xs rounded-full
-                ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}
-              `}>
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -172,6 +142,19 @@ export function CampaignList({ onOpenEditor, onOpenABEditor, onViewStats }: Camp
           />
         </div>
         <div className="flex gap-2">
+          {/* Status Filter Dropdown */}
+          <select
+            value={filters.status}
+            onChange={(e) => handleTabChange(e.target.value as CampaignStatus | 'all')}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm min-w-[140px]"
+          >
+            {STATUS_TABS.map(tab => (
+              <option key={tab.key} value={tab.key}>
+                {tab.label} ({statusCounts[tab.key]})
+              </option>
+            ))}
+          </select>
+          {/* Campaign Type Filter */}
           <select
             value={filters.type}
             onChange={(e) => updateFilters({ type: e.target.value as CampaignType | 'all' })}

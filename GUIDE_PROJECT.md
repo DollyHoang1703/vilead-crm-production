@@ -6,6 +6,10 @@ vercel --prod
 vercel  # Preview URL
 vercel --prod  # Production URL
 
+#Kho email template free :
+https://beefree.io/templates
+https://selzy.com/en/templates
+
 #Hướng dẫn dùng file .md để tạo module
 ## 📌 Scope Statements
 ⚡ **IMPORTANT:** This is UI + Mock Data + Data Flow implementation ONLY

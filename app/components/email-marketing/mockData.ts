@@ -417,6 +417,1125 @@ export const MOCK_TEMPLATES: EmailTemplate[] = [
     created_at: new Date('2026-01-29T11:00:00Z'),
     updated_at: new Date('2026-01-29T11:00:00Z'),
     deleted_at: null
+  },
+
+  // ==================== NOTIFICATION TEMPLATES ====================
+  // System notification templates based on EMAIL_TEMPLATES_SPECIFICATION.md
+  
+  // 1. OTP Verification Email
+  {
+    id: 'tpl-notif-001',
+    name: 'Mã OTP xác thực',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mã OTP xác thực tài khoản</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #1E40AF; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">ViLead CRM</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 30px 0;">
+                                Đây là mã xác thực OTP để hoàn tất việc đăng ký tài khoản của bạn:
+                            </p>
+                            <!-- OTP Code Box -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #1E40AF; border-radius: 8px; background-color: #EFF6FF;">
+                                            <tr>
+                                                <td style="padding: 20px 40px;">
+                                                    <span style="font-size: 36px; font-weight: bold; color: #1E40AF; letter-spacing: 8px;">{{otp_code}}</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Security Warning -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #DC2626;">
+                                            ⚠️ LƯU Ý BẢO MẬT:
+                                        </p>
+                                        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #1F2937;">
+                                            <li>Không chia sẻ mã OTP này với bất kỳ ai</li>
+                                            <li>ViLead sẽ không bao giờ yêu cầu bạn cung cấp mã OTP</li>
+                                            <li>Mã OTP sẽ hết hiệu lực sau {{expires_in}} phút</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Request Details -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0; border-top: 1px solid #E5E7EB; padding-top: 15px;">
+                                <tr>
+                                    <td style="font-size: 12px; color: #6B7280;">
+                                        <p style="margin: 5px 0;"><strong>Thông tin yêu cầu:</strong></p>
+                                        <p style="margin: 5px 0;">• Email: {{email}}</p>
+                                        <p style="margin: 5px 0;">• Thời gian: {{timestamp}}</p>
+                                        <p style="margin: 5px 0;">• IP Address: {{ip_address}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.<br>
+                                Cần hỗ trợ? Liên hệ: support@vilead.vn | Hotline: 1900 xxxx
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/otp.png',
+    owner_id: null,
+    category_id: 'cat-security',
+    version: 1,
+    versions: [],
+    usage_count: 1250,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 2. Password Changed Confirmation
+  {
+    id: 'tpl-notif-002',
+    name: 'Mật khẩu đã thay đổi',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mật khẩu đã được thay đổi</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #1E40AF; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">ViLead CRM</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Mật khẩu tài khoản ViLead CRM của bạn vừa được thay đổi thành công.
+                            </p>
+                            <!-- Success Box -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #F0FDF4; border-left: 4px solid #059669; padding: 15px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #059669;">
+                                            ✅ THÔNG TIN THAY ĐỔI:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Thời gian:</strong> {{timestamp}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Địa điểm:</strong> {{location}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Thiết bị:</strong> {{device_info}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>IP Address:</strong> {{ip_address}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Warning Box -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #DC2626;">
+                                            🔒 BẢO MẬT TÀI KHOẢN:
+                                        </p>
+                                        <p style="margin: 0 0 20px 0; font-size: 14px; color: #1F2937;">
+                                            Nếu <strong>KHÔNG PHẢI BẠN</strong> thực hiện thay đổi này, tài khoản của bạn có thể đã bị xâm nhập.
+                                        </p>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="border-radius: 4px; background-color: #DC2626;">
+                                                    <a href="{{recovery_url}}" style="display: inline-block; padding: 12px 24px; font-size: 14px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                                        Khôi phục tài khoản ngay
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <p style="margin: 15px 0 0 0; font-size: 13px; color: #6B7280;">
+                                            Hoặc liên hệ: 📧 security@vilead.vn | 📞 Hotline: 1900 xxxx (24/7)
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Security Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/password-changed.png',
+    owner_id: null,
+    category_id: 'cat-security',
+    version: 1,
+    versions: [],
+    usage_count: 890,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 3. New Device Login Alert
+  {
+    id: 'tpl-notif-003',
+    name: 'Đăng nhập thiết bị mới',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phát hiện đăng nhập từ thiết bị mới</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #F59E0B; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">⚠️ Cảnh báo đăng nhập</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Chúng tôi phát hiện một lần đăng nhập mới vào tài khoản ViLead CRM của bạn từ thiết bị/địa điểm chưa từng sử dụng.
+                            </p>
+                            <!-- Login Details -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #D97706;">
+                                            📍 THÔNG TIN ĐĂNG NHẬP:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Thời gian:</strong> {{timestamp}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Thiết bị:</strong> {{device_name}} ({{browser_name}})</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Hệ điều hành:</strong> {{os_name}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Địa điểm:</strong> {{city}}, {{country}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>IP Address:</strong> {{ip_address}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Question -->
+                            <p style="font-size: 16px; font-weight: bold; color: #1F2937; margin: 30px 0 20px 0; text-align: center;">
+                                ❓ ĐÂY CÓ PHẢI LÀ BẠN?
+                            </p>
+                            <!-- Action Buttons -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="padding-right: 10px;">
+                                                    <a href="{{confirm_url}}" style="display: inline-block; padding: 12px 30px; background-color: #059669; color: #FFFFFF; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                                                        ✓ Đúng, đó là tôi
+                                                    </a>
+                                                </td>
+                                                <td style="padding-left: 10px;">
+                                                    <a href="{{deny_url}}" style="display: inline-block; padding: 12px 30px; background-color: #DC2626; color: #FFFFFF; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                                                        ✗ Không phải tôi
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Security Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/new-device.png',
+    owner_id: null,
+    category_id: 'cat-security',
+    version: 1,
+    versions: [],
+    usage_count: 456,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 4. Forgot Password / Reset Password
+  {
+    id: 'tpl-notif-004',
+    name: 'Khôi phục mật khẩu',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yêu cầu khôi phục mật khẩu</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #1E40AF; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">🔑 Khôi phục mật khẩu</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Chúng tôi nhận được yêu cầu khôi phục mật khẩu cho tài khoản ViLead CRM của bạn.
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 30px 0;">
+                                Nhấn vào nút bên dưới để tạo mật khẩu mới:
+                            </p>
+                            <!-- CTA Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #1E40AF;">
+                                        <a href="{{reset_password_link}}" style="display: inline-block; padding: 15px 40px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            Đặt lại mật khẩu
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Expiry Warning -->
+                            <p style="font-size: 13px; color: #DC2626; margin: 20px 0; text-align: center;">
+                                ⏰ Link này sẽ hết hiệu lực sau <strong>{{expires_in}} phút</strong>.
+                            </p>
+                            <!-- Request Details -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0; border-top: 1px solid #E5E7EB; padding-top: 15px;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #1F2937;">
+                                            Thông tin yêu cầu:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 12px; color: #6B7280;">• Email: {{email}}</p>
+                                        <p style="margin: 5px 0; font-size: 12px; color: #6B7280;">• Thời gian: {{timestamp}}</p>
+                                        <p style="margin: 5px 0; font-size: 12px; color: #6B7280;">• IP Address: {{ip_address}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Warning -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px;">
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            <strong>⚠️ Lưu ý:</strong> Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/forgot-password.png',
+    owner_id: null,
+    category_id: 'cat-security',
+    version: 1,
+    versions: [],
+    usage_count: 678,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 5. Suspicious Activity Alert
+  {
+    id: 'tpl-notif-005',
+    name: 'Cảnh báo hoạt động bất thường',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cảnh báo hoạt động bất thường</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #DC2626; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">🚨 CẢNH BÁO BẢO MẬT</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <!-- Critical Alert -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEE2E2; border: 2px solid #DC2626; border-radius: 4px; padding: 20px; text-align: center;">
+                                        <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #DC2626;">
+                                            Phát hiện hoạt động bất thường trên tài khoản của bạn!
+                                        </p>
+                                        <p style="margin: 0; font-size: 14px; color: #1F2937;">
+                                            Mức độ rủi ro: <strong style="color: #DC2626;">{{risk_level}}</strong>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Detection Details -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #DC2626;">
+                                            📋 HOẠT ĐỘNG ĐƯỢC PHÁT HIỆN:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Nhiều lần đăng nhập thất bại</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Đăng nhập từ vị trí địa lý khác thường</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Thay đổi cài đặt bảo mật</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Detection Info -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #1F2937;">
+                                            Thông tin phát hiện:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Thời gian:</strong> {{detection_time}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>IP Address:</strong> {{ip_address}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Địa điểm:</strong> {{location}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Actions -->
+                            <p style="font-size: 16px; font-weight: bold; color: #1F2937; margin: 30px 0 15px 0;">
+                                🛡️ HÀNH ĐỘNG KHUYẾN NGHỊ:
+                            </p>
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #DC2626;">
+                                        <a href="{{change_password_url}}" style="display: inline-block; padding: 15px 30px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            Đổi mật khẩu ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Emergency Contact -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="background-color: #FEE2E2; border: 2px solid #DC2626; border-radius: 4px; padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #DC2626;">
+                                            📞 LIÊN HỆ KHẨN CẤP:
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            Hotline 24/7: <strong>1900 xxxx</strong><br>
+                                            Email: <a href="mailto:security@vilead.vn" style="color: #1E40AF;">security@vilead.vn</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Security Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/suspicious-activity.png',
+    owner_id: null,
+    category_id: 'cat-security',
+    version: 1,
+    versions: [],
+    usage_count: 123,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 6. Welcome Email
+  {
+    id: 'tpl-notif-006',
+    name: 'Chào mừng thành viên mới',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chào mừng bạn đến với ViLead CRM</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Welcome Banner -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <p style="margin: 0 0 15px 0; font-size: 32px; color: #FFFFFF; font-weight: bold;">
+                                🎉 Chào mừng bạn!
+                            </p>
+                            <p style="margin: 0; font-size: 16px; color: #DBEAFE;">
+                                Tài khoản của bạn đã được kích hoạt thành công
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{full_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Chào mừng bạn đến với ViLead CRM! Giờ đây bạn có thể bắt đầu quản lý khách hàng, leads và tối ưu hóa quy trình bán hàng của mình.
+                            </p>
+                            <!-- Get Started CTA -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #059669;">
+                                        <a href="{{login_url}}" style="display: inline-block; padding: 15px 40px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            🚀 Bắt đầu ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Account Info -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="background-color: #F3F4F6; border-radius: 4px; padding: 20px;">
+                                        <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            📋 Thông tin tài khoản:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Email:</strong> {{email}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Vai trò:</strong> {{role}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Công ty:</strong> {{company_name}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #6B7280;">• <strong>Ngày tạo:</strong> {{created_date}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Getting Started Steps -->
+                            <p style="font-size: 18px; font-weight: bold; color: #1F2937; margin: 30px 0 20px 0;">
+                                🚀 BƯỚC ĐẦU TIÊN:
+                            </p>
+                            <!-- Step 1 -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 15px 0;">
+                                <tr>
+                                    <td style="background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 15px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold; color: #1E40AF;">
+                                            1. Hoàn thiện hồ sơ cá nhân
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            Cập nhật thông tin cá nhân và ảnh đại diện
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Step 2 -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 15px 0;">
+                                <tr>
+                                    <td style="background-color: #F0FDF4; border-left: 4px solid #059669; padding: 15px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold; color: #047857;">
+                                            2. Tạo lead đầu tiên
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            Bắt đầu quản lý khách hàng tiềm năng
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Step 3 -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 15px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold; color: #D97706;">
+                                            3. Thiết lập pipeline
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            Tùy chỉnh quy trình bán hàng theo nhu cầu
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Support -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="background-color: #F3F4F6; border-radius: 4px; padding: 20px; text-align: center;">
+                                        <p style="margin: 0 0 15px 0; font-size: 16px; font-weight: bold; color: #1F2937;">
+                                            💬 Cần hỗ trợ?
+                                        </p>
+                                        <p style="margin: 0; font-size: 13px; color: #6B7280;">
+                                            Email: support@vilead.vn | Hotline: 1900 xxxx
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 16px; color: #1F2937; margin: 30px 0 10px 0; text-align: center;">
+                                Chúc bạn thành công với ViLead CRM! 🚀
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 10px 0 0 0; text-align: center;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/welcome.png',
+    owner_id: null,
+    category_id: 'cat-onboarding',
+    version: 1,
+    versions: [],
+    usage_count: 2340,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 7. Payment Reminder
+  {
+    id: 'tpl-notif-007',
+    name: 'Nhắc nhở thanh toán',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắc nhở thanh toán</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #F59E0B; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">💳 Nhắc nhở thanh toán</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{customer_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Chúng tôi xin gửi thông báo về hóa đơn chưa thanh toán:
+                            </p>
+                            <!-- Invoice Details -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+                                <tr>
+                                    <td style="background-color: #F9FAFB; padding: 15px; border-bottom: 1px solid #E5E7EB;">
+                                        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            📄 HÓA ĐƠN #{{invoice_number}}
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #6B7280;">Ngày lập hóa đơn:</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #1F2937; text-align: right;">{{issue_date}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #6B7280;">Hạn thanh toán:</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #DC2626; font-weight: bold; text-align: right;">{{due_date}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #6B7280;">Trạng thái:</td>
+                                                <td style="padding: 5px 0; font-size: 13px; text-align: right;">
+                                                    <span style="background-color: #FEF3C7; color: #D97706; padding: 2px 8px; border-radius: 4px; font-size: 12px;">{{status}}</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" style="border-top: 1px solid #E5E7EB; margin-top: 10px; padding-top: 10px;"></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 10px 0; font-size: 16px; font-weight: bold; color: #1F2937;">Tổng cộng:</td>
+                                                <td style="padding: 10px 0; font-size: 20px; font-weight: bold; color: #DC2626; text-align: right;">{{amount}} {{currency}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Days Remaining -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF2F2; border-radius: 8px; padding: 20px; text-align: center;">
+                                        <p style="margin: 0; font-size: 14px; color: #DC2626;">
+                                            ⏰ Còn <strong>{{days_remaining}} ngày</strong> để thanh toán
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- CTA Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #1E40AF;">
+                                        <a href="{{payment_url}}" style="display: inline-block; padding: 15px 40px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            Thanh toán ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Bank Transfer Info -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="background-color: #F3F4F6; border-radius: 8px; padding: 20px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            🏦 Thông tin chuyển khoản:
+                                        </p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Ngân hàng: {{bank_name}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Số tài khoản: {{account_number}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Chủ tài khoản: {{account_holder}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• Nội dung CK: <strong>{{transfer_content}}</strong></p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/payment-reminder.png',
+    owner_id: null,
+    category_id: 'cat-billing',
+    version: 1,
+    versions: [],
+    usage_count: 567,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 8. Subscription Renewal
+  {
+    id: 'tpl-notif-008',
+    name: 'Gia hạn gói dịch vụ',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gói dịch vụ sắp hết hạn</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #F59E0B; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">⚠️ Gói dịch vụ sắp hết hạn</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{customer_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Gói dịch vụ <strong>{{package_name}}</strong> của bạn sẽ hết hạn trong <strong style="color: #DC2626;">{{days_remaining}} ngày</strong> nữa.
+                            </p>
+                            <!-- Subscription Info -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+                                <tr>
+                                    <td style="background-color: #F9FAFB; padding: 15px; border-bottom: 1px solid #E5E7EB;">
+                                        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            📦 THÔNG TIN GÓI DỊCH VỤ
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Gói:</strong> {{package_name}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Ngày hết hạn:</strong> {{expiry_date}}</p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Trạng thái:</strong> <span style="color: #F59E0B;">{{status}}</span></p>
+                                        <p style="margin: 5px 0; font-size: 13px; color: #1F2937;">• <strong>Giá gia hạn:</strong> {{renewal_price}} VNĐ/{{billing_cycle}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Early Bird Discount -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background: linear-gradient(135deg, #059669 0%, #10B981 100%); border-radius: 8px; padding: 20px; text-align: center;">
+                                        <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #FFFFFF;">
+                                            🎁 ƯU ĐÃI GIA HẠN SỚM
+                                        </p>
+                                        <p style="margin: 0 0 10px 0; font-size: 24px; font-weight: bold; color: #FFFFFF;">
+                                            Giảm {{discount_percent}}%
+                                        </p>
+                                        <p style="margin: 0; font-size: 14px; color: #D1FAE5;">
+                                            Gia hạn trước {{early_bird_date}} để nhận ưu đãi!
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- CTA Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #1E40AF;">
+                                        <a href="{{renew_url}}" style="display: inline-block; padding: 15px 40px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            Gia hạn ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Warning -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px;">
+                                        <p style="margin: 0; font-size: 13px; color: #1F2937;">
+                                            <strong>⚠️ Lưu ý:</strong> Sau khi hết hạn, dữ liệu của bạn sẽ được lưu trữ trong {{retention_days}} ngày. Sau thời gian này, dữ liệu có thể bị xóa vĩnh viễn.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/subscription-renewal.png',
+    owner_id: null,
+    category_id: 'cat-billing',
+    version: 1,
+    versions: [],
+    usage_count: 345,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
+  },
+
+  // 9. Campaign Performance Report
+  {
+    id: 'tpl-notif-009',
+    name: 'Báo cáo chiến dịch email',
+    type: 'notification',
+    content_html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo kết quả Campaign</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #F9FAFB;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #1E40AF; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                            <h1 style="color: #FFFFFF; margin: 0; font-size: 24px;">📊 Báo cáo Campaign</h1>
+                            <p style="color: #DBEAFE; margin: 10px 0 0 0; font-size: 14px;">{{campaign_name}}</p>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #1F2937; margin: 0 0 20px 0;">
+                                Xin chào <strong>{{user_name}}</strong>,
+                            </p>
+                            <p style="font-size: 14px; color: #1F2937; margin: 0 0 20px 0;">
+                                Dưới đây là kết quả chi tiết của chiến dịch email "<strong>{{campaign_name}}</strong>" được gửi vào {{send_date}} lúc {{send_time}}.
+                            </p>
+                            <!-- Stats Overview -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                                <tr>
+                                    <td style="background-color: #F9FAFB; border-radius: 8px; padding: 20px;">
+                                        <p style="margin: 0 0 15px 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            📈 TỔNG QUAN
+                                        </p>
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="text-align: center; padding: 10px;">
+                                                    <p style="margin: 0; font-size: 24px; font-weight: bold; color: #1E40AF;">{{total_sent}}</p>
+                                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #6B7280;">Đã gửi</p>
+                                                </td>
+                                                <td style="text-align: center; padding: 10px;">
+                                                    <p style="margin: 0; font-size: 24px; font-weight: bold; color: #059669;">{{open_rate}}%</p>
+                                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #6B7280;">Tỷ lệ mở</p>
+                                                </td>
+                                                <td style="text-align: center; padding: 10px;">
+                                                    <p style="margin: 0; font-size: 24px; font-weight: bold; color: #F59E0B;">{{click_rate}}%</p>
+                                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #6B7280;">Tỷ lệ click</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Detailed Stats -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;">
+                                <tr>
+                                    <td style="background-color: #F9FAFB; padding: 15px; border-bottom: 1px solid #E5E7EB;">
+                                        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #1F2937;">
+                                            📋 CHI TIẾT
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 15px;">
+                                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Đã gửi thành công:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #059669; text-align: right; font-weight: bold;">{{delivered_count}} ({{delivered_rate}}%)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Gửi thất bại:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #DC2626; text-align: right;">{{failed_count}} ({{failed_rate}}%)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Đã mở:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #1F2937; text-align: right;">{{open_count}} ({{open_rate}}%)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Đã click:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #1F2937; text-align: right;">{{click_count}} ({{click_rate}}%)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Bounce:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #F59E0B; text-align: right;">{{bounce_count}} ({{bounce_rate}}%)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #6B7280;">Hủy đăng ký:</td>
+                                                <td style="padding: 8px 0; font-size: 13px; color: #DC2626; text-align: right;">{{unsub_count}} ({{unsub_rate}}%)</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- CTA Button -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 30px 0;">
+                                <tr>
+                                    <td style="border-radius: 4px; background-color: #1E40AF;">
+                                        <a href="{{view_full_report_url}}" style="display: inline-block; padding: 15px 40px; font-size: 16px; color: #FFFFFF; text-decoration: none; font-weight: bold;">
+                                            Xem báo cáo đầy đủ
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="font-size: 14px; color: #1F2937; margin: 30px 0 0 0;">
+                                Trân trọng,<br>
+                                <strong>ViLead CRM Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #F3F4F6; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px;">
+                            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                                © 2026 ViLead CRM. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `,
+    content_json: null,
+    editor_mode: 'html',
+    thumbnail_url: '/templates/thumbnails/notification/campaign-report.png',
+    owner_id: null,
+    category_id: 'cat-reports',
+    version: 1,
+    versions: [],
+    usage_count: 789,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
+    deleted_at: null
   }
 ];
 
