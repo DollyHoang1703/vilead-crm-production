@@ -10,6 +10,9 @@ vercel --prod  # Production URL
 https://beefree.io/templates
 https://selzy.com/en/templates
 
+#Trang upload image free : 
+https://freeimage.host/
+
 #Hướng dẫn dùng file .md để tạo module
 ## 📌 Scope Statements
 ⚡ **IMPORTANT:** This is UI + Mock Data + Data Flow implementation ONLY

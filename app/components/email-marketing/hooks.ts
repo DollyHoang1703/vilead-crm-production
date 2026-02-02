@@ -387,7 +387,7 @@ export function useTemplates() {
   const [templates, setTemplates] = useState<EmailTemplate[]>(MOCK_TEMPLATES);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'system' | 'user'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'notification' | 'user'>('system');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
 
