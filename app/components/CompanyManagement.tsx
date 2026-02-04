@@ -40,6 +40,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -114,6 +116,7 @@ interface Team {
   leaderId: number
   leaderName: string
   memberCount: number
+  memberIds: number[]
   description: string
   status: 'active' | 'inactive'
   createdAt: string
@@ -339,6 +342,7 @@ const sampleTeams: Team[] = [
     leaderId: 1,
     leaderName: "Nguyễn Văn An",
     memberCount: 4,
+    memberIds: [1, 2, 7, 8],
     description: "Nhóm bán hàng khu vực miền Bắc",
     status: "active",
     createdAt: "2022-01-15"
@@ -350,7 +354,8 @@ const sampleTeams: Team[] = [
     departmentName: "Phòng Kinh doanh",
     leaderId: 2,
     leaderName: "Trần Thị Bình",
-    memberCount: 4,
+    memberCount: 3,
+    memberIds: [2, 9, 10],
     description: "Nhóm bán hàng khu vực miền Nam",
     status: "active",
     createdAt: "2022-02-01"
@@ -362,7 +367,8 @@ const sampleTeams: Team[] = [
     departmentName: "Phòng Marketing",
     leaderId: 3,
     leaderName: "Lê Minh Chánh",
-    memberCount: 4,
+    memberCount: 3,
+    memberIds: [3, 4, 11],
     description: "Nhóm marketing tổng thể",
     status: "active",
     createdAt: "2022-03-01"
@@ -1100,10 +1106,44 @@ export default function CompanyManagement() {
       leaderId: '',
       leaderName: '',
       memberCount: 0,
+      memberIds: [] as number[],
       description: '',
       status: 'active' as Team['status'],
       createdAt: new Date().toISOString().split('T')[0]
     })
+    const [selectedMembers, setSelectedMembers] = useState<number[]>([])
+    const [memberSearchQuery, setMemberSearchQuery] = useState('')
+
+    // Filter employees by search query
+    const availableEmployees = employees.filter(emp => 
+      emp.status === 'active' &&
+      (emp.name.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+       emp.position.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+       emp.department.toLowerCase().includes(memberSearchQuery.toLowerCase()))
+    )
+
+    // Toggle member selection
+    const toggleMember = (empId: number) => {
+      setSelectedMembers(prev => 
+        prev.includes(empId) 
+          ? prev.filter(id => id !== empId)
+          : [...prev, empId]
+      )
+    }
+
+    // Select all visible employees
+    const selectAll = () => {
+      const visibleIds = availableEmployees.map(emp => emp.id)
+      setSelectedMembers(prev => {
+        const newSet = new Set([...prev, ...visibleIds])
+        return Array.from(newSet)
+      })
+    }
+
+    // Deselect all
+    const deselectAll = () => {
+      setSelectedMembers([])
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
@@ -1119,7 +1159,9 @@ export default function CompanyManagement() {
         departmentId: parseInt(formData.departmentId),
         departmentName: dept?.name || '',
         leaderId: parseInt(formData.leaderId),
-        leaderName: leader?.name || ''
+        leaderName: leader?.name || '',
+        memberIds: selectedMembers,
+        memberCount: selectedMembers.length
       })
     }
 
@@ -1202,7 +1244,100 @@ export default function CompanyManagement() {
             </SelectContent>
           </Select>
         </div>
-        <DialogFooter className="px-6">
+
+        {/* Member Selection Section */}
+        <div className="space-y-3 pt-2 border-t border-[#e6ebf1]">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">
+              Thành viên nhóm <span className="text-[#72849a] font-normal">({selectedMembers.length} người)</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]" onClick={selectAll}>
+                Chọn tất cả
+              </Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a] hover:text-[#455560]" onClick={deselectAll}>
+                Bỏ chọn
+              </Button>
+            </div>
+          </div>
+
+          {/* Selected Members Display */}
+          {selectedMembers.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-3 bg-[#f7f7f8] rounded-[10px] max-h-[100px] overflow-y-auto">
+              {selectedMembers.map(memberId => {
+                const emp = employees.find(e => e.id === memberId)
+                return emp ? (
+                  <Badge 
+                    key={memberId} 
+                    variant="secondary" 
+                    className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#e6ebf1] text-[#455560] hover:bg-[#f0f7ff]"
+                  >
+                    <span className="max-w-[120px] truncate">{emp.name}</span>
+                    <X 
+                      className="w-3 h-3 cursor-pointer hover:text-red-500 flex-shrink-0" 
+                      onClick={() => toggleMember(memberId)}
+                    />
+                  </Badge>
+                ) : null
+              })}
+            </div>
+          )}
+
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]" />
+            <Input
+              placeholder="Tìm kiếm nhân viên theo tên, chức vụ, phòng ban..."
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Employee List */}
+          <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+            <div className="p-2 space-y-1">
+              {availableEmployees.length === 0 ? (
+                <p className="text-sm text-[#72849a] text-center py-8">Không tìm thấy nhân viên phù hợp</p>
+              ) : (
+                availableEmployees.map(emp => (
+                  <div 
+                    key={emp.id}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                      selectedMembers.includes(emp.id) 
+                        ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' 
+                        : 'hover:bg-[#f7f7f8] border border-transparent'
+                    }`}
+                    onClick={() => toggleMember(emp.id)}
+                  >
+                    <div 
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        selectedMembers.includes(emp.id)
+                          ? 'bg-[#3e79f7] border-[#3e79f7]'
+                          : 'border-[#d9d9d9] bg-white'
+                      }`}
+                    >
+                      {selectedMembers.includes(emp.id) && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="bg-[#3e79f7] text-white text-xs">
+                        {emp.name.split(' ').slice(-2).map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                      <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <DialogFooter className="px-6 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>
@@ -1782,6 +1917,39 @@ export default function CompanyManagement() {
       leaderName: initialData.leaderName,
       status: initialData.status
     })
+    const [selectedMembers, setSelectedMembers] = useState<number[]>(initialData.memberIds || [])
+    const [memberSearchQuery, setMemberSearchQuery] = useState('')
+
+    // Filter employees by search query (show all active employees)
+    const availableEmployees = employees.filter(emp => 
+      emp.status === 'active' &&
+      (emp.name.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+       emp.position.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+       emp.department.toLowerCase().includes(memberSearchQuery.toLowerCase()))
+    )
+
+    // Toggle member selection
+    const toggleMember = (empId: number) => {
+      setSelectedMembers(prev => 
+        prev.includes(empId) 
+          ? prev.filter(id => id !== empId)
+          : [...prev, empId]
+      )
+    }
+
+    // Select all visible employees
+    const selectAll = () => {
+      const visibleIds = availableEmployees.map(emp => emp.id)
+      setSelectedMembers(prev => {
+        const newSet = new Set([...prev, ...visibleIds])
+        return Array.from(newSet)
+      })
+    }
+
+    // Deselect all
+    const deselectAll = () => {
+      setSelectedMembers([])
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
@@ -1798,7 +1966,9 @@ export default function CompanyManagement() {
         departmentId: parseInt(formData.departmentId),
         departmentName: department?.name || '',
         leaderId: parseInt(formData.leaderId),
-        leaderName: leader?.name || ''
+        leaderName: leader?.name || '',
+        memberIds: selectedMembers,
+        memberCount: selectedMembers.length
       })
     }
 
@@ -1879,6 +2049,99 @@ export default function CompanyManagement() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Member Selection Section */}
+        <div className="space-y-3 pt-2 border-t border-[#e6ebf1]">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">
+              Thành viên nhóm <span className="text-[#72849a] font-normal">({selectedMembers.length} người)</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]" onClick={selectAll}>
+                Chọn tất cả
+              </Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a] hover:text-[#455560]" onClick={deselectAll}>
+                Bỏ chọn
+              </Button>
+            </div>
+          </div>
+
+          {/* Selected Members Display */}
+          {selectedMembers.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-3 bg-[#f7f7f8] rounded-[10px] max-h-[100px] overflow-y-auto">
+              {selectedMembers.map(memberId => {
+                const emp = employees.find(e => e.id === memberId)
+                return emp ? (
+                  <Badge 
+                    key={memberId} 
+                    variant="secondary" 
+                    className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#e6ebf1] text-[#455560] hover:bg-[#f0f7ff]"
+                  >
+                    <span className="max-w-[120px] truncate">{emp.name}</span>
+                    <X 
+                      className="w-3 h-3 cursor-pointer hover:text-red-500 flex-shrink-0" 
+                      onClick={() => toggleMember(memberId)}
+                    />
+                  </Badge>
+                ) : null
+              })}
+            </div>
+          )}
+
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]" />
+            <Input
+              placeholder="Tìm kiếm nhân viên theo tên, chức vụ, phòng ban..."
+              value={memberSearchQuery}
+              onChange={(e) => setMemberSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Employee List */}
+          <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+            <div className="p-2 space-y-1">
+              {availableEmployees.length === 0 ? (
+                <p className="text-sm text-[#72849a] text-center py-8">Không tìm thấy nhân viên phù hợp</p>
+              ) : (
+                availableEmployees.map(emp => (
+                  <div 
+                    key={emp.id}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                      selectedMembers.includes(emp.id) 
+                        ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' 
+                        : 'hover:bg-[#f7f7f8] border border-transparent'
+                    }`}
+                    onClick={() => toggleMember(emp.id)}
+                  >
+                    <div 
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        selectedMembers.includes(emp.id)
+                          ? 'bg-[#3e79f7] border-[#3e79f7]'
+                          : 'border-[#d9d9d9] bg-white'
+                      }`}
+                    >
+                      {selectedMembers.includes(emp.id) && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback className="bg-[#3e79f7] text-white text-xs">
+                        {emp.name.split(' ').slice(-2).map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                      <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
         <DialogFooter className="pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
