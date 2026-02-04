@@ -68,7 +68,13 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Link
+  Link,
+  Zap,
+  ListTodo,
+  StickyNote,
+  ShoppingCart,
+  ArrowRightLeft,
+  Calendar
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -700,6 +706,31 @@ export default function ChatManagement() {
   const [customerConnectionCount, setCustomerConnectionCount] = useState<Map<string, CustomerConnectionCount>>(new Map())
   const [selectedLeadDetail, setSelectedLeadDetail] = useState<CRMCustomer | null>(null)
   const [leadDetailTab, setLeadDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
+  
+  // Quick Action Modal States
+  const [selectedLeadForQuickAction, setSelectedLeadForQuickAction] = useState<CRMCustomer | null>(null)
+  const [showQuickStatusModal, setShowQuickStatusModal] = useState(false)
+  const [showQuickTaskModal, setShowQuickTaskModal] = useState(false)
+  const [showQuickNoteModal, setShowQuickNoteModal] = useState(false)
+  const [showQuickOrderModal, setShowQuickOrderModal] = useState(false)
+  
+  // Quick Action Form States
+  const [quickStatusValue, setQuickStatusValue] = useState('')
+  const [quickTaskTitle, setQuickTaskTitle] = useState('')
+  const [quickTaskDescription, setQuickTaskDescription] = useState('')
+  const [quickTaskDeadline, setQuickTaskDeadline] = useState('')
+  const [quickTaskPriority, setQuickTaskPriority] = useState('')
+  const [quickTaskAssignee, setQuickTaskAssignee] = useState('')
+  const [quickTaskType, setQuickTaskType] = useState('Leads')
+  const [quickTaskTags, setQuickTaskTags] = useState<string[]>([])
+  const [quickTaskInternalNote, setQuickTaskInternalNote] = useState('')
+  const [quickNoteContent, setQuickNoteContent] = useState('')
+  const [quickNoteFiles, setQuickNoteFiles] = useState<File[]>([])
+  const [quickOrderProducts, setQuickOrderProducts] = useState<string[]>([])
+  const [quickOrderProductVariant, setQuickOrderProductVariant] = useState<{[key: string]: string}>({})
+  const [quickOrderDiscount, setQuickOrderDiscount] = useState('0')
+  const [quickOrderPaymentMethod, setQuickOrderPaymentMethod] = useState('cash')
+  const [quickOrderNote, setQuickOrderNote] = useState('')
   
   // Chat input expansion and attachment states
   const [isInputExpanded, setIsInputExpanded] = useState(false)
@@ -2201,14 +2232,52 @@ export default function ChatManagement() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                                  <Button 
-                                    size="sm" 
-                                    className="flex-1 text-xs"
-                                    onClick={() => setSelectedLeadDetail(customerToShow)}
-                                  >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    Xem chi tiết
-                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button 
+                                        size="sm" 
+                                        className="flex-1 text-xs"
+                                      >
+                                        <Zap className="w-4 h-4 mr-1" />
+                                        Thao tác nhanh
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48">
+                                      <DropdownMenuItem onClick={() => setSelectedLeadDetail(customerToShow)}>
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        Xem chi tiết
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedLeadForQuickAction(customerToShow)
+                                        setQuickStatusValue(customerToShow.status)
+                                        setShowQuickStatusModal(true)
+                                      }}>
+                                        <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                        Chuyển trạng thái
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedLeadForQuickAction(customerToShow)
+                                        setShowQuickTaskModal(true)
+                                      }}>
+                                        <ListTodo className="w-4 h-4 mr-2" />
+                                        Tạo task nhanh
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedLeadForQuickAction(customerToShow)
+                                        setShowQuickNoteModal(true)
+                                      }}>
+                                        <StickyNote className="w-4 h-4 mr-2" />
+                                        Thêm ghi chú
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        setSelectedLeadForQuickAction(customerToShow)
+                                        setShowQuickOrderModal(true)
+                                      }}>
+                                        <ShoppingCart className="w-4 h-4 mr-2" />
+                                        Tạo đơn hàng
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button size="sm" variant="outline" className="px-3">
@@ -2494,13 +2563,42 @@ export default function ChatManagement() {
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button size="sm" className="h-8 text-xs">
-                                                  Thao tác
+                                                  Thao tác nhanh
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="end" className="w-48">
                                                 <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
                                                   <Eye className="w-4 h-4 mr-2" />
                                                   Xem chi tiết
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setQuickStatusValue(customer.status)
+                                                  setShowQuickStatusModal(true)
+                                                }}>
+                                                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                                  Chuyển trạng thái
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickTaskModal(true)
+                                                }}>
+                                                  <ListTodo className="w-4 h-4 mr-2" />
+                                                  Tạo task nhanh
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickNoteModal(true)
+                                                }}>
+                                                  <StickyNote className="w-4 h-4 mr-2" />
+                                                  Thêm ghi chú
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickOrderModal(true)
+                                                }}>
+                                                  <ShoppingCart className="w-4 h-4 mr-2" />
+                                                  Tạo đơn hàng
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => {
                                                   if (selectedConversation && currentConnectionInfo) {
@@ -2578,13 +2676,42 @@ export default function ChatManagement() {
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button size="sm" variant="outline" className="h-8 text-xs">
-                                                  Thao tác
+                                                  Thao tác nhanh
                                                 </Button>
                                               </DropdownMenuTrigger>
                                               <DropdownMenuContent align="end" className="w-48">
                                                 <DropdownMenuItem onClick={() => setSelectedLeadDetail(customer)}>
                                                   <Eye className="w-4 h-4 mr-2" />
                                                   Xem chi tiết
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setQuickStatusValue(customer.status)
+                                                  setShowQuickStatusModal(true)
+                                                }}>
+                                                  <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                                  Chuyển trạng thái
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickTaskModal(true)
+                                                }}>
+                                                  <ListTodo className="w-4 h-4 mr-2" />
+                                                  Tạo task nhanh
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickNoteModal(true)
+                                                }}>
+                                                  <StickyNote className="w-4 h-4 mr-2" />
+                                                  Thêm ghi chú
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                  setSelectedLeadForQuickAction(customer)
+                                                  setShowQuickOrderModal(true)
+                                                }}>
+                                                  <ShoppingCart className="w-4 h-4 mr-2" />
+                                                  Tạo đơn hàng
                                                 </DropdownMenuItem>
                                               </DropdownMenuContent>
                                             </DropdownMenu>
@@ -4474,6 +4601,692 @@ export default function ChatManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Status Change Modal */}
+      {showQuickStatusModal && selectedLeadForQuickAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col mx-4">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Chuyển trạng thái - {selectedLeadForQuickAction.name}</h3>
+                <button 
+                  onClick={() => {
+                    setShowQuickStatusModal(false)
+                    setQuickStatusValue('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">Chọn trạng thái mới cho lead</p>
+            </div>
+            <div className="px-4 sm:px-6 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-3">
+                {[
+                  { value: 'new', emoji: '🆕', label: 'Lead mới', desc: 'Lead mới vừa được tạo, chưa được xử lý', bg: 'bg-gray-100', border: 'border-gray-300' },
+                  { value: 'consulting', emoji: '📞', label: 'Đang tư vấn', desc: 'Đã liên hệ và đang tư vấn khách hàng', bg: 'bg-blue-100', border: 'border-blue-300' },
+                  { value: 'proposal', emoji: '📋', label: 'Đã gửi đề xuất', desc: 'Đã gửi đề xuất/báo giá cho khách hàng', bg: 'bg-yellow-100', border: 'border-yellow-300' },
+                  { value: 'negotiation', emoji: '🤝', label: 'Đàm phán', desc: 'Đang trong quá trình thương lượng và đàm phán', bg: 'bg-orange-100', border: 'border-orange-300' },
+                  { value: 'pending_payment', emoji: '💳', label: 'Chờ thanh toán', desc: 'Đã thống nhất, chờ khách hàng thanh toán', bg: 'bg-purple-100', border: 'border-purple-300' },
+                  { value: 'success', emoji: '✅', label: 'Chuyển đổi thành công', desc: 'Đã thanh toán và chuyển đổi thành công', bg: 'bg-green-100', border: 'border-green-300' },
+                  { value: 'failed', emoji: '❌', label: 'Thất bại', desc: 'Lead không thành công, đã đóng', bg: 'bg-red-100', border: 'border-red-300' },
+                ].map((status) => (
+                  <div
+                    key={status.value}
+                    onClick={() => setQuickStatusValue(status.value)}
+                    className={cn(
+                      "p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md",
+                      quickStatusValue === status.value 
+                        ? `${status.bg} ${status.border}` 
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">{status.emoji}</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{status.label}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{status.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="text-sm text-gray-600 text-center sm:text-left">
+                  💡 Mẹo: Việc chuyển trạng thái sẽ được ghi lại trong lịch sử tương tác
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <button 
+                    onClick={() => {
+                      setShowQuickStatusModal(false)
+                      setQuickStatusValue('')
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    disabled={!quickStatusValue}
+                    onClick={() => {
+                      console.log('Status changed:', quickStatusValue)
+                      setShowQuickStatusModal(false)
+                      setQuickStatusValue('')
+                    }}
+                    className={cn(
+                      "w-full sm:w-auto px-4 py-2 text-sm font-medium border border-transparent rounded-lg transition-all duration-200 flex items-center justify-center gap-2",
+                      quickStatusValue 
+                        ? "text-white bg-blue-600 hover:bg-blue-700" 
+                        : "text-gray-400 bg-gray-300 cursor-not-allowed"
+                    )}
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    {quickStatusValue ? 'Cập nhật trạng thái' : 'Chọn trạng thái để tiếp tục'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Task Modal */}
+      {showQuickTaskModal && selectedLeadForQuickAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Tạo công việc</h3>
+              <button 
+                onClick={() => {
+                  setShowQuickTaskModal(false)
+                  setQuickTaskTitle('')
+                  setQuickTaskDescription('')
+                  setQuickTaskDeadline('')
+                  setQuickTaskPriority('')
+                  setQuickTaskAssignee('')
+                  setQuickTaskType('Leads')
+                  setQuickTaskTags([])
+                  setQuickTaskInternalNote('')
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-4 flex-1 overflow-y-auto space-y-4">
+              {/* Tiêu đề */}
+              <div>
+                <Input 
+                  placeholder="Nhập tiêu đề công việc (tối đa 100 ký tự)"
+                  value={quickTaskTitle}
+                  onChange={(e) => setQuickTaskTitle(e.target.value)}
+                  maxLength={100}
+                />
+                {!quickTaskTitle && (
+                  <p className="text-xs text-red-500 mt-1">Vui lòng nhập tên công việc</p>
+                )}
+              </div>
+
+              {/* Mô tả */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Mô tả</Label>
+                <Textarea 
+                  placeholder="Nhập mô tả chi tiết công việc (tối đa 1000 ký tự)"
+                  value={quickTaskDescription}
+                  onChange={(e) => setQuickTaskDescription(e.target.value)}
+                  className="mt-1.5"
+                  rows={3}
+                  maxLength={1000}
+                />
+              </div>
+
+              {/* Ngày đến hạn */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Ngày đến hạn</Label>
+                <div className="relative mt-1.5">
+                  <Input 
+                    type="date"
+                    value={quickTaskDeadline}
+                    onChange={(e) => setQuickTaskDeadline(e.target.value)}
+                    placeholder="Chọn ngày đến hạn"
+                  />
+                </div>
+              </div>
+
+              {/* Ưu tiên */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Ưu tiên</Label>
+                <Select value={quickTaskPriority} onValueChange={setQuickTaskPriority}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Chọn ưu tiên" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Thấp</SelectItem>
+                    <SelectItem value="medium">Trung bình</SelectItem>
+                    <SelectItem value="high">Cao</SelectItem>
+                    <SelectItem value="urgent">Khẩn cấp</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Danh sách việc cần làm */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Danh sách việc cần làm</Label>
+                <div className="mt-1.5 border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Người phụ trách & Loại */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Người phụ trách <span className="text-red-500">*</span></Label>
+                  <Select value={quickTaskAssignee} onValueChange={setQuickTaskAssignee}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Chọn người phụ trách" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user1">Nguyễn Văn A</SelectItem>
+                      <SelectItem value="user2">Trần Thị B</SelectItem>
+                      <SelectItem value="user3">Lê Văn C</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {!quickTaskAssignee && (
+                    <p className="text-xs text-red-500 mt-1">Vui lòng chọn người phụ trách</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Loại</Label>
+                  <Select value={quickTaskType} onValueChange={setQuickTaskType}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Leads" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Leads">Leads</SelectItem>
+                      <SelectItem value="Sales">Sales</SelectItem>
+                      <SelectItem value="Support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Nhãn */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Nhãn</Label>
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {[
+                    { value: 'later', label: 'Khách hẹn mua sau', color: 'bg-gray-100 text-gray-700 border-gray-300' },
+                    { value: 'potential', label: 'Khách tiềm năng', color: 'bg-green-100 text-green-700 border-green-300' },
+                    { value: 'not_interested', label: 'Khách không quan tâm', color: 'bg-red-100 text-red-700 border-red-300' },
+                  ].map((tag) => (
+                    <button
+                      key={tag.value}
+                      onClick={() => {
+                        setQuickTaskTags(prev => 
+                          prev.includes(tag.value) 
+                            ? prev.filter(t => t !== tag.value)
+                            : [...prev, tag.value]
+                        )
+                      }}
+                      className={cn(
+                        "px-3 py-1 text-xs rounded-full border transition-all",
+                        quickTaskTags.includes(tag.value) 
+                          ? tag.color + ' border-2'
+                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                      )}
+                    >
+                      {tag.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ghi chú nội bộ */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Ghi chú nội bộ</Label>
+                <Textarea 
+                  placeholder="Nhập ghi chú nội bộ"
+                  value={quickTaskInternalNote}
+                  onChange={(e) => setQuickTaskInternalNote(e.target.value)}
+                  className="mt-1.5"
+                  rows={2}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQuickTaskModal(false)
+                  setQuickTaskTitle('')
+                  setQuickTaskDescription('')
+                  setQuickTaskDeadline('')
+                  setQuickTaskPriority('')
+                  setQuickTaskAssignee('')
+                  setQuickTaskType('Leads')
+                  setQuickTaskTags([])
+                  setQuickTaskInternalNote('')
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log('Task created:', {
+                    title: quickTaskTitle,
+                    description: quickTaskDescription,
+                    deadline: quickTaskDeadline,
+                    priority: quickTaskPriority,
+                    assignee: quickTaskAssignee,
+                    type: quickTaskType,
+                    tags: quickTaskTags,
+                    internalNote: quickTaskInternalNote
+                  })
+                  setShowQuickTaskModal(false)
+                  setQuickTaskTitle('')
+                  setQuickTaskDescription('')
+                  setQuickTaskDeadline('')
+                  setQuickTaskPriority('')
+                  setQuickTaskAssignee('')
+                  setQuickTaskType('Leads')
+                  setQuickTaskTags([])
+                  setQuickTaskInternalNote('')
+                }}
+                disabled={!quickTaskTitle.trim() || !quickTaskAssignee}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Tạo công việc
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Note Modal */}
+      {showQuickNoteModal && selectedLeadForQuickAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Thêm ghi chú</h3>
+                <p className="text-sm text-gray-600 mt-1">Lead: {selectedLeadForQuickAction.name}</p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowQuickNoteModal(false)
+                  setQuickNoteContent('')
+                  setQuickNoteFiles([])
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              {/* Nội dung ghi chú */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nội dung ghi chú</label>
+                <Textarea 
+                  rows={4}
+                  placeholder="Nhập nội dung ghi chú..."
+                  value={quickNoteContent}
+                  onChange={(e) => setQuickNoteContent(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Đính kèm file */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Đính kèm file (tùy chọn)</label>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    multiple 
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" 
+                    className="hidden" 
+                    id="quick-note-file-input" 
+                    type="file"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setQuickNoteFiles(Array.from(e.target.files))
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor="quick-note-file-input" 
+                    className="flex items-center px-3 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
+                    <Paperclip className="w-4 h-4 mr-2 text-gray-600" />
+                    <span className="text-sm text-gray-700">Chọn file</span>
+                  </label>
+                </div>
+                {quickNoteFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {quickNoteFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 px-2 py-1 rounded">
+                        <span className="truncate">{file.name}</span>
+                        <button 
+                          onClick={() => setQuickNoteFiles(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">Hỗ trợ: PDF, Word, Excel, hình ảnh. Tối đa 10MB/file.</p>
+              </div>
+
+              {/* Ghi chú hiện có */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú hiện có (3)</label>
+                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded-md p-3">
+                  <div className="text-xs text-gray-600 mb-2">
+                    <div className="font-medium">18/1/2024 - Nhân viên A</div>
+                    <div className="text-gray-800">Đã liên hệ tư vấn sản phẩm</div>
+                  </div>
+                  <div className="text-xs text-gray-600 mb-2">
+                    <div className="font-medium">19/1/2024 - Nhân viên B</div>
+                    <div className="text-gray-800">Khách hàng quan tâm gói Premium</div>
+                  </div>
+                  <div className="text-xs text-gray-500 italic">... và 1 ghi chú khác</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 rounded-b-lg">
+              <button 
+                onClick={() => {
+                  setShowQuickNoteModal(false)
+                  setQuickNoteContent('')
+                  setQuickNoteFiles([])
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Hủy
+              </button>
+              <button 
+                disabled={!quickNoteContent.trim()}
+                onClick={() => {
+                  console.log('Note added:', quickNoteContent, quickNoteFiles)
+                  setShowQuickNoteModal(false)
+                  setQuickNoteContent('')
+                  setQuickNoteFiles([])
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-md transition-colors flex items-center gap-2",
+                  quickNoteContent.trim() 
+                    ? "bg-yellow-600 text-white hover:bg-yellow-700" 
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                )}
+              >
+                <StickyNote className="w-4 h-4" />
+                Thêm ghi chú
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Order Modal */}
+      {showQuickOrderModal && selectedLeadForQuickAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto mx-4">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Tạo đơn hàng - {selectedLeadForQuickAction.name}</h3>
+                <button 
+                  onClick={() => {
+                    setShowQuickOrderModal(false)
+                    setQuickOrderProducts([])
+                    setQuickOrderProductVariant({})
+                    setQuickOrderDiscount('0')
+                    setQuickOrderPaymentMethod('cash')
+                    setQuickOrderNote('')
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                <strong>Lưu ý:</strong> Chọn sản phẩm/dịch vụ để tạo đơn hàng cho lead này.
+              </p>
+            </div>
+            <div className="px-4 sm:px-6 py-4">
+              {/* Chọn sản phẩm */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn sản phẩm <span className="text-red-500">*</span>
+                </label>
+                <div className="max-h-64 overflow-y-auto space-y-3 border border-gray-300 rounded-lg p-3">
+                  {[
+                    { id: 'crm-basic', name: 'CRM Basic', desc: 'Hệ thống CRM cơ bản cho doanh nghiệp nhỏ', price: 500000 },
+                    { id: 'crm-pro', name: 'CRM Professional', desc: 'Hệ thống CRM chuyên nghiệp với nhiều tính năng nâng cao', price: 1200000, hasVariant: true },
+                    { id: 'crm-enterprise', name: 'CRM Enterprise', desc: 'Hệ thống CRM doanh nghiệp với đầy đủ tính năng', price: 2500000 },
+                    { id: 'ai-analytics', name: 'AI Analytics Module', desc: 'Module phân tích dữ liệu với AI', price: 800000 },
+                    { id: 'marketing-auto', name: 'Marketing Automation', desc: 'Tự động hóa marketing và email campaigns', price: 600000 },
+                    { id: 'sales-dashboard', name: 'Sales Dashboard Pro', desc: 'Dashboard bán hàng chuyên nghiệp', price: 400000 },
+                    { id: 'mobile-license', name: 'Mobile App License', desc: 'Giấy phép sử dụng ứng dụng di động', price: 300000 },
+                  ].map((product) => (
+                    <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                      <label className="flex items-start space-x-3 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={quickOrderProducts.includes(product.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setQuickOrderProducts([...quickOrderProducts, product.id])
+                            } else {
+                              setQuickOrderProducts(quickOrderProducts.filter(p => p !== product.id))
+                              const newVariants = {...quickOrderProductVariant}
+                              delete newVariants[product.id]
+                              setQuickOrderProductVariant(newVariants)
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{product.name}</h4>
+                          <p className="text-sm text-gray-600">{product.desc}</p>
+                          <p className="text-sm font-semibold text-green-600">{product.price.toLocaleString('vi-VN')} VNĐ</p>
+                        </div>
+                      </label>
+                      {product.hasVariant && quickOrderProducts.includes(product.id) && (
+                        <div className="ml-6 mt-2 p-2 bg-gray-50 rounded">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                          <select 
+                            className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                            value={quickOrderProductVariant[product.id] || 'standard'}
+                            onChange={(e) => setQuickOrderProductVariant({...quickOrderProductVariant, [product.id]: e.target.value})}
+                          >
+                            <option value="standard">Gói Standard - Sản phẩm cơ bản</option>
+                            <option value="plus">Gói Plus (+400.000 VNĐ) - Thêm AI Analytics</option>
+                            <option value="premium">Gói Premium (+800.000 VNĐ) - Full modules + premium support</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mã giảm giá */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mã giảm giá (%)</label>
+                <div className="flex items-center space-x-2">
+                  <Input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={quickOrderDiscount}
+                    onChange={(e) => setQuickOrderDiscount(e.target.value)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-gray-500">%</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Nhập từ 0-100% để áp dụng giảm giá</p>
+              </div>
+
+              {/* Hình thức thanh toán */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Hình thức thanh toán</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={cn(
+                    "flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors",
+                    quickOrderPaymentMethod === 'cash' ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                  )}>
+                    <input 
+                      type="radio" 
+                      value="cash" 
+                      checked={quickOrderPaymentMethod === 'cash'}
+                      onChange={(e) => setQuickOrderPaymentMethod(e.target.value)}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
+                  </label>
+                  <label className={cn(
+                    "flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors",
+                    quickOrderPaymentMethod === 'bank_transfer' ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                  )}>
+                    <input 
+                      type="radio" 
+                      value="bank_transfer" 
+                      checked={quickOrderPaymentMethod === 'bank_transfer'}
+                      onChange={(e) => setQuickOrderPaymentMethod(e.target.value)}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Tổng hợp */}
+              {quickOrderProducts.length > 0 && (
+                <>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <h5 className="text-sm font-medium text-blue-800 mb-2">Đã chọn {quickOrderProducts.length} sản phẩm:</h5>
+                    <div className="space-y-1">
+                      {quickOrderProducts.map(productId => {
+                        const product = [
+                          { id: 'crm-basic', name: 'CRM Basic', price: 500000 },
+                          { id: 'crm-pro', name: 'CRM Professional', price: 1200000 },
+                          { id: 'crm-enterprise', name: 'CRM Enterprise', price: 2500000 },
+                          { id: 'ai-analytics', name: 'AI Analytics Module', price: 800000 },
+                          { id: 'marketing-auto', name: 'Marketing Automation', price: 600000 },
+                          { id: 'sales-dashboard', name: 'Sales Dashboard Pro', price: 400000 },
+                          { id: 'mobile-license', name: 'Mobile App License', price: 300000 },
+                        ].find(p => p.id === productId)
+                        const variant = quickOrderProductVariant[productId]
+                        const variantPrice = variant === 'plus' ? 400000 : variant === 'premium' ? 800000 : 0
+                        return (
+                          <div key={productId} className="flex justify-between text-xs text-blue-700">
+                            <span>{product?.name}{variant && variant !== 'standard' ? ` (${variant})` : ''}</span>
+                            <span className="font-medium">{((product?.price || 0) + variantPrice).toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <h5 className="text-sm font-medium text-green-800 mb-2">Tổng hợp giá trị đơn hàng</h5>
+                    {(() => {
+                      const products = [
+                        { id: 'crm-basic', price: 500000 },
+                        { id: 'crm-pro', price: 1200000 },
+                        { id: 'crm-enterprise', price: 2500000 },
+                        { id: 'ai-analytics', price: 800000 },
+                        { id: 'marketing-auto', price: 600000 },
+                        { id: 'sales-dashboard', price: 400000 },
+                        { id: 'mobile-license', price: 300000 },
+                      ]
+                      const subtotal = quickOrderProducts.reduce((sum, pid) => {
+                        const product = products.find(p => p.id === pid)
+                        const variant = quickOrderProductVariant[pid]
+                        const variantPrice = variant === 'plus' ? 400000 : variant === 'premium' ? 800000 : 0
+                        return sum + (product?.price || 0) + variantPrice
+                      }, 0)
+                      const discount = parseInt(quickOrderDiscount) || 0
+                      const total = subtotal * (1 - discount / 100)
+                      return (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Tổng tiền gốc:</span>
+                            <span className="font-medium">{subtotal.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          {discount > 0 && (
+                            <div className="flex justify-between text-red-600">
+                              <span>Giảm giá ({discount}%):</span>
+                              <span className="font-medium">-{(subtotal * discount / 100).toLocaleString('vi-VN')} VNĐ</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between font-medium text-green-700 border-t border-green-300 pt-2">
+                            <span>Tổng thành tiền:</span>
+                            <span className="text-base">{total.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="text-xs text-green-600 mt-1">
+                            💰 Phương thức thanh toán: <span className="font-medium">{quickOrderPaymentMethod === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </>
+              )}
+
+              <p className="text-sm text-gray-600">
+                Lead sẽ được chuyển sang trạng thái "Chờ thanh toán" với các sản phẩm đã chọn.
+              </p>
+            </div>
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 sticky bottom-0 bg-white">
+              <button 
+                onClick={() => {
+                  setShowQuickOrderModal(false)
+                  setQuickOrderProducts([])
+                  setQuickOrderProductVariant({})
+                  setQuickOrderDiscount('0')
+                  setQuickOrderPaymentMethod('cash')
+                  setQuickOrderNote('')
+                }}
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition-all"
+              >
+                Hủy
+              </button>
+              <button 
+                disabled={quickOrderProducts.length === 0}
+                onClick={() => {
+                  console.log('Order created:', {
+                    products: quickOrderProducts,
+                    variants: quickOrderProductVariant,
+                    discount: quickOrderDiscount,
+                    paymentMethod: quickOrderPaymentMethod
+                  })
+                  setShowQuickOrderModal(false)
+                  setQuickOrderProducts([])
+                  setQuickOrderProductVariant({})
+                  setQuickOrderDiscount('0')
+                  setQuickOrderPaymentMethod('cash')
+                  setQuickOrderNote('')
+                }}
+                className={cn(
+                  "w-full sm:w-auto px-4 py-2 text-sm font-medium border border-transparent rounded-lg transition-all flex items-center justify-center gap-2",
+                  quickOrderProducts.length > 0
+                    ? "text-white bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
+                    : "text-gray-400 bg-gray-300 cursor-not-allowed"
+                )}
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span className="truncate">Xác nhận tạo đơn ({quickOrderProducts.length} SP)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
