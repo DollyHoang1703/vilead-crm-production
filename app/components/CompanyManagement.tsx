@@ -171,6 +171,15 @@ interface Role {
   updatedAt: string
 }
 
+// Interface for member conflict detection
+interface ConflictMember {
+  employeeId: number
+  employeeName: string
+  currentTeamId: number
+  currentTeamName: string
+  departmentName: string
+}
+
 // Sample Data
 const sampleEmployees: Employee[] = [
   {
@@ -703,7 +712,21 @@ export default function CompanyManagement() {
       ...teamData,
       id: newId
     }
-    setTeams([...teams, newTeam])
+    
+    // Remove members from their old teams if they are being transferred
+    const updatedTeams = teams.map(team => {
+      const membersToRemove = teamData.memberIds.filter(id => team.memberIds.includes(id))
+      if (membersToRemove.length > 0) {
+        return {
+          ...team,
+          memberIds: team.memberIds.filter(id => !membersToRemove.includes(id)),
+          memberCount: team.memberIds.filter(id => !membersToRemove.includes(id)).length
+        }
+      }
+      return team
+    })
+    
+    setTeams([...updatedTeams, newTeam])
     setShowAddTeamModal(false)
   }
 
@@ -757,9 +780,20 @@ export default function CompanyManagement() {
   const handleEditTeam = (teamData: Partial<Team>) => {
     if (!selectedTeam) return
 
+    // Remove members from their old teams if they are being transferred (except current team)
+    const membersToTransfer = teamData.memberIds || []
     const updatedTeams = teams.map(team => {
       if (team.id === selectedTeam.id) {
         return { ...team, ...teamData, updatedAt: new Date().toISOString().split('T')[0] }
+      }
+      // Remove transferred members from other teams
+      const membersToRemove = membersToTransfer.filter(id => team.memberIds.includes(id))
+      if (membersToRemove.length > 0) {
+        return {
+          ...team,
+          memberIds: team.memberIds.filter(id => !membersToRemove.includes(id)),
+          memberCount: team.memberIds.filter(id => !membersToRemove.includes(id)).length
+        }
       }
       return team
     })
@@ -1113,6 +1147,47 @@ export default function CompanyManagement() {
     })
     const [selectedMembers, setSelectedMembers] = useState<number[]>([])
     const [memberSearchQuery, setMemberSearchQuery] = useState('')
+    
+    // Conflict dialog states
+    const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [conflictMembers, setConflictMembers] = useState<ConflictMember[]>([])
+    const [confirmedConflictIds, setConfirmedConflictIds] = useState<number[]>([])
+    const [pendingFormData, setPendingFormData] = useState<Omit<Team, 'id'> | null>(null)
+
+    // Helper function to find members in other teams
+    const findMembersInOtherTeams = (memberIds: number[], currentTeamId?: number): ConflictMember[] => {
+      const conflicts: ConflictMember[] = []
+      memberIds.forEach(empId => {
+        const emp = employees.find(e => e.id === empId)
+        if (!emp) return
+        
+        // Check if this employee is in any other team
+        for (const team of teams) {
+          if (currentTeamId && team.id === currentTeamId) continue // Skip current team when editing
+          if (team.memberIds.includes(empId)) {
+            conflicts.push({
+              employeeId: empId,
+              employeeName: emp.name,
+              currentTeamId: team.id,
+              currentTeamName: team.name,
+              departmentName: emp.department
+            })
+            break // Employee can only be in one team
+          }
+        }
+      })
+      return conflicts
+    }
+
+    // Get team name for an employee
+    const getEmployeeTeamName = (empId: number): string | null => {
+      for (const team of teams) {
+        if (team.memberIds.includes(empId)) {
+          return team.name
+        }
+      }
+      return null
+    }
 
     // Filter employees by search query
     const availableEmployees = employees.filter(emp => 
@@ -1145,6 +1220,42 @@ export default function CompanyManagement() {
       setSelectedMembers([])
     }
 
+    // Toggle conflict member selection
+    const toggleConflictMember = (empId: number) => {
+      setConfirmedConflictIds(prev => 
+        prev.includes(empId) 
+          ? prev.filter(id => id !== empId)
+          : [...prev, empId]
+      )
+    }
+
+    // Handle skip - only add members without existing team
+    const handleSkipConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutTeam = selectedMembers.filter(id => !conflictIds.includes(id))
+      onSubmit({
+        ...pendingFormData,
+        memberIds: membersWithoutTeam,
+        memberCount: membersWithoutTeam.length
+      })
+      setShowConflictDialog(false)
+    }
+
+    // Handle confirm - add selected members including confirmed transfers
+    const handleConfirmConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutTeam = selectedMembers.filter(id => !conflictIds.includes(id))
+      const finalMembers = [...membersWithoutTeam, ...confirmedConflictIds]
+      onSubmit({
+        ...pendingFormData,
+        memberIds: finalMembers,
+        memberCount: finalMembers.length
+      })
+      setShowConflictDialog(false)
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       if (!formData.name || !formData.departmentId || !formData.leaderId) {
@@ -1154,7 +1265,7 @@ export default function CompanyManagement() {
 
       const dept = departments.find(d => d.id === parseInt(formData.departmentId))
       const leader = employees.find(emp => emp.id === parseInt(formData.leaderId))
-      onSubmit({
+      const submitData: Omit<Team, 'id'> = {
         ...formData,
         departmentId: parseInt(formData.departmentId),
         departmentName: dept?.name || '',
@@ -1162,10 +1273,22 @@ export default function CompanyManagement() {
         leaderName: leader?.name || '',
         memberIds: selectedMembers,
         memberCount: selectedMembers.length
-      })
+      }
+
+      // Check for conflicts
+      const conflicts = findMembersInOtherTeams(selectedMembers)
+      if (conflicts.length > 0) {
+        setConflictMembers(conflicts)
+        setConfirmedConflictIds(conflicts.map(c => c.employeeId)) // Default: select all
+        setPendingFormData(submitData)
+        setShowConflictDialog(true)
+      } else {
+        onSubmit(submitData)
+      }
     }
 
     return (
+      <>
       <form onSubmit={handleSubmit} className="space-y-4 px-6">
         <div>
           <Label htmlFor="teamName">Tên nhóm *</Label>
@@ -1327,7 +1450,14 @@ export default function CompanyManagement() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                        {getEmployeeTeamName(emp.id) && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">
+                            {getEmployeeTeamName(emp.id)}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
                     </div>
                   </div>
@@ -1346,6 +1476,95 @@ export default function CompanyManagement() {
           </Button>
         </DialogFooter>
       </form>
+
+      {/* Member Conflict Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a3353]">Xác nhận chuyển nhóm</DialogTitle>
+            <DialogDescription>
+              Các nhân viên sau đang thuộc nhóm khác. Chọn nhân viên muốn chuyển sang nhóm mới:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {/* Select All / Deselect All buttons */}
+            <div className="flex items-center justify-end gap-2 pb-2 border-b border-[#e6ebf1]">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]"
+                onClick={() => setConfirmedConflictIds(conflictMembers.map(c => c.employeeId))}
+              >
+                Chọn tất cả
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs text-[#72849a] hover:text-[#455560]"
+                onClick={() => setConfirmedConflictIds([])}
+              >
+                Bỏ chọn
+              </Button>
+            </div>
+
+            {/* Conflict Members List */}
+            <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+              <div className="p-2 space-y-1">
+                {conflictMembers.map(conflict => (
+                  <div 
+                    key={conflict.employeeId}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                      confirmedConflictIds.includes(conflict.employeeId) 
+                        ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' 
+                        : 'hover:bg-[#f7f7f8] border border-transparent'
+                    }`}
+                    onClick={() => toggleConflictMember(conflict.employeeId)}
+                  >
+                    <div 
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        confirmedConflictIds.includes(conflict.employeeId)
+                          ? 'bg-[#3e79f7] border-[#3e79f7]'
+                          : 'border-[#d9d9d9] bg-white'
+                      }`}
+                    >
+                      {confirmedConflictIds.includes(conflict.employeeId) && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353] truncate">{conflict.employeeName}</p>
+                      <div className="flex items-center gap-2 text-xs text-[#72849a]">
+                        <span className="truncate">Nhóm hiện tại:</span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">
+                          {conflict.currentTeamName}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-[#72849a] truncate">{conflict.departmentName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <p className="text-xs text-[#72849a] italic">
+              * Nhân viên được chọn sẽ được chuyển từ nhóm cũ sang nhóm mới
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleSkipConflict}>
+              Bỏ qua
+            </Button>
+            <Button type="button" onClick={handleConfirmConflict}>
+              Thêm vào nhóm ({confirmedConflictIds.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     )
   }
 
@@ -1919,6 +2138,51 @@ export default function CompanyManagement() {
     })
     const [selectedMembers, setSelectedMembers] = useState<number[]>(initialData.memberIds || [])
     const [memberSearchQuery, setMemberSearchQuery] = useState('')
+    
+    // Conflict dialog states
+    const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [conflictMembers, setConflictMembers] = useState<ConflictMember[]>([])
+    const [confirmedConflictIds, setConfirmedConflictIds] = useState<number[]>([])
+    const [pendingFormData, setPendingFormData] = useState<Partial<Team> | null>(null)
+
+    // Helper function to find members in other teams (excluding current team)
+    const findMembersInOtherTeams = (memberIds: number[], currentTeamId: number): ConflictMember[] => {
+      const conflicts: ConflictMember[] = []
+      // Only check new members (not already in current team)
+      const newMemberIds = memberIds.filter(id => !initialData.memberIds.includes(id))
+      
+      newMemberIds.forEach(empId => {
+        const emp = employees.find(e => e.id === empId)
+        if (!emp) return
+        
+        // Check if this employee is in any other team
+        for (const team of teams) {
+          if (team.id === currentTeamId) continue // Skip current team
+          if (team.memberIds.includes(empId)) {
+            conflicts.push({
+              employeeId: empId,
+              employeeName: emp.name,
+              currentTeamId: team.id,
+              currentTeamName: team.name,
+              departmentName: emp.department
+            })
+            break
+          }
+        }
+      })
+      return conflicts
+    }
+
+    // Get team name for an employee (excluding current team)
+    const getEmployeeTeamName = (empId: number): string | null => {
+      for (const team of teams) {
+        if (team.id === initialData.id) continue // Skip current team
+        if (team.memberIds.includes(empId)) {
+          return team.name
+        }
+      }
+      return null
+    }
 
     // Filter employees by search query (show all active employees)
     const availableEmployees = employees.filter(emp => 
@@ -1951,6 +2215,42 @@ export default function CompanyManagement() {
       setSelectedMembers([])
     }
 
+    // Toggle conflict member selection
+    const toggleConflictMember = (empId: number) => {
+      setConfirmedConflictIds(prev => 
+        prev.includes(empId) 
+          ? prev.filter(id => id !== empId)
+          : [...prev, empId]
+      )
+    }
+
+    // Handle skip - only add members without existing team
+    const handleSkipConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      onSubmit({
+        ...pendingFormData,
+        memberIds: membersWithoutConflict,
+        memberCount: membersWithoutConflict.length
+      })
+      setShowConflictDialog(false)
+    }
+
+    // Handle confirm - add selected members including confirmed transfers
+    const handleConfirmConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      const finalMembers = [...membersWithoutConflict, ...confirmedConflictIds]
+      onSubmit({
+        ...pendingFormData,
+        memberIds: finalMembers,
+        memberCount: finalMembers.length
+      })
+      setShowConflictDialog(false)
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       if (!formData.name || !formData.departmentId || !formData.leaderId) {
@@ -1961,7 +2261,7 @@ export default function CompanyManagement() {
       const department = departments.find(dept => dept.id === parseInt(formData.departmentId))
       const leader = employees.find(emp => emp.id === parseInt(formData.leaderId))
       
-      onSubmit({
+      const submitData: Partial<Team> = {
         ...formData,
         departmentId: parseInt(formData.departmentId),
         departmentName: department?.name || '',
@@ -1969,10 +2269,22 @@ export default function CompanyManagement() {
         leaderName: leader?.name || '',
         memberIds: selectedMembers,
         memberCount: selectedMembers.length
-      })
+      }
+
+      // Check for conflicts (only for newly added members)
+      const conflicts = findMembersInOtherTeams(selectedMembers, initialData.id)
+      if (conflicts.length > 0) {
+        setConflictMembers(conflicts)
+        setConfirmedConflictIds(conflicts.map(c => c.employeeId)) // Default: select all
+        setPendingFormData(submitData)
+        setShowConflictDialog(true)
+      } else {
+        onSubmit(submitData)
+      }
     }
 
     return (
+      <>
       <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-2">
         <div className="space-y-2">
           <Label htmlFor="teamName">Tên nhóm <span className="text-red-500">*</span></Label>
@@ -2132,7 +2444,14 @@ export default function CompanyManagement() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                        {getEmployeeTeamName(emp.id) && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">
+                            {getEmployeeTeamName(emp.id)}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
                     </div>
                   </div>
@@ -2151,6 +2470,95 @@ export default function CompanyManagement() {
           </Button>
         </DialogFooter>
       </form>
+
+      {/* Member Conflict Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a3353]">Xác nhận chuyển nhóm</DialogTitle>
+            <DialogDescription>
+              Các nhân viên sau đang thuộc nhóm khác. Chọn nhân viên muốn chuyển sang nhóm này:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {/* Select All / Deselect All buttons */}
+            <div className="flex items-center justify-end gap-2 pb-2 border-b border-[#e6ebf1]">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]"
+                onClick={() => setConfirmedConflictIds(conflictMembers.map(c => c.employeeId))}
+              >
+                Chọn tất cả
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs text-[#72849a] hover:text-[#455560]"
+                onClick={() => setConfirmedConflictIds([])}
+              >
+                Bỏ chọn
+              </Button>
+            </div>
+
+            {/* Conflict Members List */}
+            <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+              <div className="p-2 space-y-1">
+                {conflictMembers.map(conflict => (
+                  <div 
+                    key={conflict.employeeId}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                      confirmedConflictIds.includes(conflict.employeeId) 
+                        ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' 
+                        : 'hover:bg-[#f7f7f8] border border-transparent'
+                    }`}
+                    onClick={() => toggleConflictMember(conflict.employeeId)}
+                  >
+                    <div 
+                      className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        confirmedConflictIds.includes(conflict.employeeId)
+                          ? 'bg-[#3e79f7] border-[#3e79f7]'
+                          : 'border-[#d9d9d9] bg-white'
+                      }`}
+                    >
+                      {confirmedConflictIds.includes(conflict.employeeId) && (
+                        <CheckCircle className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353] truncate">{conflict.employeeName}</p>
+                      <div className="flex items-center gap-2 text-xs text-[#72849a]">
+                        <span className="truncate">Nhóm hiện tại:</span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">
+                          {conflict.currentTeamName}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-[#72849a] truncate">{conflict.departmentName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <p className="text-xs text-[#72849a] italic">
+              * Nhân viên được chọn sẽ được chuyển từ nhóm cũ sang nhóm này
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleSkipConflict}>
+              Bỏ qua
+            </Button>
+            <Button type="button" onClick={handleConfirmConflict}>
+              Thêm vào nhóm ({confirmedConflictIds.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     )
   }
 
