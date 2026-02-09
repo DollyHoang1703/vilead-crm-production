@@ -7246,7 +7246,7 @@ export default function CustomersManagement() {
           <div className="space-y-4">
             {/* Product Selection */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Chọn sản phẩm & gói sản phẩm</h4>
+              <h4 className="font-medium text-gray-900 mb-3"></h4>
               <div className="max-h-80 overflow-y-auto space-y-3">
                 {availableProducts.map((product) => (
                   <div key={product.id} className="border border-gray-200 rounded-lg p-4 bg-white">
