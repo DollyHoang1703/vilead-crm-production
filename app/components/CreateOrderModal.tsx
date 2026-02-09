@@ -694,7 +694,6 @@ export default function CreateOrderModal({
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
           <div className="text-sm text-gray-600">
-            Tạo đơn nhanh từ tin nhắn Zalo/Facebook
           </div>
           
           <div className="flex items-center space-x-3">

@@ -147,6 +147,7 @@ export default function SalesManagement() {
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
   const [paymentDeadline, setPaymentDeadline] = useState<string>('')
+  const [paymentMode, setPaymentMode] = useState<'full' | 'installment'>('full')
   const [paymentInstallments, setPaymentInstallments] = useState(1)
   const [installmentData, setInstallmentData] = useState<{amount: number; date: string}[]>([{amount: 0, date: ''}])
   const [isEditMode, setIsEditMode] = useState(false)
@@ -7092,8 +7093,30 @@ export default function SalesManagement() {
       {showBulkConvertModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 relative">
+              <button
+                onClick={() => {
+                  setShowBulkConvertModal(false)
+                  setBulkConvertTargetStatus('')
+                  setSelectedProducts([])
+                  setSelectedPackages({})
+                  setDiscountPercent(0)
+                  setDiscountType('%')
+                  setPaymentMethod('cash')
+                  setSelectedCategory('Tất cả')
+                  setPaymentDeadline('')
+                  setPaymentMode('full')
+                  setPaymentInstallments(1)
+                  setInstallmentData([{amount: 0, date: ''}])
+                }}
+                className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Đóng"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-8">
                 {selectedLeadIds.length > 1 
                   ? `Chuyển đổi hàng loạt - ${bulkConvertTargetStatus === 'payment_pending' ? 'Chờ thanh toán' : getStatusName(bulkConvertTargetStatus)}`
                   : `Chuyển đổi sang ${bulkConvertTargetStatus === 'payment_pending' ? 'chờ thanh toán' : getStatusName(bulkConvertTargetStatus).toLowerCase()}`
@@ -7244,6 +7267,16 @@ export default function SalesManagement() {
                               </div>
                             ) : null
                           })}
+                          {discountAmount > 0 && (
+                            <div className="flex justify-between text-gray-600 border-t border-green-200 pt-2 mt-2">
+                              <span>Giảm giá {discountType === '%' ? `(${discountPercent}%)` : ''}:</span>
+                              <span className="font-medium text-red-500">-{formatCurrency(discountAmount.toString())} VNĐ</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-gray-600 pt-1">
+                            <span>Phí VAT (10%):</span>
+                            <span className="font-medium text-gray-700">+{formatCurrency(vatAmount.toString())} VNĐ</span>
+                          </div>
                           <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
                             <span>Tổng cộng:</span>
                             <span className="text-lg">{formatCurrency(grandTotal.toString())} VNĐ</span>
@@ -7255,10 +7288,6 @@ export default function SalesManagement() {
 
                   {/* Payment Info Section */}
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h5 className="text-sm font-medium text-gray-800 mb-4 flex items-center gap-2">
-                      💰 Thông tin thanh toán
-                    </h5>
-                    
                     {/* Payment Deadline & Discount - Same Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Payment Deadline */}
@@ -7341,7 +7370,41 @@ export default function SalesManagement() {
                       </div>
                     </div>
 
-                    {/* Payment Installments */}
+                    {/* Payment Mode - Full or Installment */}
+                    <div className="mb-4">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                          Thực hiện thanh toán
+                        </label>
+                        <div className="flex gap-3">
+                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                            <input
+                              type="radio"
+                              name="paymentMode"
+                              value="full"
+                              checked={paymentMode === 'full'}
+                              onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">💳 Toàn bộ</span>
+                          </label>
+                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                            <input
+                              type="radio"
+                              name="paymentMode"
+                              value="installment"
+                              checked={paymentMode === 'installment'}
+                              onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">📅 Theo giai đoạn</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Installments - Only show when installment mode selected */}
+                    {paymentMode === 'installment' && (
                     <div className="border-t border-gray-200 pt-4">
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -7366,24 +7429,50 @@ export default function SalesManagement() {
                       </div>
 
                       {/* Installment Details */}
-                      {installmentData.map((installment, index) => (
+                      {installmentData.map((installment, index) => {
+                        // Calculate grand total for validation
+                        const subtotalCalc = selectedProducts.reduce((sum, productId) => {
+                          const product = availableProducts.find(p => p.id === productId)
+                          const selectedPackageId = selectedPackages[productId]
+                          const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
+                          return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                        }, 0)
+                        const totalBeforeDiscountCalc = subtotalCalc * selectedLeadIds.length
+                        const discountAmountCalc = discountType === '%' 
+                          ? totalBeforeDiscountCalc * discountPercent / 100 
+                          : discountPercent
+                        const afterDiscountCalc = totalBeforeDiscountCalc - discountAmountCalc
+                        const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                        
+                        // Calculate max allowed for this installment
+                        const otherInstallmentsTotal = installmentData.reduce((sum, inst, i) => 
+                          i !== index ? sum + inst.amount : sum, 0
+                        )
+                        const maxAllowed = Math.max(0, grandTotalCalc - otherInstallmentsTotal)
+                        const isOverLimit = installment.amount > maxAllowed
+                        
+                        return (
                         <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-white rounded-lg border border-gray-100">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Số tiền thanh toán
+                              Số tiền thanh toán <span className="text-xs text-gray-500">(Tối đa: {formatCurrency(maxAllowed.toString())} VNĐ)</span>
                             </label>
                             <input
                               type="text"
                               value={formatCurrency(installment.amount.toString())}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value.replace(/\D/g, '')) || 0
+                                const validatedValue = Math.min(value, maxAllowed)
                                 const newData = [...installmentData]
-                                newData[index] = {...newData[index], amount: value}
+                                newData[index] = {...newData[index], amount: validatedValue}
                                 setInstallmentData(newData)
                               }}
                               placeholder="0"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isOverLimit ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
                             />
+                            {isOverLimit && (
+                              <p className="mt-1 text-xs text-red-500">Số tiền vượt quá giới hạn cho phép</p>
+                            )}
                           </div>
                           <div className="flex items-end gap-2">
                             <div className="flex-1">
@@ -7423,8 +7512,10 @@ export default function SalesManagement() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -7451,6 +7542,7 @@ export default function SalesManagement() {
                   setPaymentMethod('cash')
                   setSelectedCategory('Tất cả')
                   setPaymentDeadline('')
+                  setPaymentMode('full')
                   setPaymentInstallments(1)
                   setInstallmentData([{amount: 0, date: ''}])
                 }}

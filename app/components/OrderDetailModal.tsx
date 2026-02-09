@@ -32,6 +32,15 @@ import {
   Zap
 } from 'lucide-react'
 
+interface InstallmentData {
+  id: number
+  plannedAmount: number
+  plannedDate: string
+  actualAmount: number
+  actualDate: string
+  status: 'pending' | 'partial' | 'completed'
+}
+
 interface Order {
   id: number
   orderNumber: string
@@ -45,6 +54,10 @@ interface Order {
   status: string
   paymentStatus: string
   paymentMethod: string
+  paymentMode?: 'full' | 'installment'
+  installments?: InstallmentData[]
+  totalPaid?: number
+  remainingDebt?: number
   notes: any[]
   invoices: any[]
   tags: string[]
@@ -605,47 +618,85 @@ export default function OrderDetailModal({
     </div>
   )
 
-  const renderHistory = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">Lịch sử thay đổi</h3>
-      
-      <div className="space-y-3">
-        {order.history.map((entry: any) => (
-          <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <History className="w-4 h-4 text-blue-600" />
+  const renderHistory = () => {
+    // Build timeline entries from various sources
+    const entries: Array<{
+      id: string
+      timestamp: string
+      title: string
+      description?: string
+    }> = []
+    
+    // Add order creation
+    entries.push({
+      id: 'created',
+      timestamp: order.createdAt,
+      title: 'Đơn mới được tạo'
+    })
+    
+    // Add installment payments
+    if (order.installments && order.installments.length > 0) {
+      order.installments.forEach((inst: any, index: number) => {
+        if (inst.actualAmount > 0 && inst.actualDate) {
+          entries.push({
+            id: `payment-${inst.id}`,
+            timestamp: inst.actualDate,
+            title: `Thanh toán đợt ${index + 1}: ${inst.actualAmount.toLocaleString('vi-VN')} VNĐ`
+          })
+        }
+      })
+    }
+    
+    // Add history entries
+    order.history?.forEach((entry: any) => {
+      if (entry.action !== 'created') {
+        entries.push({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          title: entry.action === 'status_changed' ? 'Thay đổi trạng thái' :
+                 entry.action === 'invoice_added' ? 'Gắn hóa đơn' :
+                 entry.action === 'note_added' ? 'Thêm ghi chú' :
+                 entry.action === 'refunded' ? 'Hoàn tiền' :
+                 entry.action === 'cancelled' ? 'Hủy đơn' :
+                 entry.action === 'payment_completed' ? 'Đã thanh toán' : entry.action,
+          description: entry.oldValue && entry.newValue 
+            ? `Từ "${entry.oldValue}" thành "${entry.newValue}"` 
+            : entry.reason || entry.details
+        })
+      }
+    })
+    
+    // Sort by timestamp descending (newest first)
+    entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Lịch sử thay đổi</h3>
+        
+        <div className="mt-4">
+          {entries.map((entry, index) => (
+            <div key={entry.id} className="flex">
+              <div className="flex flex-col items-center mr-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0"></div>
+                {index < entries.length - 1 && (
+                  <div className="w-px flex-1 border-l-2 border-dashed border-gray-300"></div>
+                )}
               </div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">
-                  {entry.action === 'created' && 'Tạo đơn hàng'}
-                  {entry.action === 'status_changed' && 'Thay đổi trạng thái'}
-                  {entry.action === 'invoice_added' && 'Gắn hóa đơn'}
-                  {entry.action === 'note_added' && 'Thêm ghi chú'}
-                  {entry.action === 'refunded' && 'Hoàn tiền'}
-                  {entry.action === 'cancelled' && 'Hủy đơn'}
+              <div className={`pb-3 ${index === entries.length - 1 ? 'pb-0' : ''}`}>
+                <div className="text-sm text-gray-500">
+                  {new Date(entry.timestamp).toLocaleString('vi-VN')}
                 </div>
-                {entry.oldValue && entry.newValue && (
-                  <div className="text-sm text-gray-600">
-                    Từ "{entry.oldValue}" thành "{entry.newValue}"
-                  </div>
+                <div className="text-sm text-gray-900 mt-1">{entry.title}</div>
+                {entry.description && (
+                  <div className="text-sm text-gray-600 mt-1">{entry.description}</div>
                 )}
-                {entry.reason && (
-                  <div className="text-sm text-gray-600">Lý do: {entry.reason}</div>
-                )}
-                {entry.details && (
-                  <div className="text-sm text-gray-600">{entry.details}</div>
-                )}
-                <div className="text-xs text-gray-500 mt-1">
-                  {entry.performedBy} • {new Date(entry.timestamp).toLocaleString('vi-VN')}
-                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -671,7 +722,6 @@ export default function OrderDetailModal({
               { id: 'overview', name: 'Tổng quan', icon: <Eye className="w-4 h-4" /> },
               { id: 'items', name: 'Sản phẩm', icon: <Package className="w-4 h-4" /> },
               { id: 'notes', name: 'Ghi chú', icon: <FileText className="w-4 h-4" /> },
-              { id: 'messages', name: 'Tin nhắn', icon: <MessageSquare className="w-4 h-4" /> },
               { id: 'history', name: 'Lịch sử', icon: <History className="w-4 h-4" /> }
             ].map((tab) => (
               <button
@@ -697,7 +747,6 @@ export default function OrderDetailModal({
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'items' && renderItems()}
           {activeTab === 'notes' && renderNotes()}
-          {activeTab === 'messages' && renderMessages()}
           {activeTab === 'history' && renderHistory()}
         </div>
       </div>

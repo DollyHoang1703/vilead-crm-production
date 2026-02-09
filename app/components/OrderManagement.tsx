@@ -143,6 +143,15 @@ interface Reminder {
   isActive: boolean
 }
 
+interface InstallmentData {
+  id: number
+  plannedAmount: number
+  plannedDate: string
+  actualAmount: number
+  actualDate: string
+  status: 'pending' | 'partial' | 'completed'
+}
+
 interface Order {
   id: number
   orderNumber: string
@@ -170,6 +179,11 @@ interface Order {
   isVip: boolean
   upsellSuggestions?: Product[]
   crosssellSuggestions?: Product[]
+  // Installment payment fields
+  paymentMode?: 'full' | 'installment'
+  installments?: InstallmentData[]
+  totalPaid?: number
+  remainingDebt?: number
 }
 
 export default function OrderManagement() {
@@ -299,11 +313,11 @@ export default function OrderManagement() {
       total: 16350000,
       totalAmount: 16350000,
       status: 'pending',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'cash',
+      paymentStatus: 'partial',
+      paymentMethod: 'transfer',
       notes: [],
       invoices: [],
-      tags: ['Mới'],
+      tags: ['Mới', 'Thanh toán một phần'],
       createdAt: '2026-01-27T08:30:00',
       createdBy: 'Trần Sales',
       updatedAt: '2026-01-27T08:30:00',
@@ -311,7 +325,15 @@ export default function OrderManagement() {
       zaloMessages: [],
       deadline: '2026-01-31T23:59:59',
       remindersSent: 0,
-      isVip: false
+      isVip: false,
+      // Installment payment data - 2 phases
+      paymentMode: 'installment',
+      installments: [
+        { id: 1, plannedAmount: 8000000, plannedDate: '2026-01-30', actualAmount: 0, actualDate: '', status: 'pending' },
+        { id: 2, plannedAmount: 8350000, plannedDate: '2026-02-10', actualAmount: 0, actualDate: '', status: 'pending' }
+      ],
+      totalPaid: 0,
+      remainingDebt: 16350000
     },
     {
       id: 3,
@@ -355,7 +377,7 @@ export default function OrderManagement() {
       paymentMethod: 'transfer',
       notes: [],
       invoices: [],
-      tags: ['Quan trọng'],
+      tags: ['Quan trọng', 'Thanh toán một phần'],
       createdAt: '2026-01-26T11:20:00',
       createdBy: 'Lê Sales',
       updatedAt: '2026-01-26T15:30:00',
@@ -363,7 +385,16 @@ export default function OrderManagement() {
       zaloMessages: [],
       deadline: '2026-02-02T23:59:59',
       remindersSent: 0,
-      isVip: false
+      isVip: false,
+      // Installment payment data
+      paymentMode: 'installment',
+      installments: [
+        { id: 1, plannedAmount: 10000000, plannedDate: '2026-01-28', actualAmount: 10000000, actualDate: '2026-01-28', status: 'completed' },
+        { id: 2, plannedAmount: 8000000, plannedDate: '2026-02-05', actualAmount: 0, actualDate: '', status: 'pending' },
+        { id: 3, plannedAmount: 8000000, plannedDate: '2026-02-15', actualAmount: 0, actualDate: '', status: 'pending' }
+      ],
+      totalPaid: 10000000,
+      remainingDebt: 16000000
     },
     {
       id: 5,
@@ -968,9 +999,40 @@ export default function OrderManagement() {
   const handleSaveEditOrder = (updatedOrderData: any) => {
     if (!editingOrder) return
 
+    // Auto-manage tags for installment orders
+    let tags = [...(updatedOrderData.tags || editingOrder.tags || [])]
+    const hasInstallments = updatedOrderData.installments && updatedOrderData.installments.length > 1
+    const hasPartialTag = tags.includes('Thanh toán một phần')
+    
+    if (hasInstallments && !hasPartialTag) {
+      tags.push('Thanh toán một phần')
+    }
+    
+    // Check if fully paid - all installments completed
+    let finalStatus = updatedOrderData.status || editingOrder.status
+    let finalPaymentStatus = updatedOrderData.paymentStatus || editingOrder.paymentStatus
+    
+    if (updatedOrderData.installments) {
+      const allCompleted = updatedOrderData.installments.every((inst: InstallmentData) => inst.status === 'completed')
+      const totalPaid = updatedOrderData.installments.reduce((sum: number, inst: InstallmentData) => sum + inst.actualAmount, 0)
+      
+      if (allCompleted && totalPaid >= editingOrder.total) {
+        finalStatus = 'completed'
+        finalPaymentStatus = 'paid'
+        // Remove partial tag, add completed tag
+        tags = tags.filter(t => t !== 'Thanh toán một phần')
+        if (!tags.includes('Hoàn thành')) {
+          tags.push('Hoàn thành')
+        }
+      }
+    }
+
     const updatedOrder: Order = {
       ...editingOrder,
       ...updatedOrderData,
+      status: finalStatus,
+      paymentStatus: finalPaymentStatus,
+      tags,
       updatedAt: new Date().toISOString(),
       history: [
         ...editingOrder.history,
@@ -980,8 +1042,8 @@ export default function OrderManagement() {
           timestamp: new Date().toISOString(),
           performedBy: 'Nguyễn Sales Manager',
           oldValue: editingOrder.status,
-          newValue: updatedOrderData.status,
-          details: 'Chỉnh sửa thông tin đơn hàng'
+          newValue: finalStatus,
+          details: updatedOrderData.paymentStatus === 'paid' ? 'Thanh toán hoàn tất' : 'Chỉnh sửa thông tin đơn hàng'
         }
       ]
     }
@@ -991,7 +1053,9 @@ export default function OrderManagement() {
     ))
 
     setNotification({
-      message: `Đơn hàng ${editingOrder.orderNumber} đã được cập nhật thành công!`,
+      message: finalPaymentStatus === 'paid' && finalStatus === 'completed'
+        ? `Đơn hàng ${editingOrder.orderNumber} đã thanh toán hoàn tất và chuyển sang Hoàn thành!`
+        : `Đơn hàng ${editingOrder.orderNumber} đã được cập nhật thành công!`,
       type: 'success'
     })
     setTimeout(() => setNotification(null), 3000)
@@ -1977,7 +2041,10 @@ Trân trọng,
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Mã đơn</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Khách hàng</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden md:table-cell">Sản phẩm</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tổng tiền</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-blue-600 uppercase tracking-wider">Tổng tiền</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap hidden lg:table-cell">Số lần TT</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-green-600 uppercase tracking-wider hidden lg:table-cell">Thực tế</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-red-600 uppercase tracking-wider hidden lg:table-cell">Dư nợ</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Trạng thái</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Thanh toán</th>
                 <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Thời hạn</th>
@@ -2040,7 +2107,23 @@ Trân trọng,
                   </td>
                   
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{formatCurrency(order.total)}</div>
+                    <div className="font-medium text-blue-600">{formatCurrency(order.total)}</div>
+                  </td>
+                  
+                  <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-sm text-gray-900">{order.installments?.length || 1}</div>
+                  </td>
+                  
+                  <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-sm font-medium text-green-600">
+                      {formatCurrency(order.totalPaid || 0)}
+                    </div>
+                  </td>
+                  
+                  <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-sm font-medium text-red-600">
+                      {formatCurrency(order.remainingDebt ?? order.total)}
+                    </div>
                   </td>
                   
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -2479,7 +2562,7 @@ Trân trọng,
       {/* Edit Order Modal */}
       {showEditModal && editingOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className={`bg-white rounded-lg shadow-xl ${editingOrder.paymentStatus === 'partial' || editingOrder.paymentMode === 'installment' ? 'max-w-5xl' : 'max-w-md'} w-full mx-4 max-h-[90vh] overflow-y-auto`}>
             <div className="flex items-center justify-between p-6 border-b">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Chỉnh sửa đơn hàng</h3>
@@ -2497,101 +2580,319 @@ Trân trọng,
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Order Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trạng thái đơn hàng
-                  </label>
-                  <select
-                    defaultValue={editingOrder.status}
-                    onChange={(e) => {
-                      setEditingOrder(prev => prev ? {...prev, status: e.target.value as Order['status']} : null)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="draft">Nháp</option>
-                    <option value="pending">Chờ xử lý</option>
-                    <option value="confirmed">Đã xác nhận</option>
-                    <option value="processing">Đang xử lý</option>
-                    <option value="completed">Hoàn thành</option>
-                  </select>
-                </div>
-
-                {/* Payment Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trạng thái thanh toán
-                  </label>
-                  <select
-                    defaultValue={editingOrder.paymentStatus}
-                    onChange={(e) => {
-                      setEditingOrder(prev => prev ? {...prev, paymentStatus: e.target.value as Order['paymentStatus']} : null)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="unpaid">Chưa thanh toán</option>
-                    <option value="partial">Thanh toán một phần</option>
-                    <option value="paid">Đã thanh toán</option>
-                    <option value="refunded">Đã hoàn tiền</option>
-                  </select>
-                </div>
-
-                {/* Payment Method */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phương thức thanh toán
-                  </label>
-                  <select
-                    defaultValue={editingOrder.paymentMethod}
-                    onChange={(e) => {
-                      setEditingOrder(prev => prev ? {...prev, paymentMethod: e.target.value as Order['paymentMethod']} : null)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="cash">Tiền mặt</option>
-                    <option value="transfer">Chuyển khoản</option>
-                    <option value="card">Thẻ tín dụng/Ghi nợ</option>
-                    <option value="installment">Trả góp</option>
-                    <option value="momo">MoMo</option>
-                    <option value="custom">Khác</option>
-                  </select>
-                </div>
-
-                {/* Deadline */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Hạn hoàn thành
-                  </label>
-                  <input
-                    type="date"
-                    defaultValue={editingOrder.deadline?.split('T')[0] || ''}
-                    onChange={(e) => {
-                      setEditingOrder(prev => prev ? {...prev, deadline: e.target.value} : null)
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+              {/* Payment Status - Full Width */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trạng thái thanh toán <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={editingOrder.paymentStatus}
+                  onChange={(e) => {
+                    const newPaymentStatus = e.target.value as Order['paymentStatus']
+                    setEditingOrder(prev => {
+                      if (!prev) return null
+                      // Auto-fill paid amount when changing to "paid"
+                      if (newPaymentStatus === 'paid') {
+                        const today = new Date().toISOString().split('T')[0]
+                        const updatedInstallments = prev.installments?.map(inst => ({
+                          ...inst,
+                          status: 'completed' as const,
+                          actualAmount: inst.actualAmount || inst.plannedAmount,
+                          actualDate: inst.actualDate || today
+                        })) || []
+                        return {
+                          ...prev,
+                          paymentStatus: newPaymentStatus,
+                          totalPaid: prev.total,
+                          remainingDebt: 0,
+                          installments: updatedInstallments
+                        }
+                      }
+                      return {...prev, paymentStatus: newPaymentStatus}
+                    })
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="unpaid">Chưa thanh toán</option>
+                  <option value="partial">Thanh toán một phần</option>
+                  <option value="paid">Đã thanh toán</option>
+                  <option value="refunded">Đã hoàn tiền</option>
+                </select>
               </div>
 
+              {/* Installment Payment UI - Show when partial payment selected */}
+              {(editingOrder.paymentStatus === 'partial' || editingOrder.paymentMode === 'installment') && editingOrder.installments && editingOrder.installments.length > 0 && (
+                <div className="mt-6 border-t pt-6">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4">Chi tiết thanh toán theo giai đoạn</h4>
+                  
+                  <div className="flex gap-6">
+                    {/* Installments List */}
+                    <div className="flex-1">
+                      <div className="space-y-3">
+                        {editingOrder.installments.map((installment, index) => {
+                          const isCompleted = installment.status === 'completed'
+                          const isOverPaid = installment.actualAmount > installment.plannedAmount
+                          const isLastInstallment = index === (editingOrder.installments?.length || 1) - 1
+                          
+                          // Calculate previous installments deficit
+                          const previousInstallments = editingOrder.installments?.slice(0, index) || []
+                          const previousDeficit = previousInstallments.reduce((sum, inst) => {
+                            return sum + Math.max(0, inst.plannedAmount - inst.actualAmount)
+                          }, 0)
+                          
+                          // For last installment, minimum required = planned + all previous deficits
+                          const minRequiredForLast = isLastInstallment ? installment.plannedAmount + previousDeficit : 0
+                          const isLastInstallmentShort = isLastInstallment && installment.actualAmount > 0 && installment.actualAmount < minRequiredForLast && !isCompleted
+                          
+                          return (
+                            <div 
+                              key={installment.id} 
+                              className={`p-4 rounded-lg border ${isCompleted ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-white border-gray-200'}`}
+                            >
+                              {/* Header with Phase Label and Submit Button */}
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-700">Đợt {index + 1}</span>
+                                  {isCompleted && (
+                                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Đã thanh toán</span>
+                                  )}
+                                </div>
+                                
+                                {/* Submit Payment Button - Top Right */}
+                                {!isCompleted && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (installment.actualAmount <= 0) {
+                                        setNotification({ message: 'Vui lòng nhập số tiền thanh toán', type: 'error' })
+                                        return
+                                      }
+                                      if (installment.actualAmount > installment.plannedAmount) {
+                                        setNotification({ message: 'Số tiền không được vượt quá số tiền dự kiến', type: 'error' })
+                                        return
+                                      }
+                                      // For last installment, check if it covers remaining debt
+                                      if (isLastInstallment && installment.actualAmount < minRequiredForLast) {
+                                        setNotification({ message: `Đợt cuối phải thanh toán tối thiểu ${minRequiredForLast.toLocaleString('vi-VN')} VNĐ để bù đắp thiếu hụt các đợt trước`, type: 'error' })
+                                        return
+                                      }
+                                      // Mark as completed
+                                      const newInstallments = [...(editingOrder.installments || [])]
+                                      newInstallments[index] = {
+                                        ...newInstallments[index],
+                                        status: 'completed',
+                                        actualDate: installment.actualDate || new Date().toISOString().split('T')[0]
+                                      }
+                                      // Calculate totals
+                                      const totalPaid = newInstallments.reduce((sum, inst) => sum + inst.actualAmount, 0)
+                                      const remainingDebt = editingOrder.total - totalPaid
+                                      // Check if fully paid
+                                      const allCompleted = newInstallments.every(inst => inst.status === 'completed')
+                                      const newPaymentStatus = allCompleted ? 'paid' : 'partial'
+                                      const newStatus = allCompleted ? 'completed' : editingOrder.status
+                                      
+                                      setEditingOrder(prev => prev ? {
+                                        ...prev, 
+                                        installments: newInstallments,
+                                        totalPaid,
+                                        remainingDebt,
+                                        paymentStatus: newPaymentStatus,
+                                        status: newStatus
+                                      } : null)
+                                      
+                                      setNotification({ 
+                                        message: allCompleted 
+                                          ? 'Đã thanh toán hoàn tất! Đơn hàng chuyển sang trạng thái Hoàn thành.' 
+                                          : `Đã ghi nhận thanh toán đợt ${index + 1}`, 
+                                        type: 'success' 
+                                      })
+                                    }}
+                                    className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
+                                    title="Nộp tiền"
+                                  >
+                                    Nộp tiền
+                                  </button>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                                {/* Planned Amount */}
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Số tiền thanh toán</label>
+                                  <input
+                                    type="text"
+                                    value={installment.plannedAmount.toLocaleString('vi-VN')}
+                                    disabled
+                                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-700"
+                                  />
+                                </div>
+                                
+                                {/* Planned Date */}
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Ngày thanh toán đợt {index + 1}</label>
+                                  <input
+                                    type="text"
+                                    value={installment.plannedDate ? new Date(installment.plannedDate).toLocaleDateString('vi-VN') : 'Thời gian thanh toán ...'}
+                                    disabled
+                                    className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm text-gray-500"
+                                  />
+                                </div>
+                                
+                                {/* Actual Amount */}
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Số tiền thanh toán thực tế</label>
+                                  <input
+                                    type="text"
+                                    value={installment.actualAmount.toLocaleString('vi-VN')}
+                                    onChange={(e) => {
+                                      if (isCompleted) return
+                                      let value = parseInt(e.target.value.replace(/\D/g, '')) || 0
+                                      
+                                      // Calculate max allowed to prevent negative debt
+                                      const otherInstallmentsPaid = (editingOrder.installments || [])
+                                        .filter((_, i) => i !== index)
+                                        .reduce((sum, inst) => sum + inst.actualAmount, 0)
+                                      const maxAllowed = editingOrder.total - otherInstallmentsPaid
+                                      
+                                      // Clamp value: cannot exceed planned amount and cannot cause negative debt
+                                      value = Math.min(value, installment.plannedAmount, maxAllowed)
+                                      
+                                      const newInstallments = [...(editingOrder.installments || [])]
+                                      newInstallments[index] = {
+                                        ...newInstallments[index],
+                                        actualAmount: value,
+                                        status: value >= installment.plannedAmount ? 'completed' : value > 0 ? 'partial' : 'pending'
+                                      }
+                                      // Calculate totals
+                                      const totalPaid = newInstallments.reduce((sum, inst) => sum + inst.actualAmount, 0)
+                                      const remainingDebt = editingOrder.total - totalPaid
+                                      
+                                      // If debt is 0, mark all pending installments as completed with 0
+                                      if (remainingDebt === 0) {
+                                        newInstallments.forEach((inst, i) => {
+                                          if (inst.status === 'pending' && inst.actualAmount === 0) {
+                                            newInstallments[i] = { ...inst, status: 'completed', actualAmount: 0 }
+                                          }
+                                        })
+                                      }
+                                      
+                                      setEditingOrder(prev => prev ? {
+                                        ...prev, 
+                                        installments: newInstallments,
+                                        totalPaid,
+                                        remainingDebt
+                                      } : null)
+                                    }}
+                                    disabled={isCompleted}
+                                    placeholder="0"
+                                    className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${
+                                      isCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 
+                                      isOverPaid ? 'border-red-500 bg-red-50 text-red-700' : 
+                                      isLastInstallmentShort ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300'
+                                    }`}
+                                  />
+                                  {isOverPaid && !isCompleted && (
+                                    <p className="mt-1 text-xs text-red-500">Số tiền vượt quá số tiền dự kiến</p>
+                                  )}
+                                  {isLastInstallmentShort && (
+                                    <p className="mt-1 text-xs text-red-500">Đợt cuối cần tối thiểu {minRequiredForLast.toLocaleString('vi-VN')} VNĐ</p>
+                                  )}
+                                </div>
+                                
+                                {/* Actual Date */}
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Ngày thanh toán thực tế đợt {index + 1}</label>
+                                  <input
+                                    type="date"
+                                    value={installment.actualDate || ''}
+                                    onChange={(e) => {
+                                      if (isCompleted) return
+                                      const newInstallments = [...(editingOrder.installments || [])]
+                                      newInstallments[index] = {...newInstallments[index], actualDate: e.target.value}
+                                      setEditingOrder(prev => prev ? {...prev, installments: newInstallments} : null)
+                                    }}
+                                    disabled={isCompleted}
+                                    className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${
+                                      isCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 'border-gray-300'
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Statistics Container */}
+                    <div className="w-64 shrink-0">
+                      <div className="bg-gray-50 rounded-lg p-4 space-y-4 sticky top-0">
+                        {/* Total Planned */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tổng số Tiền thanh toán</label>
+                          <div className={`px-3 py-2 border rounded-md text-sm font-medium ${
+                            (editingOrder.totalPaid || 0) !== editingOrder.total ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300 bg-white'
+                          }`}>
+                            {editingOrder.total.toLocaleString('vi-VN')}
+                          </div>
+                          {(editingOrder.totalPaid || 0) !== editingOrder.total && (
+                            <p className="mt-1 text-xs text-red-500">Tổng tiền khác Giá trị hợp đồng</p>
+                          )}
+                        </div>
+                        
+                        {/* Total Actual Paid */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tổng tiền thực tế thanh toán</label>
+                          <div className="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium">
+                            {(editingOrder.totalPaid || 0).toLocaleString('vi-VN')}
+                          </div>
+                        </div>
+                        
+                        {/* Remaining Debt */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Dư nợ</label>
+                          <div className={`px-3 py-2 border rounded-md text-sm font-medium ${
+                            (editingOrder.remainingDebt || 0) > 0 ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-green-50 border-green-300 text-green-700'
+                          }`}>
+                            {(editingOrder.remainingDebt ?? editingOrder.total).toLocaleString('vi-VN')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Hint for non-installment */}
+              {editingOrder.paymentStatus === 'partial' && (!editingOrder.installments || editingOrder.installments.length === 0) && (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    Đơn hàng này chưa có thông tin thanh toán theo giai đoạn. 
+                    Vui lòng tạo đơn hàng mới với tùy chọn "Theo giai đoạn" để quản lý thanh toán từng đợt.
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowEditModal(false)
-                    setEditingOrder(null)
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={() => handleSaveEditOrder(editingOrder)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  Lưu thay đổi
-                </button>
+              <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <p className="text-xs text-gray-500"></p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false)
+                      setEditingOrder(null)
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={() => handleSaveEditOrder(editingOrder)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    Lưu thay đổi
+                  </button>
+                </div>
               </div>
             </div>
           </div>
