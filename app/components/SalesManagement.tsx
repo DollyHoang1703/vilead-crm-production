@@ -7604,12 +7604,13 @@ export default function SalesManagement() {
 
                       {/* Installment Details */}
                       {installmentData.map((installment, index) => {
-                        // Calculate grand total for validation
+                        // Calculate grand total for validation (same as summary calculation)
                         const subtotalCalc = selectedProducts.reduce((sum, productId) => {
                           const product = availableProducts.find(p => p.id === productId)
                           const selectedPackageId = selectedPackages[productId]
                           const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                          return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                          const quantity = productQuantities[productId] || 1
+                          return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                         }, 0)
                         const totalBeforeDiscountCalc = subtotalCalc * selectedLeadIds.length
                         const discountAmountCalc = discountType === '%' 
