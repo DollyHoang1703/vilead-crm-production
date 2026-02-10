@@ -740,12 +740,12 @@ const permissionModuleGroups = [
     name: 'Khách hàng & Lead',
     icon: '👤',
     modules: [
-      { id: 'person', name: 'Mọi người', icon: '👤' },
-      { id: 'opportunity', name: 'Cơ hội', icon: '💰' },
-      { id: 'leadQualityFlag', name: 'Cờ đánh giá chất lượng lead', icon: '🚩' },
-      { id: 'personProductInterest', name: 'Mối quan tâm sản phẩm', icon: '❤️' },
-      { id: 'customerBehaviorConfig', name: 'Cấu hình hành vi khách hàng', icon: '⚙️' },
-      { id: 'customerTierConfig', name: 'Cấu hình hạng khách hàng', icon: '🏆' },
+      { id: 'person', name: 'Lead/Khách hàng', icon: '👤' },
+      { id: 'opportunity', name: 'Cơ hội bán hàng', icon: '💰' },
+      { id: 'leadQualityFlag', name: 'Đánh dấu chất lượng lead', icon: '🚩' },
+      { id: 'personProductInterest', name: 'Sản phẩm quan tâm', icon: '❤️' },
+      { id: 'customerBehaviorConfig', name: 'Cấu hình theo dõi hành vi khách hàng', icon: '⚙️' },
+      { id: 'customerTierConfig', name: 'Cấu hình phân hạng khách hàng', icon: '🏆' },
     ]
   },
   {
@@ -756,7 +756,7 @@ const permissionModuleGroups = [
       { id: 'order', name: 'Đơn hàng', icon: '🛒' },
       { id: 'orderHistory', name: 'Lịch sử đơn hàng', icon: '⏱️' },
       { id: 'invoice', name: 'Hóa đơn', icon: '🧾' },
-      { id: 'invoiceProduct', name: 'Sản phẩm hóa đơn', icon: '≡' },
+      { id: 'invoiceProduct', name: 'Sản phẩm trong hóa đơn', icon: '≡' },
       { id: 'payment', name: 'Thanh toán', icon: '💳' },
     ]
   },
@@ -766,12 +766,12 @@ const permissionModuleGroups = [
     icon: '📦',
     modules: [
       { id: 'product', name: 'Sản phẩm', icon: '📦' },
-      { id: 'category', name: 'Danh mục', icon: '📁' },
+      { id: 'category', name: 'Danh mục chung', icon: '📁' },
       { id: 'productCategory', name: 'Danh mục sản phẩm', icon: '🔗' },
-      { id: 'productOption', name: 'Tùy chọn sản phẩm', icon: '⚙️' },
-      { id: 'productOptionValue', name: 'Giá trị tùy chọn sản phẩm', icon: '🔢' },
+      { id: 'productOption', name: 'Thuộc tính sản phẩm', icon: '⚙️' },
+      { id: 'productOptionValue', name: 'Giá trị của thuộc tính sản phẩm', icon: '🔢' },
       { id: 'productVariant', name: 'Biến thể sản phẩm', icon: '🎨' },
-      { id: 'productVariantOptionValue', name: 'Giá trị tùy chọn biến thể', icon: '📊' },
+      { id: 'productVariantOptionValue', name: 'Giá trị của biến thể sản phẩm', icon: '📊' },
     ]
   },
   {
@@ -780,9 +780,10 @@ const permissionModuleGroups = [
     icon: '✅',
     modules: [
       { id: 'task', name: 'Công việc', icon: '✅' },
-      { id: 'taskLabel', name: 'Nhãn công việc', icon: '🏷️' },
-      { id: 'autoTaskTemplate', name: 'Mẫu tác vụ tự động', icon: '📋' },
+      { id: 'taskLabel', name: 'Phân loại công việc', icon: '🏷️' },
+      { id: 'autoTaskTemplate', name: 'Mẫu công việc tự động', icon: '📋' },
       { id: 'reminder', name: 'Nhắc nhở', icon: '⏰' },
+      { id: 'note', name: 'Ghi chú', icon: '📝' },
     ]
   },
   {
@@ -792,7 +793,7 @@ const permissionModuleGroups = [
     modules: [
       { id: 'company', name: 'Công ty', icon: '🏢' },
       { id: 'department', name: 'Phòng ban', icon: '🏛️' },
-      { id: 'team', name: 'Nhóm', icon: '👥' },
+      { id: 'team', name: 'Đội nhóm', icon: '👥' },
     ]
   },
   {
@@ -800,13 +801,14 @@ const permissionModuleGroups = [
     name: 'KPI & Hiệu suất',
     icon: '📊',
     modules: [
-      { id: 'dashboard', name: 'Bảng điều khiển', icon: '📊' },
-      { id: 'kpiAssignment', name: 'Phân công KPI', icon: '🔄' },
-      { id: 'kpiDataPoint', name: 'Điểm dữ liệu KPI', icon: '📈' },
-      { id: 'kpiDefinition', name: 'Định nghĩa KPI', icon: '📐' },
-      { id: 'memberPerformanceStats', name: 'Thống kê hiệu suất thành viên', icon: '📊' },
-      { id: 'memberSkill', name: 'Kỹ năng thành viên', icon: '💪' },
-      { id: 'memberWorkloadSnapshot', name: 'Ảnh chụp khối lượng công việc', icon: '📸' },
+      { id: 'dashboard', name: 'Tổng quan', icon: '📊' },
+      { id: 'kpiAssignment', name: 'Phân bổ KPI', icon: '🔄' },
+      { id: 'kpiDefinition', name: 'Thiết lập KPI', icon: '📐' },
+      { id: 'memberPerformanceStats', name: 'Thống kê hiệu suất nhân viên', icon: '📊' },
+      { id: 'memberSkill', name: 'Kỹ năng nhân viên', icon: '💪' },
+      { id: 'memberWorkloadSnapshot', name: 'Khối lượng công việc nhân viên', icon: '📸' },
+      { id: 'dataPoints', name: 'Điểm dữ liệu', icon: '📸' },
+
     ]
   },
   {
@@ -814,10 +816,11 @@ const permissionModuleGroups = [
     name: 'Cấu hình & Hệ thống',
     icon: '⚙️',
     modules: [
-      { id: 'assignmentRule', name: 'Quy tắc phân công', icon: '☑️' },
-      { id: 'assignmentSettings', name: 'Cài đặt phân công', icon: '☑️' },
+      { id: 'assignmentRule', name: 'Quy tắc phân chia lead', icon: '☑️' },
+      { id: 'assignmentSettings', name: 'Cài đặt phân chia lead', icon: '☑️' },
       { id: 'notificationTemplate', name: 'Mẫu thông báo', icon: '🔔' },
-      { id: 'embedding', name: 'Dữ liệu nhúng', icon: '📦' },
+      { id: 'embedding', name: 'Nhúng dữ liệu', icon: '📦' },
+      { id: 'workflows', name: 'Quy trình tự động', icon: '📸' },
     ]
   },
   {
@@ -825,9 +828,8 @@ const permissionModuleGroups = [
     name: 'Phân loại & Nhãn',
     icon: '🏷️',
     modules: [
-      { id: 'label', name: 'Nhãn', icon: '🏷️' },
-      { id: 'tag', name: 'Thẻ', icon: '🏷️' },
-      { id: 'note', name: 'Ghi chú', icon: '📝' },
+      { id: 'label', name: 'Gán nhãn', icon: '🏷️' },
+      { id: 'tag', name: 'Thẻ tag', icon: '🏷️' },
     ]
   },
   {

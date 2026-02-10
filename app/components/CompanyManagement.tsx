@@ -3004,8 +3004,8 @@ export default function CompanyManagement() {
 
     // Permission modules from Omichat
     const permissionModules = [
-      { id: 'assignmentRule', name: 'Quy tắc phân công', icon: '☑️' },
-      { id: 'assignmentSettings', name: 'Cài đặt phân công', icon: '☑️' },
+      { id: 'assignmentRule', name: 'Quy tắc phân chia lead', icon: '☑️' },
+      { id: 'assignmentSettings', name: 'Cài đặt phân chia lead', icon: '☑️' },
       { id: 'autoTaskTemplate', name: 'Mẫu tác vụ tự động', icon: '📋' },
       { id: 'category', name: 'Danh mục', icon: '📁' },
       { id: 'company', name: 'Công ty', icon: '🏢' },
