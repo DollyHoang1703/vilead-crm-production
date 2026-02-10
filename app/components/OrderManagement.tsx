@@ -49,7 +49,6 @@ import {
   Info
 } from 'lucide-react'
 
-import CreateOrderModal from './CreateOrderModal'
 import OrderDetailModal from './OrderDetailModal'
 
 // Interfaces
@@ -223,6 +222,94 @@ export default function OrderManagement() {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+
+  // New Order Modal states
+  const [selectedCustomerForNewOrder, setSelectedCustomerForNewOrder] = useState<Customer | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [selectedPackages, setSelectedPackages] = useState<{[productId: string]: string}>({})
+  const [productQuantities, setProductQuantities] = useState<{[productId: string]: number}>({})
+  const [orderNotes, setOrderNotes] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [paymentDeadline, setPaymentDeadline] = useState('')
+  const [discountPercent, setDiscountPercent] = useState(0)
+  const [discountType, setDiscountType] = useState<'%' | 'VND'>('%')
+  const [paymentMode, setPaymentMode] = useState<'full' | 'installment'>('full')
+  const [paymentInstallments, setPaymentInstallments] = useState(1)
+  const [installmentData, setInstallmentData] = useState([{amount: 0, date: ''}])
+
+  // Available products for order creation
+  const availableProducts = [
+    { id: 'crm-basic', name: 'CRM Basic', category: 'Phần mềm', price: 500000, description: 'Hệ thống CRM cơ bản cho doanh nghiệp nhỏ' },
+    { id: 'crm-professional', name: 'CRM Professional', category: 'Phần mềm', price: 1200000, description: 'Hệ thống CRM chuyên nghiệp với nhiều tính năng nâng cao' },
+    { id: 'crm-enterprise', name: 'CRM Enterprise', category: 'Phần mềm', price: 2500000, description: 'Hệ thống CRM doanh nghiệp với đầy đủ tính năng' },
+    { id: 'ai-analytics', name: 'AI Analytics Module', category: 'Phần mềm', price: 800000, description: 'Module phân tích dữ liệu với AI' },
+    { id: 'mobile-app', name: 'Mobile App License', category: 'Phần mềm', price: 300000, description: 'Giấy phép sử dụng ứng dụng di động' },
+    { id: 'marketing-course', name: 'Khóa học Marketing Online', category: 'Khóa học', price: 2000000, description: 'Khóa học Marketing Digital toàn diện' },
+    { id: 'sales-course', name: 'Khóa học Kỹ năng bán hàng', category: 'Khóa học', price: 1500000, description: 'Đào tạo kỹ năng bán hàng chuyên nghiệp' },
+    { id: 'crm-training', name: 'Khóa đào tạo sử dụng CRM', category: 'Khóa học', price: 800000, description: 'Hướng dẫn sử dụng hệ thống CRM hiệu quả' },
+    { id: 'consulting-basic', name: 'Tư vấn triển khai cơ bản', category: 'Dịch vụ tư vấn', price: 5000000, description: 'Dịch vụ tư vấn triển khai CRM cơ bản' },
+    { id: 'consulting-advanced', name: 'Tư vấn chiến lược kinh doanh', category: 'Dịch vụ tư vấn', price: 10000000, description: 'Tư vấn chiến lược và tối ưu hóa quy trình' },
+    { id: 'support-package', name: 'Gói hỗ trợ kỹ thuật', category: 'Dịch vụ tư vấn', price: 3000000, description: 'Hỗ trợ kỹ thuật 24/7 trong 6 tháng' }
+  ]
+
+  const availablePackages: {[key: string]: {id: string, name: string, price: number, description: string}[]} = {
+    'crm-basic': [
+      { id: 'basic-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'basic-plus', name: 'Gói Plus', price: 200000, description: 'Thêm training cơ bản + support 3 tháng' },
+      { id: 'basic-premium', name: 'Gói Premium', price: 500000, description: 'Thêm training + support 6 tháng + customization' }
+    ],
+    'crm-professional': [
+      { id: 'pro-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'pro-plus', name: 'Gói Plus', price: 400000, description: 'Thêm AI Analytics + training nâng cao' },
+      { id: 'pro-premium', name: 'Gói Premium', price: 800000, description: 'Thêm full modules + premium support 1 năm' }
+    ],
+    'crm-enterprise': [
+      { id: 'ent-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'ent-plus', name: 'Gói Plus', price: 1000000, description: 'Thêm full training + migration service' },
+      { id: 'ent-premium', name: 'Gói Premium', price: 2000000, description: 'Thêm custom development + premium support 2 năm' }
+    ],
+    'ai-analytics': [
+      { id: 'ai-standard', name: 'Gói Standard', price: 0, description: 'Module cơ bản' },
+      { id: 'ai-advanced', name: 'Gói Advanced', price: 300000, description: 'Thêm custom reports + training' }
+    ],
+    'mobile-app': [
+      { id: 'mobile-standard', name: 'Gói Standard', price: 0, description: 'License cơ bản' },
+      { id: 'mobile-unlimited', name: 'Gói Unlimited', price: 150000, description: 'Unlimited users + premium features' }
+    ],
+    'marketing-course': [
+      { id: 'marketing-course-standard', name: 'Gói Standard', price: 0, description: 'Khóa học cơ bản' },
+      { id: 'marketing-course-vip', name: 'Gói VIP', price: 1000000, description: 'Thêm 1-1 coaching + certificate' }
+    ],
+    'sales-course': [
+      { id: 'sales-course-standard', name: 'Gói Standard', price: 0, description: 'Khóa học cơ bản' },
+      { id: 'sales-course-vip', name: 'Gói VIP', price: 800000, description: 'Thêm practice sessions + mentoring' }
+    ],
+    'crm-training': [
+      { id: 'crm-training-standard', name: 'Gói Standard', price: 0, description: 'Đào tạo cơ bản' },
+      { id: 'crm-training-advanced', name: 'Gói Advanced', price: 400000, description: 'Thêm advanced features + certification' }
+    ],
+    'consulting-basic': [
+      { id: 'consulting-basic-standard', name: 'Gói Standard', price: 0, description: 'Tư vấn cơ bản' },
+      { id: 'consulting-basic-extended', name: 'Gói Extended', price: 2000000, description: 'Thêm follow-up 3 tháng' }
+    ],
+    'consulting-advanced': [
+      { id: 'consulting-advanced-standard', name: 'Gói Standard', price: 0, description: 'Tư vấn chiến lược' },
+      { id: 'consulting-advanced-premium', name: 'Gói Premium', price: 5000000, description: 'Thêm implementation support + 6 tháng theo dõi' }
+    ],
+    'support-package': [
+      { id: 'support-6month', name: 'Gói 6 tháng', price: 0, description: 'Hỗ trợ 6 tháng' },
+      { id: 'support-12month', name: 'Gói 12 tháng', price: 2000000, description: 'Hỗ trợ 12 tháng + priority support' }
+    ]
+  }
+
+  const productCategories = ['Tất cả', 'Phần mềm', 'Khóa học', 'Dịch vụ tư vấn']
+
+  // Format currency helper
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+    return new Intl.NumberFormat('vi-VN').format(numAmount)
+  }
 
   // Sample data
   const [customers] = useState<Customer[]>([
@@ -853,10 +940,6 @@ export default function OrderManagement() {
   }, [filters])
 
   // Helper functions
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('vi-VN') + ' đ'
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
@@ -2538,13 +2621,583 @@ Trân trọng,
 
       {/* Modals */}
       {showCreateModal && (
-        <CreateOrderModal
-          isOpen={showCreateModal}
-          customers={customers}
-          products={products}
-          onClose={() => setShowCreateModal(false)}
-          onSave={handleCreateOrder}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto mx-4">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 relative">
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setSelectedCustomerForNewOrder(null)
+                  setSelectedProducts([])
+                  setSelectedPackages({})
+                  setProductQuantities({})
+                  setOrderNotes('')
+                  setSelectedCategory('Tất cả')
+                  setPaymentMethod('cash')
+                  setPaymentDeadline('')
+                  setDiscountPercent(0)
+                  setDiscountType('%')
+                  setPaymentMode('full')
+                  setPaymentInstallments(1)
+                  setInstallmentData([{amount: 0, date: ''}])
+                }}
+                className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Đóng"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 pr-8">Tạo đơn hàng mới</h3>
+            </div>
+            
+            <div className="px-4 sm:px-6 py-4">
+              {/* Customer Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Khách hàng <span className="text-red-500">*</span></label>
+                <select
+                  value={selectedCustomerForNewOrder?.id || ''}
+                  onChange={(e) => {
+                    const customerId = parseInt(e.target.value)
+                    const customer = customers.find(c => c.id === customerId)
+                    setSelectedCustomerForNewOrder(customer || null)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Chọn khách hàng</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} - {customer.phone} ({customer.type === 'lead' ? 'Lead' : 'Khách hàng'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer Info */}
+              {selectedCustomerForNewOrder && (
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                      <User className="h-6 w-6" />
+                    </span>
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-slate-900">{selectedCustomerForNewOrder.name}</h3>
+                    </div>
+                    <p className="text-sm text-slate-600">
+                      {selectedCustomerForNewOrder.email && <span>{selectedCustomerForNewOrder.email}</span>}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Order Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn thể loại sản phẩm</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {productCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Product Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn sản phẩm và gói sản phẩm <span className="text-red-500">*</span>
+                </label>
+                <div className="max-h-72 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availableProducts
+                      .filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory)
+                      .map((product) => (
+                      <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors">
+                        <label className="flex items-start space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProducts(prev => [...prev, product.id])
+                                setSelectedPackages(prev => ({
+                                  ...prev,
+                                  [product.id]: availablePackages[product.id]?.[0]?.id || ''
+                                }))
+                                setProductQuantities(prev => ({
+                                  ...prev,
+                                  [product.id]: 1
+                                }))
+                              } else {
+                                setSelectedProducts(prev => prev.filter(id => id !== product.id))
+                                setSelectedPackages(prev => {
+                                  const newPackages = {...prev}
+                                  delete newPackages[product.id]
+                                  return newPackages
+                                })
+                                setProductQuantities(prev => {
+                                  const newQuantities = {...prev}
+                                  delete newQuantities[product.id]
+                                  return newQuantities
+                                })
+                              }
+                            }}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{product.category}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                            <p className="text-sm font-semibold text-green-600 mt-1">{formatCurrency(product.price.toString())} VNĐ</p>
+                          </div>
+                        </label>
+                        
+                        {/* Package & Quantity Selection */}
+                        {selectedProducts.includes(product.id) && availablePackages[product.id] && (
+                          <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                                <select
+                                  value={selectedPackages[product.id] || ''}
+                                  onChange={(e) => {
+                                    setSelectedPackages(prev => ({
+                                      ...prev,
+                                      [product.id]: e.target.value
+                                    }))
+                                  }}
+                                  className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                                >
+                                  {availablePackages[product.id]?.map((pkg) => (
+                                    <option key={pkg.id} value={pkg.id}>
+                                      {pkg.name} {pkg.price > 0 ? `(+${formatCurrency(pkg.price.toString())} VNĐ)` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={productQuantities[product.id] || 1}
+                                  onChange={(e) => {
+                                    setProductQuantities(prev => ({
+                                      ...prev,
+                                      [product.id]: Math.max(1, parseInt(e.target.value) || 1)
+                                    }))
+                                  }}
+                                  className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              {selectedProducts.length > 0 && (() => {
+                const subtotal = selectedProducts.reduce((sum, productId) => {
+                  const product = availableProducts.find(p => p.id === productId)
+                  const selectedPackageId = selectedPackages[productId]
+                  const selectedPackage = availablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                  const quantity = productQuantities[productId] || 1
+                  return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                }, 0)
+                const discountAmount = discountType === '%' 
+                  ? subtotal * discountPercent / 100 
+                  : discountPercent
+                const afterDiscount = subtotal - discountAmount
+                const vatAmount = afterDiscount * 0.1
+                const grandTotal = afterDiscount + vatAmount
+                
+                return (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <h5 className="text-sm font-medium text-green-800 mb-3">
+                      Đã chọn {selectedProducts.length} sản phẩm:
+                    </h5>
+                    <div className="space-y-2 text-sm">
+                      {selectedProducts.map(productId => {
+                        const product = availableProducts.find(p => p.id === productId)
+                        const selectedPackageId = selectedPackages[productId]
+                        const selectedPackage = availablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                        const quantity = productQuantities[productId] || 1
+                        const productTotal = ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                        
+                        return product ? (
+                          <div key={productId} className="flex justify-between text-gray-700">
+                            <span>{product.name} ({selectedPackage?.name || 'Standard'}) x{quantity}</span>
+                            <span className="font-medium text-green-600">
+                              {formatCurrency(productTotal.toString())} VNĐ
+                            </span>
+                          </div>
+                        ) : null
+                      })}
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between text-gray-600 border-t border-green-200 pt-2 mt-2">
+                          <span>Giảm giá {discountType === '%' ? `(${discountPercent}%)` : ''}:</span>
+                          <span className="font-medium text-red-500">-{formatCurrency(discountAmount.toString())} VNĐ</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-600 pt-1">
+                        <span>Phí VAT (10%):</span>
+                        <span className="font-medium text-gray-700">+{formatCurrency(vatAmount.toString())} VNĐ</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
+                        <span>Tổng cộng:</span>
+                        <span className="text-lg">{formatCurrency(grandTotal.toString())} VNĐ</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Payment Info Section */}
+              {selectedProducts.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Payment Deadline */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Thời hạn thanh toán <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={paymentDeadline}
+                        onChange={(e) => setPaymentDeadline(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Discount */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Giảm giá</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max={discountType === '%' ? 100 : undefined}
+                          value={discountPercent}
+                          onChange={(e) => setDiscountPercent(Math.max(0, discountType === '%' ? Math.min(100, parseInt(e.target.value) || 0) : parseInt(e.target.value) || 0))}
+                          placeholder="0"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <select 
+                          value={discountType}
+                          onChange={(e) => {
+                            setDiscountType(e.target.value as '%' | 'VND')
+                            setDiscountPercent(0)
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="%">%</option>
+                          <option value="VND">VNĐ</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="mb-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Hình thức thanh toán</label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="cash">Tiền mặt</option>
+                        <option value="bank_transfer">Chuyển khoản</option>
+                        <option value="installment">Trả góp</option>
+                        <option value="momo">Momo</option>
+                        <option value="card">Thẻ</option>
+                        <option value="custom">Tùy chỉnh</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Payment Mode */}
+                  <div className="mb-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Thực hiện thanh toán</label>
+                      <div className="flex gap-3">
+                        <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                          <input
+                            type="radio"
+                            name="newOrderPaymentMode"
+                            value="full"
+                            checked={paymentMode === 'full'}
+                            onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Toàn bộ</span>
+                        </label>
+                        <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                          <input
+                            type="radio"
+                            name="newOrderPaymentMode"
+                            value="installment"
+                            checked={paymentMode === 'installment'}
+                            onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Theo giai đoạn</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Installments - Only show when installment mode selected */}
+                  {paymentMode === 'installment' && (
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Số lần thanh toán
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={paymentInstallments}
+                        onChange={(e) => {
+                          const num = Math.max(1, Math.min(12, parseInt(e.target.value) || 1))
+                          setPaymentInstallments(num)
+                          // Update installment data array
+                          const newInstallments = Array.from({length: num}, (_, i) => 
+                            installmentData[i] || {amount: 0, date: ''}
+                          )
+                          setInstallmentData(newInstallments)
+                        }}
+                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Installment Details */}
+                    {installmentData.map((installment, index) => {
+                      // Calculate grand total for validation
+                      const subtotalCalc = selectedProducts.reduce((sum, productId) => {
+                        const product = availableProducts.find(p => p.id === productId)
+                        const selectedPackageId = selectedPackages[productId]
+                        const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
+                        return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                      }, 0)
+                      const totalBeforeDiscountCalc = subtotalCalc
+                      const discountAmountCalc = discountType === '%' 
+                        ? totalBeforeDiscountCalc * discountPercent / 100 
+                        : discountPercent
+                      const afterDiscountCalc = totalBeforeDiscountCalc - discountAmountCalc
+                      const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                      
+                      // Calculate max allowed for this installment
+                      const otherInstallmentsTotal = installmentData.reduce((sum, inst, i) => 
+                        i !== index ? sum + inst.amount : sum, 0
+                      )
+                      const maxAllowed = Math.max(0, grandTotalCalc - otherInstallmentsTotal)
+                      const isOverLimit = installment.amount > maxAllowed
+                      
+                      return (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số tiền thanh toán <span className="text-xs text-gray-500">(Tối đa: {formatCurrency(maxAllowed.toString())} VNĐ)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formatCurrency(installment.amount.toString())}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value.replace(/\D/g, '')) || 0
+                              const validatedValue = Math.min(value, maxAllowed)
+                              const newData = [...installmentData]
+                              newData[index] = {...newData[index], amount: validatedValue}
+                              setInstallmentData(newData)
+                            }}
+                            placeholder="0"
+                            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isOverLimit ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                          />
+                          {isOverLimit && (
+                            <p className="mt-1 text-xs text-red-500">Số tiền vượt quá giới hạn cho phép</p>
+                          )}
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Ngày thanh toán đợt {index + 1}
+                            </label>
+                            <input
+                              type="date"
+                              value={installment.date}
+                              onChange={(e) => {
+                                const newData = [...installmentData]
+                                newData[index] = {...newData[index], date: e.target.value}
+                                setInstallmentData(newData)
+                              }}
+                              min={new Date().toISOString().split('T')[0]}
+                              placeholder="Thời gian thanh toán ..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          {paymentInstallments > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (paymentInstallments > 1) {
+                                  const newData = installmentData.filter((_, i) => i !== index)
+                                  setInstallmentData(newData)
+                                  setPaymentInstallments(paymentInstallments - 1)
+                                }
+                              }}
+                              className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Xóa đợt thanh toán"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      )
+                    })}
+                  </div>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm text-gray-600 mt-4">
+                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang "Hoàn thành".
+              </p>
+            </div>
+
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+              <button
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setSelectedCustomerForNewOrder(null)
+                  setSelectedProducts([])
+                  setSelectedPackages({})
+                  setProductQuantities({})
+                  setOrderNotes('')
+                  setSelectedCategory('Tất cả')
+                  setPaymentMethod('cash')
+                  setPaymentDeadline('')
+                  setDiscountPercent(0)
+                  setDiscountType('%')
+                  setPaymentMode('full')
+                }}
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedCustomerForNewOrder || selectedProducts.length === 0 || !paymentDeadline) {
+                    setNotification({ message: 'Vui lòng điền đầy đủ thông tin bắt buộc', type: 'error' })
+                    setTimeout(() => setNotification(null), 3000)
+                    return
+                  }
+                  
+                  // Build order data
+                  const subtotal = selectedProducts.reduce((sum, productId) => {
+                    const product = availableProducts.find(p => p.id === productId)
+                    const selectedPackageId = selectedPackages[productId]
+                    const selectedPackage = availablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                    const quantity = productQuantities[productId] || 1
+                    return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                  }, 0)
+                  const discountAmount = discountType === '%' ? subtotal * discountPercent / 100 : discountPercent
+                  const afterDiscount = subtotal - discountAmount
+                  const vatAmount = afterDiscount * 0.1
+                  const grandTotal = afterDiscount + vatAmount
+                  
+                  const orderData = {
+                    orderNumber: `DH${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+                    customerId: selectedCustomerForNewOrder.id,
+                    items: selectedProducts.map(productId => {
+                      const product = availableProducts.find(p => p.id === productId)
+                      const selectedPackageId = selectedPackages[productId]
+                      const selectedPackage = availablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                      const quantity = productQuantities[productId] || 1
+                      return {
+                        id: Date.now() + Math.random(),
+                        productId,
+                        product: product,
+                        variantId: selectedPackageId,
+                        variant: selectedPackage,
+                        quantity,
+                        unitPrice: (product?.price || 0) + (selectedPackage?.price || 0),
+                        totalPrice: ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity,
+                        notes: orderNotes
+                      }
+                    }),
+                    subtotal,
+                    discount: discountAmount,
+                    tax: vatAmount,
+                    total: grandTotal,
+                    totalAmount: grandTotal,
+                    status: 'pending',
+                    paymentStatus: 'unpaid',
+                    paymentMethod,
+                    paymentMode,
+                    notes: orderNotes ? [{ id: Date.now(), content: orderNotes, type: 'customer_request', createdAt: new Date().toISOString(), createdBy: 'Nguyễn Sales Manager', isEditable: true }] : [],
+                    invoices: [],
+                    tags: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    zaloMessages: [],
+                    deadline: paymentDeadline,
+                    isVip: false
+                  }
+                  
+                  handleCreateOrder(orderData)
+                  
+                  // Reset form
+                  setShowCreateModal(false)
+                  setSelectedCustomerForNewOrder(null)
+                  setSelectedProducts([])
+                  setSelectedPackages({})
+                  setProductQuantities({})
+                  setOrderNotes('')
+                  setSelectedCategory('Tất cả')
+                  setPaymentMethod('cash')
+                  setPaymentDeadline('')
+                  setDiscountPercent(0)
+                  setDiscountType('%')
+                  setPaymentMode('full')
+                }}
+                disabled={!selectedCustomerForNewOrder || selectedProducts.length === 0 || !paymentDeadline}
+                className={`w-full sm:w-auto px-4 py-2 text-sm font-medium border border-transparent rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] flex items-center justify-center gap-2 ${
+                  selectedCustomerForNewOrder && selectedProducts.length > 0 && paymentDeadline
+                    ? 'text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
+                    : 'text-gray-400 bg-gray-300 cursor-not-allowed'
+                }`}
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span className="truncate">{selectedCustomerForNewOrder && selectedProducts.length > 0 && paymentDeadline ? 'Tạo đơn hàng' : 'Chọn sản phẩm để tiếp tục'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {selectedOrder && (
@@ -2634,8 +3287,11 @@ Trân trọng,
                           const isOverPaid = installment.actualAmount > installment.plannedAmount
                           const isLastInstallment = index === (editingOrder.installments?.length || 1) - 1
                           
-                          // Calculate previous installments deficit
+                          // Check if all previous installments are completed (for sequential payment)
                           const previousInstallments = editingOrder.installments?.slice(0, index) || []
+                          const allPreviousCompleted = previousInstallments.every(inst => inst.status === 'completed')
+                          
+                          // Calculate previous installments deficit
                           const previousDeficit = previousInstallments.reduce((sum, inst) => {
                             return sum + Math.max(0, inst.plannedAmount - inst.actualAmount)
                           }, 0)
@@ -2643,6 +3299,15 @@ Trân trọng,
                           // For last installment, minimum required = planned + all previous deficits
                           const minRequiredForLast = isLastInstallment ? installment.plannedAmount + previousDeficit : 0
                           const isLastInstallmentShort = isLastInstallment && installment.actualAmount > 0 && installment.actualAmount < minRequiredForLast && !isCompleted
+                          
+                          // Current remaining debt for validation
+                          const currentRemainingDebt = editingOrder.remainingDebt ?? (editingOrder.total - (editingOrder.totalPaid || 0))
+                          
+                          // For last installment: the actual debt to pay = remaining debt + this installment's current value
+                          // (because remainingDebt already subtracted this installment's actualAmount)
+                          const actualDebtForThisInstallment = isLastInstallment 
+                            ? currentRemainingDebt + installment.actualAmount 
+                            : currentRemainingDebt
                           
                           return (
                             <div 
@@ -2659,60 +3324,85 @@ Trân trọng,
                                 </div>
                                 
                                 {/* Submit Payment Button - Top Right */}
-                                {!isCompleted && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (installment.actualAmount <= 0) {
-                                        setNotification({ message: 'Vui lòng nhập số tiền thanh toán', type: 'error' })
-                                        return
-                                      }
-                                      if (installment.actualAmount > installment.plannedAmount) {
-                                        setNotification({ message: 'Số tiền không được vượt quá số tiền dự kiến', type: 'error' })
-                                        return
-                                      }
-                                      // For last installment, check if it covers remaining debt
-                                      if (isLastInstallment && installment.actualAmount < minRequiredForLast) {
-                                        setNotification({ message: `Đợt cuối phải thanh toán tối thiểu ${minRequiredForLast.toLocaleString('vi-VN')} VNĐ để bù đắp thiếu hụt các đợt trước`, type: 'error' })
-                                        return
-                                      }
-                                      // Mark as completed
-                                      const newInstallments = [...(editingOrder.installments || [])]
-                                      newInstallments[index] = {
-                                        ...newInstallments[index],
-                                        status: 'completed',
-                                        actualDate: installment.actualDate || new Date().toISOString().split('T')[0]
-                                      }
-                                      // Calculate totals
-                                      const totalPaid = newInstallments.reduce((sum, inst) => sum + inst.actualAmount, 0)
-                                      const remainingDebt = editingOrder.total - totalPaid
-                                      // Check if fully paid
-                                      const allCompleted = newInstallments.every(inst => inst.status === 'completed')
-                                      const newPaymentStatus = allCompleted ? 'paid' : 'partial'
-                                      const newStatus = allCompleted ? 'completed' : editingOrder.status
-                                      
-                                      setEditingOrder(prev => prev ? {
-                                        ...prev, 
-                                        installments: newInstallments,
-                                        totalPaid,
-                                        remainingDebt,
-                                        paymentStatus: newPaymentStatus,
-                                        status: newStatus
-                                      } : null)
-                                      
-                                      setNotification({ 
-                                        message: allCompleted 
-                                          ? 'Đã thanh toán hoàn tất! Đơn hàng chuyển sang trạng thái Hoàn thành.' 
-                                          : `Đã ghi nhận thanh toán đợt ${index + 1}`, 
-                                        type: 'success' 
-                                      })
-                                    }}
-                                    className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
-                                    title="Nộp tiền"
-                                  >
-                                    Nộp tiền
-                                  </button>
-                                )}
+                                {!isCompleted && (() => {
+                                  // For last installment, check if actual amount equals the debt to pay
+                                  const isLastInstallmentAmountValid = isLastInstallment && installment.actualAmount === actualDebtForThisInstallment
+                                  
+                                  // Can only submit if: has amount, previous completed, and valid amount
+                                  const canSubmitPayment = installment.actualAmount > 0 && 
+                                    allPreviousCompleted && 
+                                    (!isLastInstallment || isLastInstallmentAmountValid) &&
+                                    (isLastInstallment || installment.actualAmount <= installment.plannedAmount)
+                                  
+                                  return (
+                                    <div className="flex flex-col items-end">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (installment.actualAmount <= 0) {
+                                            setNotification({ message: 'Vui lòng nhập số tiền thanh toán', type: 'error' })
+                                            return
+                                          }
+                                          // For last installment, must pay exactly remaining debt
+                                          if (isLastInstallment && installment.actualAmount !== actualDebtForThisInstallment) {
+                                            setNotification({ message: `Đây là giai đoạn thanh toán cuối, bạn phải thanh toán đúng ${actualDebtForThisInstallment.toLocaleString('vi-VN')} VNĐ`, type: 'error' })
+                                            return
+                                          }
+                                          if (!isLastInstallment && installment.actualAmount > installment.plannedAmount) {
+                                            setNotification({ message: 'Số tiền không được vượt quá số tiền dự kiến', type: 'error' })
+                                            return
+                                          }
+                                          // Mark as completed
+                                          const newInstallments = [...(editingOrder.installments || [])]
+                                          newInstallments[index] = {
+                                            ...newInstallments[index],
+                                            status: 'completed',
+                                            actualDate: installment.actualDate || new Date().toISOString().split('T')[0]
+                                          }
+                                          // Calculate totals
+                                          const totalPaid = newInstallments.reduce((sum, inst) => sum + inst.actualAmount, 0)
+                                          const remainingDebt = editingOrder.total - totalPaid
+                                          // Check if fully paid
+                                          const allCompleted = newInstallments.every(inst => inst.status === 'completed')
+                                          const newPaymentStatus = allCompleted ? 'paid' : 'partial'
+                                          const newStatus = allCompleted ? 'completed' : editingOrder.status
+                                          
+                                          setEditingOrder(prev => prev ? {
+                                            ...prev, 
+                                            installments: newInstallments,
+                                            totalPaid,
+                                            remainingDebt,
+                                            paymentStatus: newPaymentStatus,
+                                            status: newStatus
+                                          } : null)
+                                          
+                                          setNotification({ 
+                                            message: allCompleted 
+                                              ? 'Đã thanh toán hoàn tất! Đơn hàng chuyển sang trạng thái Hoàn thành.' 
+                                              : `Đã ghi nhận thanh toán đợt ${index + 1}`, 
+                                            type: 'success' 
+                                          })
+                                        }}
+                                        disabled={!canSubmitPayment}
+                                        className={`px-3 py-1.5 rounded-md transition-colors text-sm ${
+                                          !canSubmitPayment
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                        }`}
+                                        title={!allPreviousCompleted 
+                                          ? 'Vui lòng hoàn thành thanh toán các đợt trước' 
+                                          : isLastInstallment && !isLastInstallmentAmountValid 
+                                            ? `Thanh toán đúng ${actualDebtForThisInstallment.toLocaleString('vi-VN')} VNĐ` 
+                                            : 'Nộp tiền'}
+                                      >
+                                        Nộp tiền
+                                      </button>
+                                      {!allPreviousCompleted && (
+                                        <p className="text-xs text-orange-500 mt-1">Hoàn thành đợt trước</p>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
                               </div>
                               
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
@@ -2744,37 +3434,32 @@ Trân trọng,
                                   <input
                                     type="text"
                                     value={installment.actualAmount.toLocaleString('vi-VN')}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                      }
+                                    }}
                                     onChange={(e) => {
-                                      if (isCompleted) return
+                                      if (isCompleted || !allPreviousCompleted) return
                                       let value = parseInt(e.target.value.replace(/\D/g, '')) || 0
                                       
-                                      // Calculate max allowed to prevent negative debt
-                                      const otherInstallmentsPaid = (editingOrder.installments || [])
-                                        .filter((_, i) => i !== index)
-                                        .reduce((sum, inst) => sum + inst.actualAmount, 0)
-                                      const maxAllowed = editingOrder.total - otherInstallmentsPaid
-                                      
-                                      // Clamp value: cannot exceed planned amount and cannot cause negative debt
-                                      value = Math.min(value, installment.plannedAmount, maxAllowed)
+                                      // For last installment: allow entering up to the actual debt for this installment
+                                      // For other installments: limit to remaining debt and planned amount
+                                      if (isLastInstallment) {
+                                        value = Math.min(value, actualDebtForThisInstallment)
+                                      } else {
+                                        value = Math.min(value, currentRemainingDebt, installment.plannedAmount)
+                                      }
                                       
                                       const newInstallments = [...(editingOrder.installments || [])]
                                       newInstallments[index] = {
                                         ...newInstallments[index],
-                                        actualAmount: value,
-                                        status: value >= installment.plannedAmount ? 'completed' : value > 0 ? 'partial' : 'pending'
+                                        actualAmount: value
+                                        // Status NOT changed here - only changed when clicking "Nộp tiền" button
                                       }
-                                      // Calculate totals
+                                      // Calculate totals for display only
                                       const totalPaid = newInstallments.reduce((sum, inst) => sum + inst.actualAmount, 0)
                                       const remainingDebt = editingOrder.total - totalPaid
-                                      
-                                      // If debt is 0, mark all pending installments as completed with 0
-                                      if (remainingDebt === 0) {
-                                        newInstallments.forEach((inst, i) => {
-                                          if (inst.status === 'pending' && inst.actualAmount === 0) {
-                                            newInstallments[i] = { ...inst, status: 'completed', actualAmount: 0 }
-                                          }
-                                        })
-                                      }
                                       
                                       setEditingOrder(prev => prev ? {
                                         ...prev, 
@@ -2783,19 +3468,22 @@ Trân trọng,
                                         remainingDebt
                                       } : null)
                                     }}
-                                    disabled={isCompleted}
+                                    disabled={isCompleted || !allPreviousCompleted}
                                     placeholder="0"
                                     className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${
-                                      isCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 
+                                      isCompleted || !allPreviousCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 
                                       isOverPaid ? 'border-red-500 bg-red-50 text-red-700' : 
                                       isLastInstallmentShort ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300'
                                     }`}
                                   />
-                                  {isOverPaid && !isCompleted && (
+                                  {!allPreviousCompleted && !isCompleted && (
+                                    <p className="mt-1 text-xs text-orange-500">Hoàn thành đợt trước</p>
+                                  )}
+                                  {allPreviousCompleted && isOverPaid && !isCompleted && (
                                     <p className="mt-1 text-xs text-red-500">Số tiền vượt quá số tiền dự kiến</p>
                                   )}
-                                  {isLastInstallmentShort && (
-                                    <p className="mt-1 text-xs text-red-500">Đợt cuối cần tối thiểu {minRequiredForLast.toLocaleString('vi-VN')} VNĐ</p>
+                                  {allPreviousCompleted && isLastInstallment && installment.actualAmount > 0 && installment.actualAmount !== actualDebtForThisInstallment && (
+                                    <p className="mt-1 text-xs text-red-500">Thanh toán đúng {actualDebtForThisInstallment.toLocaleString('vi-VN')} VNĐ</p>
                                   )}
                                 </div>
                                 
@@ -2805,15 +3493,20 @@ Trân trọng,
                                   <input
                                     type="date"
                                     value={installment.actualDate || ''}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                      }
+                                    }}
                                     onChange={(e) => {
-                                      if (isCompleted) return
+                                      if (isCompleted || !allPreviousCompleted) return
                                       const newInstallments = [...(editingOrder.installments || [])]
                                       newInstallments[index] = {...newInstallments[index], actualDate: e.target.value}
                                       setEditingOrder(prev => prev ? {...prev, installments: newInstallments} : null)
                                     }}
-                                    disabled={isCompleted}
+                                    disabled={isCompleted || !allPreviousCompleted}
                                     className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 ${
-                                      isCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 'border-gray-300'
+                                      isCompleted || !allPreviousCompleted ? 'bg-gray-100 border-gray-200 text-gray-500' : 'border-gray-300'
                                     }`}
                                   />
                                 </div>
@@ -2836,14 +3529,14 @@ Trân trọng,
                             {editingOrder.total.toLocaleString('vi-VN')}
                           </div>
                           {(editingOrder.totalPaid || 0) !== editingOrder.total && (
-                            <p className="mt-1 text-xs text-red-500">Tổng tiền khác Giá trị hợp đồng</p>
+                            <p className="mt-1 text-xs text-red-500"></p>
                           )}
                         </div>
                         
                         {/* Total Actual Paid */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tổng tiền thực tế thanh toán</label>
-                          <div className="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium">
+                          <div className="px-3 py-2 bg-green-50 border border-green-300 rounded-md text-sm font-medium text-green-700">
                             {(editingOrder.totalPaid || 0).toLocaleString('vi-VN')}
                           </div>
                         </div>
@@ -2864,11 +3557,11 @@ Trân trọng,
               )}
 
               {/* Hint for non-installment */}
-              {editingOrder.paymentStatus === 'partial' && (!editingOrder.installments || editingOrder.installments.length === 0) && (
+              {editingOrder.paymentStatus === 'partial' && (!editingOrder.installments || editingOrder.installments.length === 0) && editingOrder.paymentMode !== 'installment' && (
                 <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-700">
                     Đơn hàng này chưa có thông tin thanh toán theo giai đoạn. 
-                    Vui lòng tạo đơn hàng mới với tùy chọn "Theo giai đoạn" để quản lý thanh toán từng đợt.
+                    Vui lòng chọn trạng thái thanh toán khác.
                   </p>
                 </div>
               )}
@@ -2888,7 +3581,8 @@ Trân trọng,
                   </button>
                   <button
                     onClick={() => handleSaveEditOrder(editingOrder)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    disabled={editingOrder.paymentStatus === 'partial' && (!editingOrder.installments || editingOrder.installments.length === 0) && editingOrder.paymentMode !== 'installment'}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     Lưu thay đổi
                   </button>

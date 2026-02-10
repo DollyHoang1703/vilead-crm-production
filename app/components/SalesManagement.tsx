@@ -142,6 +142,8 @@ export default function SalesManagement() {
   const [selectedProduct, setSelectedProduct] = useState('')
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [selectedPackages, setSelectedPackages] = useState<{[productId: string]: string}>({}) // Track package for each product
+  const [productQuantities, setProductQuantities] = useState<{[productId: string]: number}>({}) // Track quantity for each product
+  const [orderNotes, setOrderNotes] = useState('') // Order notes
   const [discountPercent, setDiscountPercent] = useState(0)
   const [discountType, setDiscountType] = useState<'%' | 'VND'>('%')
   const [paymentMethod, setPaymentMethod] = useState('cash')
@@ -6108,15 +6110,50 @@ export default function SalesManagement() {
               <h3 className="text-lg font-semibold text-gray-900">Chuyển vào chuyển đổi - chờ thanh toán</h3>
             </div>
             
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-green-600" />
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {/* Customer Info */}
+              <div className="flex items-center gap-3 mb-4">
+                <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                    <User className="h-6 w-6" />
+                  </span>
+                </span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-900">{selectedLead.name}</h3>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    {selectedLead.phone && <span className="mr-3">📱 {selectedLead.phone}</span>}
+                    {selectedLead.email && <span>📧 {selectedLead.email}</span>}
+                  </p>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{selectedLead.name}</h4>
-                  <p className="text-sm text-gray-500">{selectedLead.company || 'Cá nhân'}</p>
-                </div>
+              </div>
+
+              {/* Order Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn thể loại sản phẩm</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Tất cả">Tất cả</option>
+                  <option value="Khóa học">Khóa học</option>
+                  <option value="Phần mềm">Phần mềm</option>
+                  <option value="Dịch vụ tư vấn">Dịch vụ tư vấn</option>
+                </select>
               </div>
 
               {/* Product Selection - with Packages */}
@@ -6125,10 +6162,10 @@ export default function SalesManagement() {
                   Chọn sản phẩm & gói sản phẩm <span className="text-red-500">*</span>
                 </label>
                 <div className="max-h-80 overflow-y-auto space-y-3 border border-gray-300 rounded-lg p-3">
-                  {availableProducts.map((product) => (
-                    <div key={product.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                  {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).map((product) => (
+                    <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors">
                       {/* Product Selection */}
-                      <label className="flex items-start space-x-3 cursor-pointer mb-3">
+                      <label className="flex items-start space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedProducts.includes(product.id)}
@@ -6140,6 +6177,11 @@ export default function SalesManagement() {
                                 ...prev,
                                 [product.id]: availablePackages[product.id as keyof typeof availablePackages]?.[0]?.id || ''
                               }))
+                              // Set default quantity to 1
+                              setProductQuantities(prev => ({
+                                ...prev,
+                                [product.id]: 1
+                              }))
                             } else {
                               setSelectedProducts(prev => prev.filter(id => id !== product.id))
                               // Remove package selection
@@ -6148,48 +6190,68 @@ export default function SalesManagement() {
                                 delete newPackages[product.id]
                                 return newPackages
                               })
+                              // Remove quantity
+                              setProductQuantities(prev => {
+                                const newQuantities = { ...prev }
+                                delete newQuantities[product.id]
+                                return newQuantities
+                              })
                             }
                           }}
-                          className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h6 className="font-medium text-gray-900">{product.name}</h6>
-                              <p className="text-sm text-gray-600">{product.description}</p>
-                            </div>
-                            <span className="font-medium text-green-600">
-                              {formatCurrency(product.price.toString())} VNĐ
-                            </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{product.category}</span>
                           </div>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                          <p className="text-sm font-semibold text-green-600 mt-1">{formatCurrency(product.price.toString())} VNĐ</p>
                         </div>
                       </label>
 
-                      {/* Package Selection Dropdown */}
+                      {/* Package & Quantity Selection */}
                       {selectedProducts.includes(product.id) && (
-                        <div className="ml-7 border-t border-gray-100 pt-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Chọn gói sản phẩm:
-                          </label>
-                          <select
-                            value={selectedPackages[product.id] || ''}
-                            onChange={(e) => setSelectedPackages(prev => ({
-                              ...prev,
-                              [product.id]: e.target.value
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                          >
-                            {availablePackages[product.id as keyof typeof availablePackages]?.map((pkg) => (
-                              <option key={pkg.id} value={pkg.id}>
-                                {pkg.name} - {pkg.price > 0 ? `+${formatCurrency(pkg.price.toString())} VNĐ` : 'Miễn phí'} 
-                                {pkg.description && ` - ${pkg.description}`}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                              <select
+                                value={selectedPackages[product.id] || ''}
+                                onChange={(e) => setSelectedPackages(prev => ({
+                                  ...prev,
+                                  [product.id]: e.target.value
+                                }))}
+                                className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                              >
+                                {availablePackages[product.id as keyof typeof availablePackages]?.map((pkg) => (
+                                  <option key={pkg.id} value={pkg.id}>
+                                    {pkg.name} {pkg.price > 0 ? `(+${formatCurrency(pkg.price.toString())} VNĐ)` : ''} - {pkg.description}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={productQuantities[product.id] || 1}
+                                onChange={(e) => setProductQuantities(prev => ({
+                                  ...prev,
+                                  [product.id]: Math.max(1, parseInt(e.target.value) || 1)
+                                }))}
+                                className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
+                  {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">Không có sản phẩm nào trong thể loại này</p>
+                  )}
                 </div>
 
                 {/* Selected Products Summary */}
@@ -6201,12 +6263,14 @@ export default function SalesManagement() {
                         const product = availableProducts.find(p => p.id === productId)
                         const selectedPackageId = selectedPackages[productId]
                         const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                        const totalPrice = (product?.price || 0) + (selectedPackage?.price || 0)
+                        const quantity = productQuantities[productId] || 1
+                        const unitPrice = (product?.price || 0) + (selectedPackage?.price || 0)
+                        const totalPrice = unitPrice * quantity
                         
                         return product ? (
                           <div key={productId} className="flex justify-between text-sm">
                             <span>
-                              {product.name} ({selectedPackage?.name || 'Standard'})
+                              {product.name} ({selectedPackage?.name || 'Standard'}) x{quantity}
                             </span>
                             <span className="font-medium text-green-600">
                               {formatCurrency(totalPrice.toString())} VNĐ
@@ -6223,7 +6287,8 @@ export default function SalesManagement() {
                                 const product = availableProducts.find(p => p.id === productId)
                                 const selectedPackageId = selectedPackages[productId]
                                 const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                                return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                                const quantity = productQuantities[productId] || 1
+                                return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                               }, 0).toString()
                             )} VNĐ
                           </span>
@@ -6262,30 +6327,18 @@ export default function SalesManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Hình thức thanh toán
                   </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="cash"
-                        checked={paymentMethod === 'cash'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="bank_transfer"
-                        checked={paymentMethod === 'bank_transfer'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
-                    </label>
-                  </div>
+                  <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="flex-1 max-w-xs px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="cash">Tiền mặt</option>
+                          <option value="bank_transfer">Chuyển khoản</option>
+                          <option value="installment">Trả góp</option>
+                          <option value="momo">Momo</option>
+                          <option value="card">Thẻ</option>
+                          <option value="custom">Tùy chỉnh</option>
+                        </select>
                 </div>
 
                 {/* Total calculation */}
@@ -6298,7 +6351,8 @@ export default function SalesManagement() {
                           const product = availableProducts.find(p => p.id === productId)
                           const selectedPackageId = selectedPackages[productId]
                           const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                          return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                          const quantity = productQuantities[productId] || 1
+                          return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                         }, 0).toString()
                       )} VNĐ</span>
                     </div>
@@ -6310,7 +6364,8 @@ export default function SalesManagement() {
                             const product = availableProducts.find(p => p.id === productId)
                             const selectedPackageId = selectedPackages[productId]
                             const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                            return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                            const quantity = productQuantities[productId] || 1
+                            return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                           }, 0) * discountPercent / 100).toString()
                         )} VNĐ</span>
                       </div>
@@ -6322,7 +6377,8 @@ export default function SalesManagement() {
                           const product = availableProducts.find(p => p.id === productId)
                           const selectedPackageId = selectedPackages[productId]
                           const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                          return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                          const quantity = productQuantities[productId] || 1
+                          return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                         }, 0) * (100 - discountPercent) / 100).toString()
                       )} VNĐ</span>
                     </div>
@@ -6339,7 +6395,11 @@ export default function SalesManagement() {
                   {selectedProducts.length > 0 && (
                     <>
                       <li>• Hình thức thanh toán: <span className="font-medium">
-                        {paymentMethod === 'cash' ? '💵 Tiền mặt' : '🏦 Chuyển khoản'}
+                        {paymentMethod === 'cash' ? 'Tiền mặt' : 
+                         paymentMethod === 'bank_transfer' ? 'Chuyển khoản' :
+                         paymentMethod === 'installment' ? 'Trả góp' :
+                         paymentMethod === 'momo' ? 'Momo' :
+                         paymentMethod === 'card' ? 'Thẻ' : 'Tùy chỉnh'}
                       </span></li>
                       {discountPercent > 0 && (
                         <li>• Giảm giá: <span className="font-medium text-red-600">{discountPercent}%</span></li>
@@ -6350,7 +6410,8 @@ export default function SalesManagement() {
                             const product = availableProducts.find(p => p.id === productId)
                             const selectedPackageId = selectedPackages[productId]
                             const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                            return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                            const quantity = productQuantities[productId] || 1
+                            return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                           }, 0) * (100 - discountPercent) / 100).toString()
                         )} VNĐ
                       </span></li>
@@ -6371,8 +6432,11 @@ export default function SalesManagement() {
                   setSelectedProduct('') // Reset single product when closing modal
                   setSelectedProducts([]) // Reset multiple products when closing modal
                   setSelectedPackages({}) // Reset packages when closing modal
+                  setProductQuantities({}) // Reset quantities
+                  setOrderNotes('') // Reset order notes
                   setDiscountPercent(0) // Reset discount
                   setPaymentMethod('cash') // Reset payment method
+                  setSelectedCategory('Tất cả') // Reset category
                 }}
                 className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md"
               >
@@ -6410,15 +6474,50 @@ export default function SalesManagement() {
               )}
             </div>
             
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-blue-600" />
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {/* Customer Info */}
+              <div className="flex items-center gap-3 mb-4">
+                <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                    <User className="h-6 w-6" />
+                  </span>
+                </span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-900">{pendingDragLead.name}</h3>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    {pendingDragLead.phone && <span className="mr-3">📱 {pendingDragLead.phone}</span>}
+                    {pendingDragLead.email && <span>{pendingDragLead.email}</span>}
+                  </p>
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{pendingDragLead.name}</h4>
-                  <p className="text-sm text-gray-500">{pendingDragLead.company || 'Cá nhân'}</p>
-                </div>
+              </div>
+
+              {/* Order Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn thể loại sản phẩm</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Tất cả">Tất cả</option>
+                  <option value="Khóa học">Khóa học</option>
+                  <option value="Phần mềm">Phần mềm</option>
+                  <option value="Dịch vụ tư vấn">Dịch vụ tư vấn</option>
+                </select>
               </div>
 
               {/* Product Selection - with Packages */}
@@ -6430,10 +6529,10 @@ export default function SalesManagement() {
                   } <span className="text-red-500">*</span>
                 </label>
                 <div className="max-h-64 overflow-y-auto space-y-3 border border-gray-300 rounded-lg p-3">
-                  {availableProducts.map((product) => (
-                    <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                  {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).map((product) => (
+                    <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors">
                       {/* Product Selection */}
-                      <label className="flex items-start space-x-3 cursor-pointer mb-2">
+                      <label className="flex items-start space-x-3 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedProducts.includes(product.id)}
@@ -6445,6 +6544,11 @@ export default function SalesManagement() {
                                 ...prev,
                                 [product.id]: availablePackages[product.id as keyof typeof availablePackages]?.[0]?.id || ''
                               }))
+                              // Set default quantity to 1
+                              setProductQuantities(prev => ({
+                                ...prev,
+                                [product.id]: 1
+                              }))
                             } else {
                               setSelectedProducts(prev => prev.filter(id => id !== product.id))
                               // Remove package selection
@@ -6453,47 +6557,68 @@ export default function SalesManagement() {
                                 delete newPackages[product.id]
                                 return newPackages
                               })
+                              // Remove quantity
+                              setProductQuantities(prev => {
+                                const newQuantities = { ...prev }
+                                delete newQuantities[product.id]
+                                return newQuantities
+                              })
                             }
                           }}
                           className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h6 className="font-medium text-gray-900">{product.name}</h6>
-                              <p className="text-sm text-gray-600">{product.description}</p>
-                            </div>
-                            <span className="font-medium text-blue-600">
-                              {formatCurrency(product.price.toString())} VNĐ
-                            </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{product.category}</span>
                           </div>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                          <p className="text-sm font-semibold text-green-600 mt-1">{formatCurrency(product.price.toString())} VNĐ</p>
                         </div>
                       </label>
 
-                      {/* Package Selection Dropdown */}
+                      {/* Package & Quantity Selection */}
                       {selectedProducts.includes(product.id) && (
-                        <div className="ml-7 border-t border-gray-100 pt-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Chọn gói:
-                          </label>
-                          <select
-                            value={selectedPackages[product.id] || ''}
-                            onChange={(e) => setSelectedPackages(prev => ({
-                              ...prev,
-                              [product.id]: e.target.value
-                            }))}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            {availablePackages[product.id as keyof typeof availablePackages]?.map((pkg) => (
-                              <option key={pkg.id} value={pkg.id}>
-                                {pkg.name} - {pkg.price > 0 ? `+${formatCurrency(pkg.price.toString())} VNĐ` : 'Miễn phí'}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                              <select
+                                value={selectedPackages[product.id] || ''}
+                                onChange={(e) => setSelectedPackages(prev => ({
+                                  ...prev,
+                                  [product.id]: e.target.value
+                                }))}
+                                className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                              >
+                                {availablePackages[product.id as keyof typeof availablePackages]?.map((pkg) => (
+                                  <option key={pkg.id} value={pkg.id}>
+                                    {pkg.name} {pkg.price > 0 ? `(+${formatCurrency(pkg.price.toString())} VNĐ)` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={productQuantities[product.id] || 1}
+                                onChange={(e) => setProductQuantities(prev => ({
+                                  ...prev,
+                                  [product.id]: Math.max(1, parseInt(e.target.value) || 1)
+                                }))}
+                                className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
+                  {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">Không có sản phẩm nào trong thể loại này</p>
+                  )}
                 </div>
 
                 {/* Selected Products Summary */}
@@ -6505,11 +6630,13 @@ export default function SalesManagement() {
                         const product = availableProducts.find(p => p.id === productId)
                         const selectedPackageId = selectedPackages[productId]
                         const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                        const totalPrice = (product?.price || 0) + (selectedPackage?.price || 0)
+                        const quantity = productQuantities[productId] || 1
+                        const unitPrice = (product?.price || 0) + (selectedPackage?.price || 0)
+                        const totalPrice = unitPrice * quantity
                         
                         return product ? (
                           <div key={productId} className="flex justify-between text-xs">
-                            <span>{product.name} ({selectedPackage?.name || 'Standard'})</span>
+                            <span>{product.name} ({selectedPackage?.name || 'Standard'}) x{quantity}</span>
                             <span className="font-medium text-blue-600">
                               {formatCurrency(totalPrice.toString())} VNĐ
                             </span>
@@ -6552,30 +6679,18 @@ export default function SalesManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Hình thức thanh toán
                   </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="dragPaymentMethod"
-                        value="cash"
-                        checked={paymentMethod === 'cash'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
-                    </label>
-                    <label className="flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="radio"
-                        name="dragPaymentMethod"
-                        value="bank_transfer"
-                        checked={paymentMethod === 'bank_transfer'}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
-                    </label>
-                  </div>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="cash">Tiền mặt</option>
+                    <option value="bank_transfer">Chuyển khoản</option>
+                    <option value="installment">Trả góp</option>
+                    <option value="momo">Momo</option>
+                    <option value="card">Thẻ</option>
+                    <option value="custom">Tùy chỉnh</option>
+                  </select>
                 </div>
               )}
 
@@ -6592,7 +6707,8 @@ export default function SalesManagement() {
                               const product = availableProducts.find(p => p.id === productId)
                               const selectedPackageId = selectedPackages[productId]
                               const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                              return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                              const quantity = productQuantities[productId] || 1
+                              return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                             }, 0).toString())} VNĐ
                           </span>
                         </div>
@@ -6603,7 +6719,8 @@ export default function SalesManagement() {
                               const product = availableProducts.find(p => p.id === productId)
                               const selectedPackageId = selectedPackages[productId]
                               const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                              return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                              const quantity = productQuantities[productId] || 1
+                              return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                             }, 0) * discountPercent / 100).toString())} VNĐ
                           </span>
                         </div>
@@ -6614,7 +6731,8 @@ export default function SalesManagement() {
                               const product = availableProducts.find(p => p.id === productId)
                               const selectedPackageId = selectedPackages[productId]
                               const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                              return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                              const quantity = productQuantities[productId] || 1
+                              return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                             }, 0) * (100 - discountPercent) / 100).toString())} VNĐ
                           </span>
                         </div>
@@ -6643,8 +6761,11 @@ export default function SalesManagement() {
                   setOriginalTargetStatus('')
                   setSelectedProducts([])
                   setSelectedPackages({})
+                  setProductQuantities({}) // Reset quantities
+                  setOrderNotes('') // Reset order notes
                   setDiscountPercent(0) // Reset discount
                   setPaymentMethod('cash') // Reset payment method
+                  setSelectedCategory('Tất cả') // Reset category
                 }}
                 className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200 shadow-sm hover:shadow-md"
               >
@@ -7100,6 +7221,8 @@ export default function SalesManagement() {
                   setBulkConvertTargetStatus('')
                   setSelectedProducts([])
                   setSelectedPackages({})
+                  setProductQuantities({}) // Reset quantities
+                  setOrderNotes('') // Reset order notes
                   setDiscountPercent(0)
                   setDiscountType('%')
                   setPaymentMethod('cash')
@@ -7133,6 +7256,40 @@ export default function SalesManagement() {
             </div>
             
             <div className="px-4 sm:px-6 py-4">
+              {/* Customer Info */}
+              {selectedLeadIds.length === 1 && (() => {
+                const selectedLead = leads.find(l => l.id === selectedLeadIds[0])
+                return selectedLead ? (
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                        <User className="h-6 w-6" />
+                      </span>
+                    </span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-slate-900">{selectedLead.name}</h3>
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        {selectedLead.email && <span>{selectedLead.email}</span>}
+                      </p>
+                    </div>
+                  </div>
+                ) : null
+              })()}
+
+              {/* Order Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
               {/* Category Filter */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -7176,12 +7333,22 @@ export default function SalesManagement() {
                                   ...prev,
                                   [product.id]: availablePackages[product.id as keyof typeof availablePackages]?.[0]?.id || ''
                                 }))
+                                // Set default quantity to 1
+                                setProductQuantities(prev => ({
+                                  ...prev,
+                                  [product.id]: 1
+                                }))
                               } else {
                                 setSelectedProducts(prev => prev.filter(id => id !== product.id))
                                 setSelectedPackages(prev => {
                                   const newPackages = {...prev}
                                   delete newPackages[product.id]
                                   return newPackages
+                                })
+                                setProductQuantities(prev => {
+                                  const newQuantities = {...prev}
+                                  delete newQuantities[product.id]
+                                  return newQuantities
                                 })
                               }
                             }}
@@ -7197,24 +7364,41 @@ export default function SalesManagement() {
                           </div>
                         </label>
                         
-                        {/* Package Selection */}
+                        {/* Package & Quantity Selection */}
                         {selectedProducts.includes(product.id) && availablePackages[product.id as keyof typeof availablePackages] && (
                           <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
-                            <select
-                              value={selectedPackages[product.id] || ''}
-                              onChange={(e) => setSelectedPackages(prev => ({
-                                ...prev,
-                                [product.id]: e.target.value
-                              }))}
-                              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                            >
-                              {availablePackages[product.id as keyof typeof availablePackages]?.map(pkg => (
-                                <option key={pkg.id} value={pkg.id}>
-                                  {pkg.name} {pkg.price > 0 ? `(+${formatCurrency(pkg.price.toString())} VNĐ)` : ''} - {pkg.description}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                                <select
+                                  value={selectedPackages[product.id] || ''}
+                                  onChange={(e) => setSelectedPackages(prev => ({
+                                    ...prev,
+                                    [product.id]: e.target.value
+                                  }))}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                >
+                                  {availablePackages[product.id as keyof typeof availablePackages]?.map(pkg => (
+                                    <option key={pkg.id} value={pkg.id}>
+                                      {pkg.name} {pkg.price > 0 ? `(+${formatCurrency(pkg.price.toString())} VNĐ)` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={productQuantities[product.id] || 1}
+                                  onChange={(e) => setProductQuantities(prev => ({
+                                    ...prev,
+                                    [product.id]: Math.max(1, parseInt(e.target.value) || 1)
+                                  }))}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                />
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -7236,7 +7420,8 @@ export default function SalesManagement() {
                       const product = availableProducts.find(p => p.id === productId)
                       const selectedPackageId = selectedPackages[productId]
                       const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                      return sum + (product?.price || 0) + (selectedPackage?.price || 0)
+                      const quantity = productQuantities[productId] || 1
+                      return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                     }, 0)
                     const totalBeforeDiscount = subtotal * selectedLeadIds.length
                     const discountAmount = discountType === '%' 
@@ -7256,11 +7441,12 @@ export default function SalesManagement() {
                             const product = availableProducts.find(p => p.id === productId)
                             const selectedPackageId = selectedPackages[productId]
                             const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
-                            const productTotal = (product?.price || 0) + (selectedPackage?.price || 0)
+                            const quantity = productQuantities[productId] || 1
+                            const productTotal = ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
                             
                             return product ? (
                               <div key={productId} className="flex justify-between text-gray-700">
-                                <span>{product.name} / Số lượng: {selectedLeadIds.length}</span>
+                                <span>{product.name} ({selectedPackage?.name || 'Standard'}) x{quantity} / {selectedLeadIds.length} leads</span>
                                 <span className="font-medium text-green-600">
                                   {formatCurrency((productTotal * selectedLeadIds.length).toString())} VNĐ
                                 </span>
@@ -7343,30 +7529,18 @@ export default function SalesManagement() {
                         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                           Hình thức thanh toán
                         </label>
-                        <div className="flex gap-3">
-                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
-                            <input
-                              type="radio"
-                              name="bulkPaymentMethod"
-                              value="cash"
-                              checked={paymentMethod === 'cash'}
-                              onChange={(e) => setPaymentMethod(e.target.value)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
-                          </label>
-                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
-                            <input
-                              type="radio"
-                              name="bulkPaymentMethod"
-                              value="bank_transfer"
-                              checked={paymentMethod === 'bank_transfer'}
-                              onChange={(e) => setPaymentMethod(e.target.value)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
-                          </label>
-                        </div>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="cash">Tiền mặt</option>
+                          <option value="bank_transfer">Chuyển khoản</option>
+                          <option value="installment">Trả góp</option>
+                          <option value="momo">Momo</option>
+                          <option value="card">Thẻ</option>
+                          <option value="custom">Tùy chỉnh</option>
+                        </select>
                       </div>
                     </div>
 
@@ -7386,7 +7560,7 @@ export default function SalesManagement() {
                               onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                             />
-                            <span className="ml-2 text-sm text-gray-700">💳 Toàn bộ</span>
+                            <span className="ml-2 text-sm text-gray-700">Toàn bộ</span>
                           </label>
                           <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
                             <input
@@ -7397,7 +7571,7 @@ export default function SalesManagement() {
                               onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                             />
-                            <span className="ml-2 text-sm text-gray-700">📅 Theo giai đoạn</span>
+                            <span className="ml-2 text-sm text-gray-700">Theo giai đoạn</span>
                           </label>
                         </div>
                       </div>
@@ -7537,6 +7711,8 @@ export default function SalesManagement() {
                   setBulkConvertTargetStatus('')
                   setSelectedProducts([])
                   setSelectedPackages({})
+                  setProductQuantities({}) // Reset quantities
+                  setOrderNotes('') // Reset order notes
                   setDiscountPercent(0)
                   setDiscountType('%')
                   setPaymentMethod('cash')
