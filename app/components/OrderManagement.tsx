@@ -2283,7 +2283,7 @@ Trân trọng,
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Edit className="w-4 h-4 text-gray-500" />
-                            <span>Chỉnh sửa đơn hàng</span>
+                            <span>Thanh toán đơn hàng</span>
                           </button>
                           <button 
                             onClick={() => {
@@ -3219,7 +3219,7 @@ Trân trọng,
           <div className={`bg-white rounded-lg shadow-xl ${editingOrder.paymentStatus === 'partial' || editingOrder.paymentMode === 'installment' ? 'max-w-5xl' : 'max-w-md'} w-full mx-4 max-h-[90vh] overflow-y-auto`}>
             <div className="flex items-center justify-between p-6 border-b">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Chỉnh sửa đơn hàng</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Thanh toán đơn hàng</h3>
                 <p className="text-sm text-gray-600 mt-1">Đơn hàng: {editingOrder.orderNumber}</p>
               </div>
               <button

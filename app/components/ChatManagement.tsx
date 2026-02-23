@@ -74,7 +74,19 @@ import {
   StickyNote,
   ShoppingCart,
   ArrowRightLeft,
-  Calendar
+  Calendar,
+  Reply,
+  Forward,
+  MoreHorizontal,
+  Pin,
+  Copy,
+  Bell,
+  CornerUpLeft,
+  CheckSquare,
+  Undo2,
+  AlarmClock,
+  ChevronLeft,
+  Repeat2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -94,6 +106,12 @@ interface ZaloMessage {
     type: 'customer' | 'agent'
   }
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed'
+  isPinned?: boolean
+  replyTo?: {
+    id: string
+    content: string
+    senderName: string
+  }
 }
 
 interface ZaloContact {
@@ -192,6 +210,18 @@ interface ZaloConversation {
   platform?: 'zalo-personal' | 'zalo-oa' | 'facebook'
 }
 
+interface Reminder {
+  id: string
+  title: string
+  date: string
+  time: string
+  repeat: 'none' | 'daily' | 'weekly' | 'monthly'
+  note?: string
+  conversationId: string
+  messageId?: string
+  createdAt: string
+}
+
 // ===== GENERATE DEMO DATA =====
 
 const vietnameseNamesZaloPersonal = [
@@ -227,7 +257,30 @@ const lastMessages = [
   'Em muốn tìm hiểu về gói CRM Professional',
   'Cho mình hỏi về tính năng marketing automation',
   'Tôi cần tư vấn về giải pháp CRM',
-  'Hợp đồng sắp hết hạn rồi'
+  'Hợp đồng sắp hết hạn rồi',
+  'Xin chào, tôi muốn hỏi về báo giá sản phẩm',
+  'Anh ơi cho em hỏi về sản phẩm CRM',
+  'Chị có thể gửi thông tin qua email được không?',
+  'Tôi quan tâm đến gói Enterprise',
+  'Phần mềm này có hỗ trợ tiếng Việt không?',
+  'Cho em hỏi về cách thanh toán',
+  'Em muốn đặt lịch demo sản phẩm',
+  'Dạ em cần hỗ trợ kỹ thuật',
+  'Bên mình có chính sách chiết khấu không ạ?',
+  'Tư vấn giúp em về giải pháp quản lý khách hàng',
+  'Anh có thể gọi lại cho em được không?',
+  'Em đang gặp vấn đề khi đăng nhập',
+  'Cho em xin địa chỉ văn phòng',
+  'Cảm ơn anh/chị nhiều ạ!',
+  'Nguyễn Hải Yến vừa gửi tin nhắn mới',
+  'Trần Thu Hương đã xác nhận đơn hàng',
+  'Phạm Minh Tuấn cần tư vấn thêm về sản phẩm',
+  'Hoàng Văn Long muốn gia hạn hợp đồng',
+  'Đỗ Thị Mai hỏi về tính năng báo cáo',
+  'Bùi Công Danh quan tâm gói Premium',
+  'Phan Thị Lan cần hỗ trợ kỹ thuật',
+  'Ngô Thanh Tùng đặt lịch demo tuần sau',
+  'Đinh Hồng Nhung gửi yêu cầu báo giá'
 ]
 
 const tags = [
@@ -657,7 +710,7 @@ export default function ChatManagement() {
   const [selectedChannel, setSelectedChannel] = useState<'zalo-personal' | 'zalo-oa' | 'facebook'>('zalo-personal')
   const [selectedAccount, setSelectedAccount] = useState<ZaloAccount>(connectedZaloAccounts[0])
   const [showAccountDropdown, setShowAccountDropdown] = useState(false)
-  const [rightPanelTab, setRightPanelTab] = useState<'zalo' | 'sync' | 'community' | 'files'>('zalo')
+  const [rightPanelTab, setRightPanelTab] = useState<'zalo' | 'sync' | 'community' | 'files' | 'reminders'>('zalo')
   const [syncSearchTerm, setSyncSearchTerm] = useState('')
   const [syncSearchAll, setSyncSearchAll] = useState(false)
   const [fileSearchTerm, setFileSearchTerm] = useState('')
@@ -738,6 +791,55 @@ export default function ChatManagement() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
 
+  // Message actions states
+  const [forwardingMessage, setForwardingMessage] = useState<ZaloMessage | null>(null)
+  const [replyingToMessage, setReplyingToMessage] = useState<ZaloMessage | null>(null)
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([])
+  const [isSelectMode, setIsSelectMode] = useState(false)
+  const [showReminderDialog, setShowReminderDialog] = useState(false)
+  const [reminderMessage, setReminderMessage] = useState<ZaloMessage | null>(null)
+  const [pinnedMessages, setPinnedMessages] = useState<Set<string>>(new Set())
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
+  const [showPinnedList, setShowPinnedList] = useState(false)
+  const [showUnpinDialog, setShowUnpinDialog] = useState(false)
+  const [messageToUnpin, setMessageToUnpin] = useState<string | null>(null)
+  // Reminder states
+  const [reminders, setReminders] = useState<Reminder[]>([
+    {
+      id: 'reminder-1',
+      title: 'Nhắc hẹn 2',
+      date: '2026-02-25',
+      time: '23:57',
+      repeat: 'weekly',
+      note: '',
+      conversationId: 'conv-1',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'reminder-2',
+      title: 'Ám ảnh zalo',
+      date: '2026-02-24',
+      time: '01:45',
+      repeat: 'weekly',
+      note: '',
+      conversationId: 'conv-1',
+      createdAt: new Date().toISOString()
+    }
+  ])
+  const [reminderTitle, setReminderTitle] = useState('')
+  const [reminderDate, setReminderDate] = useState(new Date().toISOString().split('T')[0])
+  const [reminderTime, setReminderTime] = useState('09:00')
+  const [reminderRepeat, setReminderRepeat] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none')
+  const [reminderNote, setReminderNote] = useState('')
+  const [reminderNotification, setReminderNotification] = useState<Reminder | null>(null)
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+  const [showDeleteReminderDialog, setShowDeleteReminderDialog] = useState(false)
+  const [reminderToDelete, setReminderToDelete] = useState<string | null>(null)
+  // Search mode states
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchTab, setSearchTab] = useState<'all' | 'users' | 'messages'>('all')
+
   const messageScrollRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -811,12 +913,19 @@ export default function ChatManagement() {
       direction: 'outgoing',
       timestamp: new Date().toISOString(),
       sender: { id: 'agent-1', name: 'Tư vấn viên', type: 'agent' },
-      status: 'sent'
+      status: 'sent',
+      replyTo: replyingToMessage ? {
+        id: replyingToMessage.id,
+        content: replyingToMessage.content,
+        senderName: replyingToMessage.sender.name
+      } : undefined
     }
 
     setMessages([...messages, newMessage])
     setMessageInput('')
     setShowQuickReplies(false)
+    setReplyingToMessage(null)
+    setForwardingMessage(null)
 
     // Update conversation last message
     setConversations(conversations.map(c =>
@@ -824,6 +933,288 @@ export default function ChatManagement() {
         ? { ...c, lastMessage: newMessage, lastMessageAt: newMessage.timestamp }
         : c
     ))
+  }
+
+  // Message action handlers
+  const handleReplyMessage = (message: ZaloMessage) => {
+    setReplyingToMessage(message)
+    setForwardingMessage(null)
+  }
+
+  const handleForwardMessage = (message: ZaloMessage) => {
+    setForwardingMessage(message)
+    setReplyingToMessage(null)
+  }
+
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      // Could add toast notification here
+    } catch (err) {
+      console.error('Failed to copy message:', err)
+    }
+  }
+
+  const handlePinMessage = (messageId: string) => {
+    setPinnedMessages(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId)
+      } else {
+        newSet.add(messageId)
+      }
+      return newSet
+    })
+  }
+
+  const handleDeleteMessageForMe = (messageId: string) => {
+    // In real app, this would mark the message as deleted for current user
+    setMessages(prev => prev.filter(m => m.id !== messageId))
+  }
+
+  const handleRecallMessage = (messageId: string) => {
+    // In real app, this would recall the message from both sides
+    setMessages(prev => prev.map(m => 
+      m.id === messageId 
+        ? { ...m, content: 'Tin nhắn đã được thu hồi', messageType: 'text' as const }
+        : m
+    ))
+  }
+
+  const handleSelectMessage = (messageId: string) => {
+    setSelectedMessageIds(prev => 
+      prev.includes(messageId)
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    )
+  }
+
+  const handleCreateReminder = (message?: ZaloMessage) => {
+    // Check permission for community
+    if (selectedConversation?.conversationType === 'group' && selectedChannel === 'zalo-personal') {
+      // For community, check if user is leader/deputy (for demo, always show alert)
+      alert('Chỉ trưởng/ phó cộng đồng mới được tạo nhắc hẹn')
+      return
+    }
+    setReminderMessage(message || null)
+    setReminderTitle('')
+    setReminderDate(new Date().toISOString().split('T')[0])
+    setReminderTime('09:00')
+    setReminderRepeat('none')
+    setReminderNote('')
+    setShowReminderDialog(true)
+  }
+
+  // Save reminder (create or edit)
+  const saveReminder = () => {
+    if (!reminderTitle.trim() || !selectedConversation) return
+
+    if (editingReminder) {
+      // Edit mode
+      setReminders(prev => prev.map(r => 
+        r.id === editingReminder.id 
+          ? {
+              ...r,
+              title: reminderTitle,
+              date: reminderDate,
+              time: reminderTime,
+              repeat: reminderRepeat,
+              note: reminderNote
+            }
+          : r
+      ))
+      setEditingReminder(null)
+    } else {
+      // Create mode
+      const newReminder: Reminder = {
+        id: `reminder-${Date.now()}`,
+        title: reminderTitle,
+        date: reminderDate,
+        time: reminderTime,
+        repeat: reminderRepeat,
+        note: reminderNote,
+        conversationId: selectedConversation.id,
+        messageId: reminderMessage?.id,
+        createdAt: new Date().toISOString()
+      }
+
+      setReminders(prev => [newReminder, ...prev])
+      setReminderNotification(newReminder)
+
+      // Auto-hide notification after 10 seconds
+      setTimeout(() => {
+        setReminderNotification(null)
+      }, 10000)
+    }
+
+    setShowReminderDialog(false)
+    setReminderMessage(null)
+  }
+
+  // Format reminder display date
+  const formatReminderDate = (dateStr: string, timeStr: string) => {
+    const date = new Date(dateStr + 'T' + timeStr)
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return `Hôm nay lúc ${timeStr}`
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return `Ngày mai lúc ${timeStr}`
+    } else {
+      const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }
+      return `${date.toLocaleDateString('vi-VN', options)} lúc ${timeStr}`
+    }
+  }
+
+  // Get day of week in Vietnamese
+  const getDayOfWeek = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+    return days[date.getDay()]
+  }
+
+  // Format repeat label
+  const formatRepeatLabel = (repeat: string) => {
+    switch (repeat) {
+      case 'daily': return 'Nhắc hằng ngày'
+      case 'weekly': return 'Nhắc theo tuần'
+      case 'monthly': return 'Nhắc hằng tháng'
+      default: return 'Không lặp lại'
+    }
+  }
+
+  // Get reminders for current conversation
+  const getConversationReminders = () => {
+    if (!selectedConversation) return []
+    return reminders.filter(r => r.conversationId === selectedConversation.id)
+  }
+
+  // Check if conversation has reminders
+  const hasConversationReminders = (conversationId: string) => {
+    return reminders.some(r => r.conversationId === conversationId)
+  }
+
+  // Handle edit reminder
+  const handleEditReminder = (reminder: Reminder) => {
+    setEditingReminder(reminder)
+    setReminderTitle(reminder.title)
+    setReminderDate(reminder.date)
+    setReminderTime(reminder.time)
+    setReminderRepeat(reminder.repeat)
+    setReminderNote(reminder.note || '')
+    setShowReminderDialog(true)
+  }
+
+  // Handle delete reminder confirmation
+  const handleDeleteReminderConfirm = (reminderId: string) => {
+    setReminderToDelete(reminderId)
+    setShowDeleteReminderDialog(true)
+  }
+
+  // Execute delete reminder
+  const executeDeleteReminder = () => {
+    if (reminderToDelete) {
+      setReminders(prev => prev.filter(r => r.id !== reminderToDelete))
+      setReminderToDelete(null)
+      setShowDeleteReminderDialog(false)
+    }
+  }
+
+  // Search results with deduplication
+  const getSearchResults = () => {
+    if (!searchQuery.trim()) return { users: [], messages: [] }
+    
+    const query = searchQuery.toLowerCase()
+    
+    // Search users (conversations) - deduplicate by contact name
+    const seenUserNames = new Set<string>()
+    const userResults = conversations.filter(conv => {
+      const matches = conv.contact.name.toLowerCase().includes(query) ||
+        (conv.contact.phone && conv.contact.phone.includes(query))
+      if (matches && !seenUserNames.has(conv.contact.name)) {
+        seenUserNames.add(conv.contact.name)
+        return true
+      }
+      return false
+    })
+    
+    // Search ALL messages in demoMessages - deduplicate by content
+    const messageResults: { message: ZaloMessage; conversation: ZaloConversation }[] = []
+    const seenMessages = new Set<string>()
+    
+    Object.entries(demoMessages).forEach(([contactId, msgs]) => {
+      msgs.forEach(msg => {
+        if (msg.content.toLowerCase().includes(query)) {
+          const msgKey = `${msg.content}`
+          if (!seenMessages.has(msgKey)) {
+            seenMessages.add(msgKey)
+            const conv = conversations.find(c => c.contactId === contactId)
+            if (conv) {
+              messageResults.push({ message: msg, conversation: conv })
+            }
+          }
+        }
+      })
+    })
+    
+    return { users: userResults, messages: messageResults }
+  }
+
+  const cancelReplyOrForward = () => {
+    setReplyingToMessage(null)
+    setForwardingMessage(null)
+  }
+
+  // Get pinned messages data
+  const getPinnedMessagesData = () => {
+    return messages.filter(m => pinnedMessages.has(m.id))
+  }
+
+  // Confirm unpin message
+  const confirmUnpinMessage = (messageId: string) => {
+    setMessageToUnpin(messageId)
+    setShowUnpinDialog(true)
+  }
+
+  // Execute unpin
+  const executeUnpin = () => {
+    if (messageToUnpin) {
+      handlePinMessage(messageToUnpin)
+      setMessageToUnpin(null)
+      setShowUnpinDialog(false)
+    }
+  }
+
+  // Cancel select mode
+  const cancelSelectMode = () => {
+    setIsSelectMode(false)
+    setSelectedMessageIds([])
+  }
+
+  // Bulk copy messages
+  const handleBulkCopy = () => {
+    const selectedMsgs = messages.filter(m => selectedMessageIds.includes(m.id))
+    const content = selectedMsgs.map(m => m.content).join('\n')
+    navigator.clipboard.writeText(content)
+    cancelSelectMode()
+  }
+
+  // Bulk delete messages
+  const handleBulkDelete = () => {
+    setMessages(prev => prev.filter(m => !selectedMessageIds.includes(m.id)))
+    cancelSelectMode()
+  }
+
+  // Bulk recall messages
+  const handleBulkRecall = () => {
+    setMessages(prev => prev.map(m => 
+      selectedMessageIds.includes(m.id) 
+        ? { ...m, content: 'Tin nhắn đã được thu hồi', messageType: 'text' as const }
+        : m
+    ))
+    cancelSelectMode()
   }
 
   // Handle Enter key
@@ -966,15 +1357,85 @@ export default function ChatManagement() {
 
             {/* Search */}
             <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Tìm kiếm tin nhắn"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white border-gray-300 text-sm h-9"
-              />
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Tìm kiếm tin nhắn"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchMode(true)}
+                    className="pl-10 bg-white border-gray-300 text-sm h-9"
+                  />
+                </div>
+                {isSearchMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsSearchMode(false)
+                      setSearchQuery('')
+                      setSearchTab('all')
+                    }}
+                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 h-9 px-3"
+                  >
+                    Đóng
+                  </Button>
+                )}
+              </div>
             </div>
 
+            {/* Search Mode: Tabs */}
+            {isSearchMode ? (
+              (() => {
+                const results = getSearchResults()
+                const totalCount = results.users.length + results.messages.length
+                return (
+                  <div className="flex gap-1">
+                    <Button
+                      variant={searchTab === 'all' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSearchTab('all')}
+                      className={cn(
+                        "text-xs h-8",
+                        searchTab === 'all'
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "hover:bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      Tất cả {searchQuery.trim() && `(${totalCount})`}
+                    </Button>
+                    <Button
+                      variant={searchTab === 'users' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSearchTab('users')}
+                      className={cn(
+                        "text-xs h-8",
+                        searchTab === 'users'
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "hover:bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      Người dùng {searchQuery.trim() && `(${results.users.length})`}
+                    </Button>
+                    <Button
+                      variant={searchTab === 'messages' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSearchTab('messages')}
+                      className={cn(
+                        "text-xs h-8",
+                        searchTab === 'messages'
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "hover:bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      Tin nhắn {searchQuery.trim() && `(${results.messages.length})`}
+                    </Button>
+                  </div>
+                )
+              })()
+            ) : (
+              <>
             {/* Channel Icons */}
             <div className="flex gap-2 mb-3">
               <button 
@@ -1178,10 +1639,113 @@ export default function ChatManagement() {
                 )}
               </div>
             </div>
+              </>
+            )}
           </div>
 
-          {/* Conversation List or Contacts List */}
-          {activeTab === 'contacts' ? (
+          {/* Search Results */}
+          {isSearchMode ? (
+            <ScrollArea className="flex-1 bg-white">
+              {(() => {
+                const results = getSearchResults()
+                const showUsers = searchTab === 'all' || searchTab === 'users'
+                const showMessages = searchTab === 'all' || searchTab === 'messages'
+                const hasResults = results.users.length > 0 || results.messages.length > 0
+                
+                if (!searchQuery.trim()) {
+                  return (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <Search className="w-12 h-12 text-gray-300 mb-3" />
+                      <p className="text-gray-500 text-sm">Nhập từ khóa để tìm kiếm</p>
+                    </div>
+                  )
+                }
+                
+                if (!hasResults) {
+                  return (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <Search className="w-12 h-12 text-gray-300 mb-3" />
+                      <p className="text-gray-500 text-sm">Không tìm thấy kết quả</p>
+                    </div>
+                  )
+                }
+                
+                return (
+                  <div className="divide-y divide-gray-100">
+                    {/* User Results */}
+                    {showUsers && results.users.length > 0 && (
+                      <div>
+                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                          <span className="text-xs font-medium text-gray-500 uppercase">Người dùng ({results.users.length})</span>
+                        </div>
+                        {results.users.map((conv) => (
+                          <div
+                            key={conv.id}
+                            onClick={() => {
+                              handleSelectConversation(conv)
+                            }}
+                            className={cn(
+                              "px-4 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer transition-colors",
+                              selectedConversation?.id === conv.id && "bg-blue-50 border-l-4 border-l-blue-500"
+                            )}
+                          >
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage src={conv.contact.avatar} />
+                              <AvatarFallback className="bg-blue-500 text-white text-sm">
+                                {conv.contact.name.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900 truncate">{conv.contact.name}</p>
+                              <p className="text-xs text-gray-500">{conv.contact.phone || 'Zalo'}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Message Results */}
+                    {showMessages && results.messages.length > 0 && (
+                      <div>
+                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                          <span className="text-xs font-medium text-gray-500 uppercase">Tin nhắn ({results.messages.length})</span>
+                        </div>
+                        {results.messages.map((item, idx) => {
+                          const { message, conversation: conv } = item
+                          return (
+                            <div
+                              key={`${conv.id}-${idx}`}
+                              onClick={() => {
+                                handleSelectConversation(conv)
+                              }}
+                              className={cn(
+                                "px-4 py-3 flex items-start gap-3 hover:bg-gray-50 cursor-pointer transition-colors",
+                                selectedConversation?.id === conv.id && "bg-blue-50 border-l-4 border-l-blue-500"
+                              )}
+                            >
+                              <Avatar className="w-10 h-10 flex-shrink-0">
+                                <AvatarImage src={conv.contact.avatar} />
+                                <AvatarFallback className="bg-blue-500 text-white text-sm">
+                                  {conv.contact.name.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 truncate">{conv.contact.name}</p>
+                                <p className="text-sm text-gray-600 line-clamp-2">{message.content}</p>
+                                <p className="text-xs text-gray-400 mt-1">{message.timestamp}</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </ScrollArea>
+          ) : (
+          /* Conversation List or Contacts List */
+          activeTab === 'contacts' ? (
             // Contacts View
             <div className="flex-1 flex flex-col bg-white overflow-hidden">
               {/* Contact Tabs */}
@@ -1401,6 +1965,7 @@ export default function ChatManagement() {
                 )
               })}
             </ScrollArea>
+          )
           )}
         </div>
 
@@ -1489,6 +2054,21 @@ export default function ChatManagement() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                     </svg>
                   </Button> */}
+                  {/* Only show bell icon if current conversation has reminders */}
+                  {selectedConversation && getConversationReminders().length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-9 w-9 p-0 rounded-full hover:bg-gray-100 relative" 
+                      title="Nhắc hẹn"
+                      onClick={() => setRightPanelTab('reminders')}
+                    >
+                      <Bell className="w-4 h-4 text-gray-600" />
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                        {getConversationReminders().length}
+                      </span>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="Gọi điện">
                     <Phone className="w-4 h-4 text-gray-600" />
                   </Button>
@@ -1512,6 +2092,101 @@ export default function ChatManagement() {
                   </Button>
                 </div>
               </div>
+
+              {/* Pinned Messages Panel */}
+              {pinnedMessages.size > 0 && (
+                <div className="bg-yellow-50 border-b border-yellow-200">
+                  {!showPinnedList ? (
+                    // Single pinned message view with expand option
+                    <div 
+                      className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-yellow-100 transition-colors"
+                      onClick={() => pinnedMessages.size > 1 && setShowPinnedList(true)}
+                    >
+                      <Pin className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 truncate">
+                          {getPinnedMessagesData()[0]?.content}
+                        </p>
+                      </div>
+                      {pinnedMessages.size > 1 && (
+                        <span className="flex-shrink-0 text-xs bg-yellow-200 text-yellow-700 px-2 py-0.5 rounded-full">
+                          +{pinnedMessages.size - 1} ghim
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const firstPinned = getPinnedMessagesData()[0]
+                          if (firstPinned) confirmUnpinMessage(firstPinned.id)
+                        }}
+                        className="flex-shrink-0 p-1 rounded hover:bg-yellow-200 text-yellow-600 hover:text-yellow-800"
+                        title="Bỏ ghim"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    // Expanded pinned messages list
+                    <div className="py-2">
+                      <div 
+                        className="flex items-center gap-2 px-4 py-1.5 cursor-pointer hover:bg-yellow-100"
+                        onClick={() => setShowPinnedList(false)}
+                      >
+                        <ChevronDown className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-700">
+                          Danh sách ghim ({pinnedMessages.size})
+                        </span>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto">
+                        {getPinnedMessagesData().map((msg) => (
+                          <div 
+                            key={msg.id}
+                            className="flex items-center gap-2 px-4 py-2 hover:bg-yellow-100 transition-colors"
+                          >
+                            <Pin className="w-3 h-3 text-yellow-600 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-yellow-600 font-medium">{msg.sender.name}</p>
+                              <p className="text-sm text-gray-700 truncate">{msg.content}</p>
+                            </div>
+                            <button
+                              onClick={() => confirmUnpinMessage(msg.id)}
+                              className="flex-shrink-0 p-1 rounded hover:bg-yellow-200 text-yellow-600 hover:text-yellow-800"
+                              title="Bỏ ghim"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Reminder Notification */}
+              {reminderNotification && (
+                <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 flex items-center gap-3">
+                  <AlarmClock className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">
+                      Bạn tạo nhắc hẹn mới <span className="font-medium">{reminderNotification.title}</span> - {getDayOfWeek(reminderNotification.date)}, {new Date(reminderNotification.date).getDate()} tháng {new Date(reminderNotification.date).getMonth() + 1} lúc {reminderNotification.time} .{' '}
+                      <button 
+                        onClick={() => setRightPanelTab('reminders')}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Xem
+                      </button>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setReminderNotification(null)}
+                    className="flex-shrink-0 p-1 rounded hover:bg-yellow-200 text-yellow-600 hover:text-yellow-800"
+                    title="Đóng"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Messages Area */}
               <div className={cn(
@@ -1552,17 +2227,176 @@ export default function ChatManagement() {
 
                           <div className={cn("flex flex-col gap-1 max-w-[70%]", msgGroup.direction === 'outgoing' ? 'items-end' : 'items-start')}>
                             {msgGroup.messages.map((message, mIdx) => (
-                              <div key={message.id}>
-                                <div
-                                  className={cn(
-                                    "rounded-2xl px-4 py-2",
-                                    msgGroup.direction === 'outgoing'
-                                      ? 'bg-blue-50 text-gray-900'
-                                      : 'bg-gray-100 text-gray-900'
+                              <div 
+                                key={message.id} 
+                                className="group relative flex items-center gap-1"
+                                onMouseEnter={() => setHoveredMessageId(message.id)}
+                                onMouseLeave={() => setHoveredMessageId(null)}
+                              >
+                                {/* Checkbox for select mode */}
+                                {isSelectMode && (
+                                  <div 
+                                    className="flex-shrink-0 cursor-pointer"
+                                    onClick={() => handleSelectMessage(message.id)}
+                                  >
+                                    <div className={cn(
+                                      "w-5 h-5 rounded border-2 flex items-center justify-center transition-colors",
+                                      selectedMessageIds.includes(message.id)
+                                        ? "bg-blue-500 border-blue-500"
+                                        : "border-gray-300 hover:border-blue-400"
+                                    )}>
+                                      {selectedMessageIds.includes(message.id) && (
+                                        <Check className="w-3 h-3 text-white" />
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Message Actions - Left side for outgoing */}
+                                {msgGroup.direction === 'outgoing' && (
+                                  <div className={cn(
+                                    "flex items-center gap-0.5 transition-opacity duration-200",
+                                    hoveredMessageId === message.id ? "opacity-100" : "opacity-0"
+                                  )}>
+                                    <button
+                                      onClick={() => handleReplyMessage(message)}
+                                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                      title="Trả lời"
+                                    >
+                                      <Reply className="w-4 h-4" />
+                                    </button>
+                                    {/* <button
+                                      onClick={() => handleForwardMessage(message)}
+                                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                      title="Chuyển tiếp"
+                                    >
+                                      <Forward className="w-4 h-4" />
+                                    </button> */}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                          title="Thêm"
+                                        >
+                                          <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem onClick={() => handleCopyMessage(message.content)}>
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Sao chép tin nhắn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
+                                          <Pin className="w-4 h-4 mr-2" />
+                                          {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => {
+                                          setIsSelectMode(true)
+                                          handleSelectMessage(message.id)
+                                        }}>
+                                          <CheckSquare className="w-4 h-4 mr-2" />
+                                          Chọn nhiều tin nhắn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleCreateReminder(message)}>
+                                          <Bell className="w-4 h-4 mr-2" />
+                                          Tạo nhắc hẹn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Xóa tin nhắn phía tôi
+                                        </DropdownMenuItem>
+                                        {msgGroup.direction === 'outgoing' && (
+                                          <DropdownMenuItem onClick={() => handleRecallMessage(message.id)} className="text-orange-600">
+                                            <Undo2 className="w-4 h-4 mr-2" />
+                                            Thu hồi
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                )}
+
+                                {/* Message Bubble */}
+                                <div className="flex flex-col">
+                                  {/* Reply reference */}
+                                  {message.replyTo && (
+                                    <div className="text-xs text-gray-500 mb-1 px-2 py-1 bg-gray-50 rounded border-l-2 border-blue-400">
+                                      <span className="font-medium">{message.replyTo.senderName}</span>
+                                      <p className="truncate max-w-[200px]">{message.replyTo.content}</p>
+                                    </div>
                                   )}
-                                >
-                                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                                  <div
+                                    className={cn(
+                                      "rounded-2xl px-4 py-2 relative",
+                                      msgGroup.direction === 'outgoing'
+                                        ? 'bg-blue-50 text-gray-900'
+                                        : 'bg-gray-100 text-gray-900',
+                                      pinnedMessages.has(message.id) && "ring-2 ring-yellow-400"
+                                    )}
+                                  >
+                                    {pinnedMessages.has(message.id) && (
+                                      <Pin className="absolute -top-1 -right-1 w-3 h-3 text-yellow-500" />
+                                    )}
+                                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                                  </div>
                                 </div>
+
+                                {/* Message Actions - Right side for incoming */}
+                                {msgGroup.direction === 'incoming' && (
+                                  <div className={cn(
+                                    "flex items-center gap-0.5 transition-opacity duration-200",
+                                    hoveredMessageId === message.id ? "opacity-100" : "opacity-0"
+                                  )}>
+                                    <button
+                                      onClick={() => handleReplyMessage(message)}
+                                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                      title="Trả lời"
+                                    >
+                                      <Reply className="w-4 h-4" />
+                                    </button>
+                                    {/* <button
+                                      onClick={() => handleForwardMessage(message)}
+                                      className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                      title="Chuyển tiếp"
+                                    >
+                                      <Forward className="w-4 h-4" />
+                                    </button> */}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                          title="Thêm"
+                                        >
+                                          <MoreHorizontal className="w-4 h-4" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="start" className="w-48">
+                                        <DropdownMenuItem onClick={() => handleCopyMessage(message.content)}>
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Sao chép tin nhắn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
+                                          <Pin className="w-4 h-4 mr-2" />
+                                          {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => {
+                                          setIsSelectMode(true)
+                                          handleSelectMessage(message.id)
+                                        }}>
+                                          <CheckSquare className="w-4 h-4 mr-2" />
+                                          Chọn nhiều tin nhắn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleCreateReminder(message)}>
+                                          <Bell className="w-4 h-4 mr-2" />
+                                          Tạo nhắc hẹn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Xóa tin nhắn phía tôi
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                )}
                               </div>
                             ))}
                             {/* Show time after last message in group */}
@@ -1599,8 +2433,69 @@ export default function ChatManagement() {
                   className="hidden"
                 />
 
+                {/* Selection Mode Actions */}
+                {isSelectMode && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">
+                        Đã chọn {selectedMessageIds.length} tin nhắn
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBulkCopy}
+                        disabled={selectedMessageIds.length === 0}
+                        className="h-8 text-xs"
+                      >
+                        <Copy className="w-4 h-4 mr-1" />
+                        Sao chép
+                      </Button>
+                      {/* <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {}}
+                        disabled={selectedMessageIds.length === 0}
+                        className="h-8 text-xs"
+                      >
+                        <Forward className="w-4 h-4 mr-1" />
+                        Chia sẻ
+                      </Button> */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBulkRecall}
+                        disabled={selectedMessageIds.length === 0}
+                        className="h-8 text-xs text-orange-600 hover:text-orange-700"
+                      >
+                        <Undo2 className="w-4 h-4 mr-1" />
+                        Thu hồi
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={selectedMessageIds.length === 0}
+                        className="h-8 text-xs text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Xóa
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={cancelSelectMode}
+                        className="h-8 text-xs"
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Message Writer Container */}
-                <div className={cn("p-3", isInputExpanded && "flex-1 flex flex-col min-h-0")}>
+                <div className={cn("p-3", isInputExpanded && "flex-1 flex flex-col min-h-0", isSelectMode && "hidden")}>
                   {/* Expanded Header */}
                   {isInputExpanded && (
                     <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
@@ -1622,6 +2517,38 @@ export default function ChatManagement() {
                     "border border-gray-200 rounded-lg bg-white",
                     isInputExpanded && "flex-1 flex flex-col min-h-0"
                   )}>
+                    {/* Reply/Forward Preview */}
+                    {(replyingToMessage || forwardingMessage) && (
+                      <div className="flex items-start gap-2 p-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {replyingToMessage ? (
+                            <Reply className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <Forward className="w-4 h-4 text-blue-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 border-l-2 border-blue-400 pl-2">
+                          <div className="flex items-center gap-1 text-xs font-medium text-blue-600">
+                            {replyingToMessage ? (
+                              <>Trả lời {replyingToMessage.sender.name}</>
+                            ) : (
+                              <>Chuyển tiếp tin nhắn</>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 truncate">
+                            {replyingToMessage?.content || forwardingMessage?.content}
+                          </p>
+                        </div>
+                        <button
+                          onClick={cancelReplyOrForward}
+                          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                          title="Hủy"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
                     {/* Attachments Preview */}
                     {(selectedImages.length > 0 || selectedFiles.length > 0) && (
                       <div className="p-2 border-b border-gray-100">
@@ -1684,7 +2611,7 @@ export default function ChatManagement() {
                     </div>
 
                     {/* Action Buttons Row */}
-                    <div className="flex items-center justify-between border-t border-gray-100 px-2 py-2">
+                    <div className="flex items-center justify-between border-t border-gray-200 px-2 py-2">
                       {/* Left Actions */}
                       <div className="flex items-center gap-1">
                         <Button
@@ -1740,6 +2667,16 @@ export default function ChatManagement() {
                               <path d="M855 160.1l-189.2 23.5c-6.6.8-9.3 8.8-4.7 13.5l54.7 54.7-153.5 153.5a8.03 8.03 0 000 11.3l45.1 45.1c3.1 3.1 8.2 3.1 11.3 0l153.6-153.6 54.7 54.7a7.94 7.94 0 0013.5-4.7L863.9 169a7.9 7.9 0 00-8.9-8.9zM416.6 562.3a8.03 8.03 0 00-11.3 0L251.8 715.9l-54.7-54.7a7.94 7.94 0 00-13.5 4.7L160.1 855c-.6 5.2 3.7 9.5 8.9 8.9l189.2-23.5c6.6-.8 9.3-8.8 4.7-13.5l-54.7-54.7 153.6-153.6c3.1-3.1 3.1-8.2 0-11.3l-45.2-45z" />
                             </svg>
                           )}
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-gray-50"
+                          title="Tạo nhắc hẹn"
+                          onClick={() => handleCreateReminder()}
+                        >
+                          <Bell className="w-4 h-4 text-gray-600" />
                         </Button>
                       </div>
 
@@ -3143,6 +4080,110 @@ export default function ChatManagement() {
                         </div>
                       </div>
                     ))}
+                </ScrollArea>
+              </div>
+            )}
+
+            {/* Tab Content: Reminders List */}
+            {rightPanelTab === 'reminders' && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setRightPanelTab('zalo')}
+                      className="p-1 rounded hover:bg-gray-100 text-gray-600"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h3 className="font-semibold text-gray-900">Danh sách nhắc hẹn</h3>
+                  </div>
+                  <button
+                    onClick={() => handleCreateReminder()}
+                    className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+                    title="Thêm nhắc hẹn"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Reminder List */}
+                <ScrollArea className="flex-1">
+                  {getConversationReminders().length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <Bell className="w-12 h-12 text-gray-300 mb-3" />
+                      <p className="text-gray-500 text-sm">Chưa có nhắc hẹn nào</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-3"
+                        onClick={() => handleCreateReminder()}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Tạo nhắc hẹn
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-4 space-y-3">
+                      {getConversationReminders().map((reminder) => {
+                        const date = new Date(reminder.date)
+                        const day = date.getDate()
+                        const month = date.getMonth() + 1
+                        const dayOfWeek = getDayOfWeek(reminder.date)
+                        
+                        return (
+                          <div 
+                            key={reminder.id}
+                            className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow"
+                          >
+                            {/* Date Badge */}
+                            <div className="flex-shrink-0 w-14 h-14 bg-blue-50 rounded-lg flex flex-col items-center justify-center border border-blue-100">
+                              <span className="text-[10px] text-blue-600 font-medium">{dayOfWeek}</span>
+                              <span className="text-lg font-bold text-blue-600">{day}</span>
+                              <span className="text-[10px] text-blue-500">Tháng {month}</span>
+                            </div>
+                            
+                            {/* Reminder Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <h4 className="font-medium text-gray-900 truncate">{reminder.title}</h4>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1 text-gray-400 hover:text-gray-600 flex-shrink-0">
+                                      <MoreHorizontal className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={() => handleEditReminder(reminder)}>
+                                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      Sửa lịch hẹn
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteReminderConfirm(reminder.id)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Hủy lịch hẹn
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                                <Clock className="w-3 h-3" />
+                                <span>T{date.getDay() === 0 ? 'CN' : date.getDay()} {day.toString().padStart(2, '0')}/{month.toString().padStart(2, '0')}/{date.getFullYear()} lúc {reminder.time}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                                <Repeat2 className="w-3 h-3" />
+                                <span>{formatRepeatLabel(reminder.repeat)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </ScrollArea>
               </div>
             )}
@@ -5287,6 +6328,187 @@ export default function ChatManagement() {
           </div>
         </div>
       )}
+
+      {/* Unpin Confirmation Dialog */}
+      <Dialog open={showUnpinDialog} onOpenChange={setShowUnpinDialog}>
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] sm:w-full">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Bỏ ghim tin nhắn</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn bỏ ghim nội dung này không?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowUnpinDialog(false)
+                setMessageToUnpin(null)
+              }}
+            >
+              Không
+            </Button>
+            <Button
+              onClick={executeUnpin}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Bỏ ghim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Dialog */}
+      <Dialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+        <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <Bell className="w-5 h-5 text-blue-500" />
+              {!editingReminder ? 'Sửa lịch hẹn' : 'Tạo nhắc hẹn'}
+            </DialogTitle>
+            <DialogDescription>
+              {!editingReminder 
+                ? 'Chỉnh sửa thông tin nhắc hẹn của bạn'
+                : 'Đặt lịch nhắc hẹn để không bỏ lỡ công việc quan trọng'
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 px-6">
+            {/* Related message preview */}
+            {reminderMessage && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-500 mb-1">Tin nhắn liên quan:</p>
+                <p className="text-sm text-gray-700 line-clamp-2">{reminderMessage.content}</p>
+              </div>
+            )}
+
+            {/* Reminder title */}
+            <div>
+              <Label htmlFor="reminder-title" className="text-sm font-medium text-gray-700">
+                Tiêu đề nhắc hẹn
+              </Label>
+              <Input
+                id="reminder-title"
+                placeholder="VD: Gọi lại khách hàng..."
+                className="mt-1"
+                value={reminderTitle}
+                onChange={(e) => setReminderTitle(e.target.value)}
+              />
+            </div>
+
+            {/* Date and Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="reminder-date" className="text-sm font-medium text-gray-700">
+                  Ngày
+                </Label>
+                <Input
+                  id="reminder-date"
+                  type="date"
+                  className="mt-1"
+                  value={reminderDate}
+                  onChange={(e) => setReminderDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="reminder-time" className="text-sm font-medium text-gray-700">
+                  Giờ
+                </Label>
+                <Input
+                  id="reminder-time"
+                  type="time"
+                  className="mt-1"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Repeat option */}
+            <div>
+              <Label htmlFor="reminder-repeat" className="text-sm font-medium text-gray-700">
+                Chọn kiểu lặp lại (vd: Lặp lại hằng tuần)
+              </Label>
+              <Select value={reminderRepeat} onValueChange={(value: 'none' | 'daily' | 'weekly' | 'monthly') => setReminderRepeat(value)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Chọn kiểu lặp lại" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Không lặp lại</SelectItem>
+                  <SelectItem value="daily">Hằng ngày</SelectItem>
+                  <SelectItem value="weekly">Hằng tuần</SelectItem>
+                  <SelectItem value="monthly">Hằng tháng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Note */}
+            <div>
+              <Label htmlFor="reminder-note" className="text-sm font-medium text-gray-700">
+                Ghi chú (tùy chọn)
+              </Label>
+              <Textarea
+                id="reminder-note"
+                placeholder="Thêm ghi chú..."
+                className="mt-1"
+                rows={3}
+                value={reminderNote}
+                onChange={(e) => setReminderNote(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReminderDialog(false)
+                setReminderMessage(null)
+                setEditingReminder(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={saveReminder}
+              className="bg-blue-500 hover:bg-blue-600"
+              disabled={!reminderTitle.trim()}
+            >
+              <Bell className="w-4 h-4 mr-1" />
+              {editingReminder ? 'Lưu' : 'Tạo nhắc hẹn'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Reminder Confirmation Dialog */}
+      <Dialog open={showDeleteReminderDialog} onOpenChange={setShowDeleteReminderDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
+              Hủy nhắc hẹn
+            </DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn hủy nhắc hẹn này?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteReminderDialog(false)}
+            >
+              Không
+            </Button>
+            <Button
+              onClick={executeDeleteReminder}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Có
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
