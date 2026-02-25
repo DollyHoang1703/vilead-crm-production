@@ -108,9 +108,9 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
     {
       id: 'chat',
       icon: MessageSquare,
-      label: "Quản lý Chat",
+      label: "Chat đa kênh",
       iconText: "💬",
-      tooltip: "Quản lý Chat: Tin nhắn và hội thoại với khách hàng",
+      tooltip: "Chat đa kênh: Tin nhắn và hội thoại với khách hàng",
       roles: ["admin", "ceo", "leader", "sale"],
       disabled: false
     },
