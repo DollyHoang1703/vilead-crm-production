@@ -2285,25 +2285,31 @@ export default function ChatManagement() {
                                           <Copy className="w-4 h-4 mr-2" />
                                           Sao chép tin nhắn
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
-                                          <Pin className="w-4 h-4 mr-2" />
-                                          {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => {
-                                          setIsSelectMode(true)
-                                          handleSelectMessage(message.id)
-                                        }}>
-                                          <CheckSquare className="w-4 h-4 mr-2" />
-                                          Chọn nhiều tin nhắn
-                                        </DropdownMenuItem>
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
+                                            <Pin className="w-4 h-4 mr-2" />
+                                            {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
+                                          </DropdownMenuItem>
+                                        )}
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => {
+                                            setIsSelectMode(true)
+                                            handleSelectMessage(message.id)
+                                          }}>
+                                            <CheckSquare className="w-4 h-4 mr-2" />
+                                            Chọn nhiều tin nhắn
+                                          </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem onClick={() => handleCreateReminder(message)}>
                                           <Bell className="w-4 h-4 mr-2" />
                                           Tạo nhắc hẹn
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
-                                          <Trash2 className="w-4 h-4 mr-2" />
-                                          Xóa tin nhắn phía tôi
-                                        </DropdownMenuItem>
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Xóa tin nhắn phía tôi
+                                          </DropdownMenuItem>
+                                        )}
                                         {msgGroup.direction === 'outgoing' && (
                                           <DropdownMenuItem onClick={() => handleRecallMessage(message.id)} className="text-orange-600">
                                             <Undo2 className="w-4 h-4 mr-2" />
@@ -2374,25 +2380,31 @@ export default function ChatManagement() {
                                           <Copy className="w-4 h-4 mr-2" />
                                           Sao chép tin nhắn
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
-                                          <Pin className="w-4 h-4 mr-2" />
-                                          {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => {
-                                          setIsSelectMode(true)
-                                          handleSelectMessage(message.id)
-                                        }}>
-                                          <CheckSquare className="w-4 h-4 mr-2" />
-                                          Chọn nhiều tin nhắn
-                                        </DropdownMenuItem>
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
+                                            <Pin className="w-4 h-4 mr-2" />
+                                            {pinnedMessages.has(message.id) ? 'Bỏ ghim tin nhắn' : 'Ghim tin nhắn'}
+                                          </DropdownMenuItem>
+                                        )}
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => {
+                                            setIsSelectMode(true)
+                                            handleSelectMessage(message.id)
+                                          }}>
+                                            <CheckSquare className="w-4 h-4 mr-2" />
+                                            Chọn nhiều tin nhắn
+                                          </DropdownMenuItem>
+                                        )}
                                         <DropdownMenuItem onClick={() => handleCreateReminder(message)}>
                                           <Bell className="w-4 h-4 mr-2" />
                                           Tạo nhắc hẹn
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
-                                          <Trash2 className="w-4 h-4 mr-2" />
-                                          Xóa tin nhắn phía tôi
-                                        </DropdownMenuItem>
+                                        {selectedChannel !== 'zalo-oa' && (
+                                          <DropdownMenuItem onClick={() => handleDeleteMessageForMe(message.id)} className="text-red-600">
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Xóa tin nhắn phía tôi
+                                          </DropdownMenuItem>
+                                        )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </div>
