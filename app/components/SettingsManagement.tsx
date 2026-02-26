@@ -731,8 +731,8 @@ type RoleType = {
   name: string
   description: string
   status: string
-  department: string
-  team: string
+  departments: string[] // Changed to array for multi-select
+  teams: string[] // Changed to array for multi-select
   users: number
   scopeEnabled: boolean
   scope: 'department' | 'team' | 'global' | ''
@@ -740,10 +740,12 @@ type RoleType = {
 
 // Role data
 const initialRolesList: RoleType[] = [
-  { id: 1, name: 'Admin', description: 'Quản trị viên toàn quyền', status: 'active', department: '', team: '', users: 1, scopeEnabled: true, scope: 'global' },
-  { id: 2, name: 'Sale', description: 'Nhân viên bán hàng', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
-  { id: 3, name: 'Leader', description: 'Quản lý team bán hàng', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
-  { id: 4, name: 'Sale Manager', description: 'Quản lý phòng kinh doanh', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
+  { id: 1, name: 'Admin', description: 'Quản trị viên toàn quyền', status: 'active', departments: [], teams: [], users: 1, scopeEnabled: true, scope: 'global' },
+  { id: 2, name: 'Sale', description: 'Nhân viên bán hàng', status: 'active', departments: [], teams: [], users: 0, scopeEnabled: false, scope: '' },
+  { id: 3, name: 'Leader', description: 'Quản lý team bán hàng', status: 'active', departments: [], teams: [], users: 0, scopeEnabled: false, scope: '' },
+  { id: 4, name: 'Sale Manager', description: 'Quản lý phòng kinh doanh', status: 'active', departments: [], teams: [], users: 0, scopeEnabled: false, scope: '' },
+  { id: 5, name: 'Support', description: 'Nhân viên chăm sóc khách hàng (Presale)', status: 'active', departments: [], teams: [], users: 0, scopeEnabled: false, scope: '' },
+  { id: 6, name: 'Support Manager', description: 'Quản lý đội chăm sóc khách hàng', status: 'active', departments: [], teams: [], users: 0, scopeEnabled: false, scope: '' },
 ]
 
 // Permission modules grouped by category
@@ -1033,6 +1035,116 @@ const defaultPermissionsByRole: Record<string, Record<string, PermissionSet>> = 
     province: createPermission(true, false, false, false),
     ward: createPermission(true, false, false, false),
   },
+
+  // Support - Customer care after lead becomes customer, focus on customer service
+  'Support': {
+    // Khách hàng & Lead - full read, can update
+    person: createPermission(true, true, false, false),
+    opportunity: createPermission(true, false, false, false),
+    leadQualityFlag: createPermission(true, true, false, false),
+    personProductInterest: createPermission(true, true, false, false),
+    customerBehaviorConfig: createPermission(false, false, false, false),
+    customerTierConfig: createPermission(false, false, false, false),
+    // Bán hàng & Đơn hàng - read only
+    order: createPermission(true, false, false, false),
+    orderHistory: createPermission(true, false, false, false),
+    invoice: createPermission(true, false, false, false),
+    invoiceProduct: createPermission(true, false, false, false),
+    payment: createPermission(true, false, false, false),
+    // Sản phẩm - read only
+    product: createPermission(true, false, false, false),
+    category: createPermission(true, false, false, false),
+    productCategory: createPermission(true, false, false, false),
+    productOption: createPermission(true, false, false, false),
+    productOptionValue: createPermission(true, false, false, false),
+    productVariant: createPermission(true, false, false, false),
+    productVariantOptionValue: createPermission(true, false, false, false),
+    // Công việc & Tác vụ - full for task management
+    task: createPermission(true, true, true, false),
+    taskLabel: createPermission(true, false, false, false),
+    autoTaskTemplate: createPermission(true, false, false, false),
+    reminder: createPermission(true, true, true, false),
+    note: createPermission(true, true, true, false),
+    // Tổ chức - no access
+    company: createPermission(false, false, false, false),
+    department: createPermission(false, false, false, false),
+    team: createPermission(false, false, false, false),
+    // KPI & Hiệu suất - view personal only
+    dashboard: createPermission(true, false, false, false),
+    kpiAssignment: createPermission(false, false, false, false),
+    kpiDefinition: createPermission(false, false, false, false),
+    memberPerformanceStats: createPermission(false, false, false, false),
+    memberSkill: createPermission(false, false, false, false),
+    memberWorkloadSnapshot: createPermission(false, false, false, false),
+    dataPoints: createPermission(false, false, false, false),
+    // Cấu hình & Hệ thống
+    assignmentRule: createPermission(false, false, false, false),
+    assignmentSettings: createPermission(false, false, false, false),
+    notificationTemplate: createPermission(true, false, false, false),
+    embedding: createPermission(false, false, false, false),
+    workflows: createPermission(false, false, false, false),
+    // Phân loại & Nhãn
+    label: createPermission(true, true, false, false),
+    tag: createPermission(true, true, false, false),
+    // Địa lý
+    province: createPermission(true, false, false, false),
+    ward: createPermission(true, false, false, false),
+  },
+
+  // Support Manager - Manage support team, view team KPI
+  'Support Manager': {
+    // Khách hàng & Lead - full management
+    person: createPermission(true, true, true, false),
+    opportunity: createPermission(true, true, false, false),
+    leadQualityFlag: createPermission(true, true, true, false),
+    personProductInterest: createPermission(true, true, true, false),
+    customerBehaviorConfig: createPermission(true, true, false, false),
+    customerTierConfig: createPermission(true, true, false, false),
+    // Bán hàng & Đơn hàng - view and some edit
+    order: createPermission(true, true, false, false),
+    orderHistory: createPermission(true, false, false, false),
+    invoice: createPermission(true, true, false, false),
+    invoiceProduct: createPermission(true, false, false, false),
+    payment: createPermission(true, true, false, false),
+    // Sản phẩm - read only
+    product: createPermission(true, false, false, false),
+    category: createPermission(true, false, false, false),
+    productCategory: createPermission(true, false, false, false),
+    productOption: createPermission(true, false, false, false),
+    productOptionValue: createPermission(true, false, false, false),
+    productVariant: createPermission(true, false, false, false),
+    productVariantOptionValue: createPermission(true, false, false, false),
+    // Công việc & Tác vụ - full management
+    task: createPermission(true, true, true, true),
+    taskLabel: createPermission(true, true, true, false),
+    autoTaskTemplate: createPermission(true, true, false, false),
+    reminder: createPermission(true, true, true, false),
+    note: createPermission(true, true, true, false),
+    // Tổ chức - team view only
+    company: createPermission(false, false, false, false),
+    department: createPermission(false, false, false, false),
+    team: createPermission(true, false, false, false),
+    // KPI & Hiệu suất - view team
+    dashboard: createPermission(true, false, false, false),
+    kpiAssignment: createPermission(true, false, false, false),
+    kpiDefinition: createPermission(true, false, false, false),
+    memberPerformanceStats: createPermission(true, false, false, false),
+    memberSkill: createPermission(true, true, false, false),
+    memberWorkloadSnapshot: createPermission(true, false, false, false),
+    dataPoints: createPermission(true, false, false, false),
+    // Cấu hình & Hệ thống - view some
+    assignmentRule: createPermission(true, false, false, false),
+    assignmentSettings: createPermission(true, false, false, false),
+    notificationTemplate: createPermission(true, true, false, false),
+    embedding: createPermission(false, false, false, false),
+    workflows: createPermission(true, false, false, false),
+    // Phân loại & Nhãn
+    label: createPermission(true, true, true, false),
+    tag: createPermission(true, true, true, false),
+    // Địa lý
+    province: createPermission(true, false, false, false),
+    ward: createPermission(true, false, false, false),
+  },
 }
 
 // Helper function to get default permissions for a role
@@ -1133,14 +1245,18 @@ const AssignPermissionContent = () => {
     { id: 2, name: 'Sale' },
     { id: 3, name: 'Leader' },
     { id: 4, name: 'Sale Manager' },
+    { id: 5, name: 'Support' },
+    { id: 6, name: 'Support Manager' },
   ])
   const [selectedAssignRoleId, setSelectedAssignRoleId] = useState<number>(1)
   const [employees] = useState(sampleEmployeesForAssign)
   const [roleAssignments, setRoleAssignments] = useState<Record<number, number[]>>({
-    1: [4, 5, 8], // Leader: Hoàng Chính Nghĩa, Nguyễn Minh Quang, Trần Văn Hùng
-    2: [4, 7, 9], // DEV: Hoàng Chính Nghĩa, Lê Đình Nam, Phạm Thị Lan
-    3: [5, 6, 9], // Tester: Nguyễn Minh Quang, Nguyễn Thị Mai, Phạm Thị Lan
-    4: [], // Trưởng phòng ban khác: none
+    1: [4, 5, 8], // Admin
+    2: [4, 7, 9], // Sale
+    3: [5, 6, 9], // Leader
+    4: [], // Sale Manager
+    5: [], // Support
+    6: [], // Support Manager
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [filterDepartment, setFilterDepartment] = useState('')
@@ -1326,14 +1442,14 @@ const RoleManagementNew = () => {
     description: '', 
     scopeEnabled: false,
     scope: 'department' as 'department' | 'team' | 'global',
-    scopeTarget: ''
+    scopeTargets: [] as string[] // Changed to array for multi-select
   })
   const [addRoleForm, setAddRoleForm] = useState({ 
     name: '', 
     description: '', 
     scopeEnabled: false,
     scope: 'department' as 'department' | 'team' | 'global',
-    scopeTarget: ''
+    scopeTargets: [] as string[] // Changed to array for multi-select
   })
   const [addRoleError, setAddRoleError] = useState('')
   const selectedRoleData = rolesList.find(r => r.id === selectedRoleId) || rolesList[0]
@@ -1441,7 +1557,7 @@ const RoleManagementNew = () => {
       description: selectedRoleData.description,
       scopeEnabled: selectedRoleData.scopeEnabled || false,
       scope: (selectedRoleData.scope as 'department' | 'team' | 'global') || 'department',
-      scopeTarget: ''
+      scopeTargets: [] // Reset targets when editing
     })
     setIsEditingRole(true)
     setShowRoleDropdown(null)
@@ -1450,14 +1566,14 @@ const RoleManagementNew = () => {
   const saveEditRole = () => {
     const scopeData = editRoleForm.scopeEnabled && editRoleForm.scope !== 'global' 
       ? {
-          department: editRoleForm.scope === 'department' 
-            ? sampleDepartments.find(d => d.id === editRoleForm.scopeTarget)?.name || ''
-            : '',
-          team: editRoleForm.scope === 'team'
-            ? sampleTeams.find(t => t.id === editRoleForm.scopeTarget)?.name || ''
-            : ''
+          departments: editRoleForm.scope === 'department' 
+            ? editRoleForm.scopeTargets.map(id => sampleDepartments.find(d => d.id === id)?.name || '').filter(Boolean)
+            : [],
+          teams: editRoleForm.scope === 'team'
+            ? editRoleForm.scopeTargets.map(id => sampleTeams.find(t => t.id === id)?.name || '').filter(Boolean)
+            : []
         }
-      : { department: '', team: '' }
+      : { departments: [], teams: [] }
     
     setRolesList(prev => prev.map(r => 
       r.id === selectedRoleId 
@@ -1482,14 +1598,14 @@ const RoleManagementNew = () => {
     }
     const scopeData = addRoleForm.scopeEnabled && addRoleForm.scope !== 'global' 
       ? {
-          department: addRoleForm.scope === 'department' 
-            ? sampleDepartments.find(d => d.id === addRoleForm.scopeTarget)?.name || ''
-            : '',
-          team: addRoleForm.scope === 'team'
-            ? sampleTeams.find(t => t.id === addRoleForm.scopeTarget)?.name || ''
-            : ''
+          departments: addRoleForm.scope === 'department' 
+            ? addRoleForm.scopeTargets.map(id => sampleDepartments.find(d => d.id === id)?.name || '').filter(Boolean)
+            : [],
+          teams: addRoleForm.scope === 'team'
+            ? addRoleForm.scopeTargets.map(id => sampleTeams.find(t => t.id === id)?.name || '').filter(Boolean)
+            : []
         }
-      : { department: '', team: '' }
+      : { departments: [], teams: [] }
     
     const newRole: RoleType = {
       id: Math.max(...rolesList.map(r => r.id)) + 1,
@@ -1503,7 +1619,7 @@ const RoleManagementNew = () => {
     }
     setRolesList(prev => [...prev, newRole])
     setShowAddRoleModal(false)
-    setAddRoleForm({ name: '', description: '', scopeEnabled: false, scope: 'department', scopeTarget: '' })
+    setAddRoleForm({ name: '', description: '', scopeEnabled: false, scope: 'department', scopeTargets: [] })
     setAddRoleError('')
     setSelectedRoleId(newRole.id)
   }
@@ -1609,7 +1725,7 @@ const RoleManagementNew = () => {
                         ...prev, 
                         scopeEnabled: checked,
                         scope: checked ? 'department' : 'global',
-                        scopeTarget: ''
+                        scopeTargets: []
                       }))}
                     />
                   </div>
@@ -1621,7 +1737,7 @@ const RoleManagementNew = () => {
                           onChange={(e) => setEditRoleForm(prev => ({ 
                             ...prev, 
                             scope: e.target.value as 'department' | 'team' | 'global',
-                            scopeTarget: ''
+                            scopeTargets: []
                           }))}
                           className="w-full max-w-xs h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
                         >
@@ -1632,24 +1748,31 @@ const RoleManagementNew = () => {
                       </div>
                       {editRoleForm.scope !== 'global' && (
                         <div>
-                          <Label className="text-sm text-[#1a3353] block">
-                            Áp dụng <span className="text-red-500">*</span>
+                          <Label className="text-sm text-[#1a3353] block mb-2">
+                            Áp dụng cho {editRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} <span className="text-red-500">*</span>
                           </Label>
-                          <select
-                            value={editRoleForm.scopeTarget}
-                            onChange={(e) => setEditRoleForm(prev => ({ ...prev, scopeTarget: e.target.value }))}
-                            className="block w-full max-w-xs h-9 px-3 mt-1 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
-                          >
-                            <option value="">-- Chọn {editRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} --</option>
-                            {editRoleForm.scope === 'department' 
-                              ? sampleDepartments.map(dept => (
-                                  <option key={dept.id} value={dept.id}>{dept.name}</option>
-                                ))
-                              : sampleTeams.map(team => (
-                                  <option key={team.id} value={team.id}>{team.name}</option>
-                                ))
-                            }
-                          </select>
+                          <div className="max-h-40 overflow-y-auto border border-[#e6ebf1] rounded-[10px] p-2 max-w-xs">
+                            {(editRoleForm.scope === 'department' ? sampleDepartments : sampleTeams).map(item => (
+                              <label key={item.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editRoleForm.scopeTargets.includes(item.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setEditRoleForm(prev => ({ ...prev, scopeTargets: [...prev.scopeTargets, item.id] }))
+                                    } else {
+                                      setEditRoleForm(prev => ({ ...prev, scopeTargets: prev.scopeTargets.filter(id => id !== item.id) }))
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7]"
+                                />
+                                <span className="text-sm text-[#455560]">{item.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                          {editRoleForm.scopeTargets.length > 0 && (
+                            <p className="text-xs text-[#3e79f7] mt-1">Đã chọn: {editRoleForm.scopeTargets.length}</p>
+                          )}
                         </div>
                       )}
                     </>
@@ -1677,11 +1800,11 @@ const RoleManagementNew = () => {
                 <div className="flex items-center gap-4 mt-2 text-xs text-[#455560]">
                   <span className="flex items-center gap-1">
                     <Building2 className="w-3.5 h-3.5" />
-                    Phòng ban: <strong>{selectedRoleData?.department || 'Chưa gán'}</strong>
+                    Phòng ban: <strong>{selectedRoleData?.departments?.length ? selectedRoleData.departments.join(', ') : 'Chưa gán'}</strong>
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />
-                    Nhóm: <strong>{selectedRoleData?.team || 'Chưa gán'}</strong>
+                    Nhóm: <strong>{selectedRoleData?.teams?.length ? selectedRoleData.teams.join(', ') : 'Chưa gán'}</strong>
                   </span>
                   <span className="flex items-center gap-1">
                     <User2 className="w-3.5 h-3.5" />
@@ -1853,7 +1976,7 @@ const RoleManagementNew = () => {
                     ...prev, 
                     scopeEnabled: checked,
                     scope: checked ? 'department' : 'global',
-                    scopeTarget: ''
+                    scopeTargets: []
                   }))}
                 />
               </div>
@@ -1865,7 +1988,7 @@ const RoleManagementNew = () => {
                       onChange={(e) => setAddRoleForm(prev => ({ 
                         ...prev, 
                         scope: e.target.value as 'department' | 'team' | 'global',
-                        scopeTarget: ''
+                        scopeTargets: []
                       }))}
                       className="w-full h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
                     >
@@ -1876,24 +1999,31 @@ const RoleManagementNew = () => {
                   </div>
                   {addRoleForm.scope !== 'global' && (
                     <div>
-                      <Label className="text-sm text-[#1a3353]">
-                        Áp dụng <span className="text-red-500">*</span>
+                      <Label className="text-sm text-[#1a3353] block mb-2">
+                        Áp dụng cho {addRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} <span className="text-red-500">*</span>
                       </Label>
-                      <select
-                        value={addRoleForm.scopeTarget}
-                        onChange={(e) => setAddRoleForm(prev => ({ ...prev, scopeTarget: e.target.value }))}
-                        className="w-full h-9 px-3 mt-1 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
-                      >
-                        <option value="">-- Chọn {addRoleForm.scope === 'department' ? 'phòng ban' : 'nhóm'} --</option>
-                        {addRoleForm.scope === 'department' 
-                          ? sampleDepartments.map(dept => (
-                              <option key={dept.id} value={dept.id}>{dept.name}</option>
-                            ))
-                          : sampleTeams.map(team => (
-                              <option key={team.id} value={team.id}>{team.name}</option>
-                            ))
-                        }
-                      </select>
+                      <div className="max-h-40 overflow-y-auto border border-[#e6ebf1] rounded-[10px] p-2">
+                        {(addRoleForm.scope === 'department' ? sampleDepartments : sampleTeams).map(item => (
+                          <label key={item.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={addRoleForm.scopeTargets.includes(item.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setAddRoleForm(prev => ({ ...prev, scopeTargets: [...prev.scopeTargets, item.id] }))
+                                } else {
+                                  setAddRoleForm(prev => ({ ...prev, scopeTargets: prev.scopeTargets.filter(id => id !== item.id) }))
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7]"
+                            />
+                            <span className="text-sm text-[#455560]">{item.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {addRoleForm.scopeTargets.length > 0 && (
+                        <p className="text-xs text-[#3e79f7] mt-1">Đã chọn: {addRoleForm.scopeTargets.length}</p>
+                      )}
                     </div>
                   )}
                 </>
