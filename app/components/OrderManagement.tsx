@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   Plus, 
   Search, 
@@ -46,10 +46,13 @@ import {
   Check,
   ChevronDown,
   HelpCircle,
-  Info
+  Info,
+  Receipt,
+  StickyNote
 } from 'lucide-react'
 
 import OrderDetailModal from './OrderDetailModal'
+import CustomerDetailModal from './CustomerDetailModal'
 
 // Interfaces
 interface Customer {
@@ -185,6 +188,32 @@ interface Order {
   remainingDebt?: number
 }
 
+// Helper function to convert order customer to CustomerDetailModal customer format
+const convertOrderCustomerToCustomer = (customer: Customer, orders: Order[]) => {
+  const customerOrders = orders.filter(o => o.customer.id === customer.id)
+  const totalSpent = customerOrders.reduce((sum, o) => sum + o.total, 0)
+  const successfulOrders = customerOrders.filter(o => o.status === 'completed').length
+  const lastOrder = customerOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+  
+  return {
+    id: customer.id,
+    name: customer.name,
+    contact: customer.phone,
+    email: customer.email,
+    company: customer.company || '',
+    position: customer.position || '',
+    address: customer.address || '',
+    customerType: customer.company ? 'business' : 'individual',
+    status: 'active',
+    totalOrders: customerOrders.length,
+    totalSpent: totalSpent,
+    lastOrderDate: lastOrder ? new Date(lastOrder.createdAt).toLocaleDateString('vi-VN') : undefined,
+    source: 'website',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
 export default function OrderManagement() {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'reminders'>('orders')
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -222,6 +251,12 @@ export default function OrderManagement() {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelingOrder, setCancelingOrder] = useState<Order | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+  
+  // Dialog states for order actions
+  const [showRefundDialog, setShowRefundDialog] = useState(false)
+  const [showAddNoteDialog, setShowAddNoteDialog] = useState(false)
+  const [orderForAction, setOrderForAction] = useState<Order | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // New Order Modal states
   const [selectedCustomerForNewOrder, setSelectedCustomerForNewOrder] = useState<Customer | null>(null)
@@ -2296,11 +2331,46 @@ Trân trọng,
                             <Bell className="w-4 h-4 text-gray-500" />
                             <span>Nhắc nhở thanh toán</span>
                           </button>
+                          <button 
+                            onClick={() => {
+                              // Open file picker directly
+                              setOrderForAction(order)
+                              setOpenActionMenu(null)
+                              setTimeout(() => fileInputRef.current?.click(), 0)
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                          >
+                            <Receipt className="w-4 h-4 text-gray-500" />
+                            <span>Gắn hóa đơn</span>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setOrderForAction(order)
+                              setShowAddNoteDialog(true)
+                              setOpenActionMenu(null)
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-3"
+                          >
+                            <StickyNote className="w-4 h-4 text-gray-500" />
+                            <span>Thêm ghi chú</span>
+                          </button>
                           
                           {/* Thao tác nguy hiểm Section */}
                           <div className="border-t border-gray-100 mt-2 pt-2 px-4 pb-1 text-left">
                             <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Thao tác nguy hiểm</span>
                           </div>
+                          <button 
+                            onClick={() => {
+                              setOrderForAction(order)
+                              setShowRefundDialog(true)
+                              setOpenActionMenu(null)
+                            }}
+                            disabled={order.paymentStatus === 'unpaid' || order.status === 'cancelled'}
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <RefreshCw className="w-4 h-4 text-red-500" />
+                            <span>Hoàn tiền</span>
+                          </button>
                           <button 
                             onClick={() => {
                               handleCancelOrder(order)
@@ -2361,213 +2431,6 @@ Trân trọng,
       </div>
     </div>
   )
-
-  // Customer Detail Modal
-  const renderCustomerDetailModal = () => {
-    if (!showCustomerDetail || !selectedCustomer) return null
-
-    // Get customer orders
-    const customerOrders = orders.filter(o => o.customer.id === selectedCustomer.id)
-    const totalSpent = customerOrders.reduce((sum, o) => sum + o.total, 0)
-    const lastOrder = customerOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-6xl mx-4 h-[90vh] flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold bg-purple-600">
-                {selectedCustomer.name.charAt(0)}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedCustomer.name}</h2>
-                <p className="text-sm text-gray-500">{selectedCustomer.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Edit className="w-4 h-4" />
-                <span>Chỉnh sửa</span>
-              </button>
-              <button 
-                onClick={() => setShowCustomerDetail(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="border-b border-gray-200 px-6">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setCustomerDetailTab('info')}
-                className={`flex items-center space-x-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  customerDetailTab === 'info'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                <span>Thông tin chi tiết</span>
-              </button>
-              <button
-                onClick={() => setCustomerDetailTab('history')}
-                className={`flex items-center space-x-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  customerDetailTab === 'history'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Lịch sử tương tác</span>
-              </button>
-              <button
-                onClick={() => setCustomerDetailTab('orders')}
-                className={`flex items-center space-x-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  customerDetailTab === 'orders'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Package className="w-4 h-4" />
-                <span>Đơn hàng</span>
-              </button>
-              <button
-                onClick={() => setCustomerDetailTab('notes')}
-                className={`flex items-center space-x-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                  customerDetailTab === 'notes'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <FileText className="w-4 h-4" />
-                <span>Ghi chú</span>
-              </button>
-            </nav>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6">
-            {customerDetailTab === 'info' && (
-              <div className="space-y-6">
-                {/* Thông tin cơ bản */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin cơ bản</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Họ và Tên</label>
-                      <p className="text-gray-900">{selectedCustomer.name}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <p className="text-gray-900">{selectedCustomer.email}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Điện thoại</label>
-                      <p className="text-gray-900">{selectedCustomer.phone}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Công ty</label>
-                      <p className="text-gray-900">{selectedCustomer.company || 'Không có'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
-                      <p className="text-gray-900">{selectedCustomer.position || 'Không có'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
-                      <p className="text-gray-900">{selectedCustomer.address || 'Không có'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Thống kê */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Thống kê</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{customerOrders.length}</p>
-                      <p className="text-sm text-gray-600">Tổng đơn hàng</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{formatCurrency(totalSpent)}</p>
-                      <p className="text-sm text-gray-600">Tổng chi tiêu</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">{lastOrder ? formatCurrency(lastOrder.total) : '0 đ'}</p>
-                      <p className="text-sm text-gray-600">Đơn gần nhất</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-orange-600">{lastOrder ? new Date(lastOrder.createdAt).toLocaleDateString('vi-VN') : 'Chưa có'}</p>
-                      <p className="text-sm text-gray-600">Mua gần nhất</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {customerDetailTab === 'orders' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Lịch sử đơn hàng ({customerOrders.length})</h3>
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {customerOrders.map(order => (
-                        <tr key={order.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{order.orderNumber}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(order.total)}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                              order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {order.status === 'completed' ? 'Hoàn thành' :
-                               order.status === 'confirmed' ? 'Đã xác nhận' :
-                               order.status === 'pending' ? 'Chờ xác nhận' :
-                               order.status === 'cancelled' ? 'Đã hủy' : 'Nháp'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {customerDetailTab === 'history' && (
-              <div className="text-center py-12 text-gray-500">
-                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p>Chưa có lịch sử tương tác</p>
-              </div>
-            )}
-
-            {customerDetailTab === 'notes' && (
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Ghi chú</h3>
-                <p className="text-gray-600 italic">Chưa có ghi chú nào</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -3725,7 +3588,157 @@ Trân trọng,
       )}
 
       {/* Customer Detail Modal */}
-      {renderCustomerDetailModal()}
+      <CustomerDetailModal
+        isOpen={showCustomerDetail}
+        onClose={() => setShowCustomerDetail(false)}
+        customer={selectedCustomer ? convertOrderCustomerToCustomer(selectedCustomer, orders) : null}
+      />
+
+      {/* Hidden file input for invoice attachment */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0 && orderForAction) {
+            console.log('Invoice files attached:', Array.from(e.target.files).map(f => f.name), 'for order:', orderForAction.id)
+            setNotification({ message: `Đã gắn ${e.target.files.length} hóa đơn cho đơn hàng ${orderForAction.orderNumber}`, type: 'success' })
+            setOrderForAction(null)
+          }
+          e.target.value = ''
+        }}
+      />
+
+      {/* Add Note Dialog */}
+      {showAddNoteDialog && orderForAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-xl w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <StickyNote className="w-5 h-5 text-blue-500" />
+                <h3 className="font-semibold text-gray-900">Thêm ghi chú - {orderForAction.orderNumber}</h3>
+              </div>
+              <button onClick={() => { setShowAddNoteDialog(false); setOrderForAction(null) }} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Nội dung ghi chú <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="order-note-content"
+                rows={4}
+                placeholder="Nhập nội dung ghi chú cho đơn hàng..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              />
+              <p className="text-sm text-red-500 mt-1">Vui lòng nhập nội dung ghi chú</p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => { setShowAddNoteDialog(false); setOrderForAction(null) }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  const textarea = document.getElementById('order-note-content') as HTMLTextAreaElement
+                  if (textarea && textarea.value.trim()) {
+                    console.log('Note added:', textarea.value, 'for order:', orderForAction.id)
+                    setNotification({ message: 'Đã thêm ghi chú cho đơn hàng', type: 'success' })
+                    setShowAddNoteDialog(false)
+                    setOrderForAction(null)
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Lưu ghi chú
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Dialog */}
+      {showRefundDialog && orderForAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-xl w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-blue-500" />
+                <h3 className="font-semibold text-gray-900">Hoàn tiền/Hủy đơn</h3>
+              </div>
+              <button onClick={() => { setShowRefundDialog(false); setOrderForAction(null) }} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Số tiền hoàn (VND) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="refund-amount"
+                  type="text"
+                  placeholder="Nhập số tiền hoàn..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phương thức hoàn <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="refund-method"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="custom">Tùy chỉnh</option>
+                  <option value="bank_transfer">Chuyển khoản</option>
+                  <option value="cash">Tiền mặt</option>
+                  <option value="voucher">Voucher</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Lý do hoàn/hủy <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="refund-reason"
+                  rows={3}
+                  placeholder="Khách hủy, sai hợp đồng, chưa thanh toán..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => { setShowRefundDialog(false); setOrderForAction(null) }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  const amount = (document.getElementById('refund-amount') as HTMLInputElement)?.value
+                  const reason = (document.getElementById('refund-reason') as HTMLTextAreaElement)?.value
+                  if (amount && reason?.trim()) {
+                    console.log('Refund processed:', { amount, reason }, 'for order:', orderForAction.id)
+                    setNotification({ message: 'Đã xử lý hoàn tiền cho đơn hàng', type: 'success' })
+                    setShowRefundDialog(false)
+                    setOrderForAction(null)
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Đồng ý
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

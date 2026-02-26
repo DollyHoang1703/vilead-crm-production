@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import CustomerEventsManager from './CustomerEventsManager'
 import CustomerAnalytics from './CustomerAnalytics'
+import CustomerDetailModal from './CustomerDetailModal'
 
 interface CustomerTag {
   id: string
@@ -6651,7 +6652,18 @@ export default function CustomersManagement() {
     )}
 
     {/* Customer Detail Modal */}
-    {selectedCustomer && (
+    <CustomerDetailModal
+      isOpen={!!selectedCustomer}
+      onClose={handleCloseCustomerDetail}
+      customer={selectedCustomer}
+      onUpdate={(customerId, updates) => {
+        console.log('Update customer:', customerId, updates)
+        // In real app, call API to update customer
+      }}
+    />
+
+    {/* OLD Customer Detail Modal - REPLACED */}
+    {false && selectedCustomer && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg w-full max-w-6xl mx-4 h-[90vh] flex flex-col">
           {/* Modal Header */}

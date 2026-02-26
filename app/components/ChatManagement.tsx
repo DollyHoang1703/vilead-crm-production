@@ -86,9 +86,13 @@ import {
   Undo2,
   AlarmClock,
   ChevronLeft,
-  Repeat2
+  Repeat2,
+  ShoppingBag,
+  FileText,
+  Minus
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import CustomerDetailModal from './CustomerDetailModal'
 
 // ===== TYPE DEFINITIONS =====
 
@@ -693,6 +697,33 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+// Helper function to convert CRMCustomer to CustomerDetailModal customer format
+const convertCRMCustomerToCustomer = (customer: CRMCustomer) => {
+  return {
+    id: parseInt(customer.id) || 0,
+    name: customer.name,
+    contact: customer.phone,
+    email: customer.email || '',
+    company: customer.company || '',
+    position: '',
+    address: '',
+    customerType: customer.company ? 'Doanh nghiệp' : 'Cá nhân',
+    source: customer.source,
+    status: customer.status === 'customer' ? 'active' : 'potential',
+    totalOrders: 0,
+    totalSpent: 0,
+    successRate: customer.status === 'customer' ? 100 : 50,
+    createdAt: customer.createdAt,
+    updatedAt: customer.lastContactedAt,
+    lastInteraction: customer.lastContactedAt,
+    notes: customer.notes ? [{ id: '1', content: customer.notes, createdAt: customer.lastContactedAt, createdBy: 'System', attachments: [] }] : [],
+    tags: customer.tags?.map((tag, index) => ({ id: String(index), name: tag, color: 'bg-blue-100 text-blue-800' })) || [],
+    orders: [],
+    tasks: [],
+    history: []
+  }
+}
+
 // ===== MAIN COMPONENT =====
 
 export default function ChatManagement() {
@@ -779,11 +810,63 @@ export default function ChatManagement() {
   const [quickTaskInternalNote, setQuickTaskInternalNote] = useState('')
   const [quickNoteContent, setQuickNoteContent] = useState('')
   const [quickNoteFiles, setQuickNoteFiles] = useState<File[]>([])
-  const [quickOrderProducts, setQuickOrderProducts] = useState<string[]>([])
-  const [quickOrderProductVariant, setQuickOrderProductVariant] = useState<{[key: string]: string}>({})
-  const [quickOrderDiscount, setQuickOrderDiscount] = useState('0')
+  // Quick Order Modal States (matching CustomerManagement)
+  const [quickOrderSelectedProducts, setQuickOrderSelectedProducts] = useState<string[]>([])
+  const [quickOrderSelectedPackages, setQuickOrderSelectedPackages] = useState<{[productId: string]: string}>({})
+  const [quickOrderProductQuantities, setQuickOrderProductQuantities] = useState<{[productId: string]: number}>({})
+  const [quickOrderNotes, setQuickOrderNotes] = useState('')
+  const [quickOrderSelectedCategory, setQuickOrderSelectedCategory] = useState('Tất cả')
+  const [quickOrderPaymentDeadline, setQuickOrderPaymentDeadline] = useState('')
+  const [quickOrderDiscountPercent, setQuickOrderDiscountPercent] = useState(0)
+  const [quickOrderDiscountType, setQuickOrderDiscountType] = useState<'%' | 'VND'>('%')
   const [quickOrderPaymentMethod, setQuickOrderPaymentMethod] = useState('cash')
-  const [quickOrderNote, setQuickOrderNote] = useState('')
+  const [quickOrderPaymentMode, setQuickOrderPaymentMode] = useState<'full' | 'installment'>('full')
+  const [quickOrderPaymentInstallments, setQuickOrderPaymentInstallments] = useState(1)
+  const [quickOrderInstallmentData, setQuickOrderInstallmentData] = useState([{amount: 0, date: ''}])
+  
+  // Available products and packages for Quick Order
+  const quickOrderAvailableProducts = [
+    { id: 'crm-basic', name: 'CRM Basic', category: 'Sản phẩm', price: 500000, description: 'Hệ thống CRM cơ bản cho doanh nghiệp nhỏ' },
+    { id: 'crm-professional', name: 'CRM Professional', category: 'Sản phẩm', price: 1200000, description: 'Hệ thống CRM chuyên nghiệp với nhiều tính năng nâng cao' },
+    { id: 'crm-enterprise', name: 'CRM Enterprise', category: 'Sản phẩm', price: 2500000, description: 'Hệ thống CRM doanh nghiệp với đầy đủ tính năng' },
+    { id: 'ai-analytics', name: 'AI Analytics Module', category: 'Sản phẩm', price: 800000, description: 'Module phân tích dữ liệu với AI' },
+    { id: 'marketing-automation', name: 'Marketing Automation', category: 'Sản phẩm', price: 600000, description: 'Tự động hóa marketing và email campaigns' },
+    { id: 'sales-dashboard', name: 'Sales Dashboard Pro', category: 'Sản phẩm', price: 400000, description: 'Dashboard bán hàng chuyên nghiệp' },
+    { id: 'mobile-app', name: 'Mobile App License', category: 'Sản phẩm', price: 300000, description: 'Giấy phép sử dụng ứng dụng di động' }
+  ]
+  const quickOrderAvailablePackages: {[key: string]: {id: string, name: string, price: number, description: string}[]} = {
+    'crm-basic': [
+      { id: 'basic-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'basic-plus', name: 'Gói Plus', price: 200000, description: 'Thêm training cơ bản + support 3 tháng' },
+      { id: 'basic-premium', name: 'Gói Premium', price: 500000, description: 'Thêm training + support 6 tháng + customization' }
+    ],
+    'crm-professional': [
+      { id: 'pro-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'pro-plus', name: 'Gói Plus', price: 400000, description: 'Thêm AI Analytics + training nâng cao' },
+      { id: 'pro-premium', name: 'Gói Premium', price: 800000, description: 'Thêm full modules + premium support 1 năm' }
+    ],
+    'crm-enterprise': [
+      { id: 'ent-standard', name: 'Gói Standard', price: 0, description: 'Sản phẩm cơ bản' },
+      { id: 'ent-plus', name: 'Gói Plus', price: 1000000, description: 'Thêm full training + migration service' },
+      { id: 'ent-premium', name: 'Gói Premium', price: 2000000, description: 'Thêm custom development + premium support 2 năm' }
+    ],
+    'ai-analytics': [
+      { id: 'ai-standard', name: 'Gói Standard', price: 0, description: 'Module cơ bản' },
+      { id: 'ai-advanced', name: 'Gói Advanced', price: 300000, description: 'Thêm custom reports + training' }
+    ],
+    'marketing-automation': [
+      { id: 'marketing-standard', name: 'Gói Standard', price: 0, description: 'Module cơ bản' },
+      { id: 'marketing-pro', name: 'Gói Pro', price: 250000, description: 'Thêm email templates + analytics' }
+    ],
+    'sales-dashboard': [
+      { id: 'dashboard-standard', name: 'Gói Standard', price: 0, description: 'Dashboard cơ bản' },
+      { id: 'dashboard-pro', name: 'Gói Pro', price: 200000, description: 'Thêm custom widgets + real-time data' }
+    ],
+    'mobile-app': [
+      { id: 'mobile-standard', name: 'Gói Standard', price: 0, description: 'License cơ bản' },
+      { id: 'mobile-unlimited', name: 'Gói Unlimited', price: 150000, description: 'Unlimited users + premium features' }
+    ]
+  }
   
   // Chat input expansion and attachment states
   const [isInputExpanded, setIsInputExpanded] = useState(false)
@@ -4204,248 +4287,11 @@ export default function ChatManagement() {
       </div>
 
       {/* Lead Detail Modal */}
-      <Dialog open={selectedLeadDetail !== null} onOpenChange={(open) => !open && setSelectedLeadDetail(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-          {selectedLeadDetail && (
-            <>
-              {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-base font-semibold text-gray-900">Chi tiết Lead - {selectedLeadDetail.name}</h3>
-                    <Badge className={cn(
-                      "text-xs px-2 py-0.5 h-5",
-                      selectedLeadDetail.status === 'customer' ? "bg-green-100 text-green-700" :
-                      selectedLeadDetail.status === 'lead' ? "bg-blue-100 text-blue-700" :
-                      "bg-yellow-100 text-yellow-700"
-                    )}>
-                      {selectedLeadDetail.status === 'customer' ? 'Chuyển đổi thành công' :
-                       selectedLeadDetail.status === 'lead' ? 'Lead mới' : 'Tiềm năng'}
-                    </Badge>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedLeadDetail(null)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-                
-                {/* Tabs */}
-                <div className="flex border-b border-gray-200 -mb-px">
-                  <button
-                    onClick={() => setLeadDetailTab('contact')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                      leadDetailTab === 'contact' 
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    )}
-                  >
-                    Thông tin liên hệ
-                  </button>
-                  <button
-                    onClick={() => setLeadDetailTab('history')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                      leadDetailTab === 'history'
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    )}
-                  >
-                    Lịch sử tương tác
-                  </button>
-                  <button
-                    onClick={() => setLeadDetailTab('notes')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                      leadDetailTab === 'notes'
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    )}
-                  >
-                    Ghi chú & Nội dung
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <ScrollArea className="flex-1 p-6">
-                {leadDetailTab === 'contact' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column */}
-                    <div className="space-y-6">
-                      {/* Thông tin cơ bản */}
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <User className="w-5 h-5 text-blue-500" />
-                          Thông tin cơ bản
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Tên khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.name}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Công ty:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.company || 'N/A'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Loại khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLeadDetail.status === 'customer' ? 'Khách hàng' : 
-                               selectedLeadDetail.status === 'lead' ? 'Lead' : 'Tiềm năng'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Thông tin liên hệ */}
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Phone className="w-5 h-5 text-green-500" />
-                          Thông tin liên hệ
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Số điện thoại:</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.phone}</span>
-                              <button className="p-1 text-green-600 hover:bg-green-100 rounded">
-                                <Phone className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          {selectedLeadDetail.email && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">Email:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.email}</span>
-                                <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
-                                  <Mail className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Nguồn:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.source}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column */}
-                    <div className="space-y-6">
-                      {/* Thông tin bán hàng */}
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Briefcase className="w-5 h-5 text-purple-500" />
-                          Thông tin bán hàng
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sản phẩm quan tâm:</span>
-                            <span className="text-sm font-medium text-gray-900">CRM Solution</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sales phụ trách:</span>
-                            <span className="text-sm font-medium text-gray-900">Minh Expert</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Giá trị lead:</span>
-                            <span className="text-sm font-medium text-green-600">50.000.000 VNĐ</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Xác suất thành công:</span>
-                            <span className="text-sm font-medium text-gray-900">85%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Thông tin thời gian */}
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <ClockIcon className="w-5 h-5 text-orange-500" />
-                          Thông tin thời gian
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Ngày tạo:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Lần liên hệ cuối:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLeadDetail.lastContactedAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Số lần tương tác:</span>
-                            <span className="text-sm font-medium text-blue-600">8 lần</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      <div>
-                        <h4 className="text-base font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedLeadDetail.tags.map((tag, idx) => (
-                            <span
-                              key={idx}
-                              className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full",
-                                tag.toLowerCase().includes('vip') ? "bg-red-100 text-red-800" :
-                                tag.toLowerCase().includes('hot') ? "bg-red-100 text-red-800" :
-                                tag.toLowerCase().includes('enterprise') ? "bg-purple-100 text-purple-800" :
-                                "bg-gray-100 text-gray-800"
-                              )}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {leadDetailTab === 'history' && (
-                  <div className="text-center py-12 text-gray-500">
-                    Chức năng lịch sử tương tác đang được phát triển
-                  </div>
-                )}
-
-                {leadDetailTab === 'notes' && (
-                  <div className="text-center py-12 text-gray-500">
-                    Chức năng ghi chú & nội dung đang được phát triển
-                  </div>
-                )}
-              </ScrollArea>
-
-              {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedLeadDetail(null)}
-                  className="px-4 py-2 text-sm"
-                >
-                  Đóng
-                </Button>
-                <Button
-                  className="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Chuyển đổi
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CustomerDetailModal
+        isOpen={selectedLeadDetail !== null}
+        onClose={() => setSelectedLeadDetail(null)}
+        customer={selectedLeadDetail ? convertCRMCustomerToCustomer(selectedLeadDetail) : null}
+      />
 
       {/* Connection Management Modal */}
       <Dialog open={showConnectionModal} onOpenChange={setShowConnectionModal}>
@@ -5413,248 +5259,6 @@ export default function ChatManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Lead Detail Modal */}
-      <Dialog open={!!selectedLeadDetail} onOpenChange={(open) => !open && setSelectedLeadDetail(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button]:hidden">
-          <div className="bg-white rounded-lg flex flex-col h-full">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Chi tiết Lead - {selectedLeadDetail?.name}
-                  </h3>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    Chuyển đổi thành công
-                  </span>
-                </div>
-                <button 
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  onClick={() => setSelectedLeadDetail(null)}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              {/* Tabs */}
-              <div className="flex border-b border-gray-200 mt-4 -mb-px">
-                <button 
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    leadDetailTab === 'contact' 
-                      ? 'border-blue-500 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  onClick={() => setLeadDetailTab('contact')}
-                >
-                  Thông tin liên hệ
-                </button>
-                <button 
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    leadDetailTab === 'history' 
-                      ? 'border-blue-500 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  onClick={() => setLeadDetailTab('history')}
-                >
-                  Lịch sử tương tác
-                </button>
-                <button 
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    leadDetailTab === 'notes' 
-                      ? 'border-blue-500 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  onClick={() => setLeadDetailTab('notes')}
-                >
-                  Ghi chú & Nội dung
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="p-6">
-                {leadDetailTab === 'contact' && selectedLeadDetail && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column */}
-                    <div className="space-y-6">
-                      {/* Basic Info */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <User className="w-5 h-5 text-blue-500" />
-                          Thông tin cơ bản
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Tên khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.name}</span>
-                          </div>
-                          {selectedLeadDetail.company && (
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Công ty:</span>
-                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.company}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Loại khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLeadDetail.company ? 'Doanh nghiệp' : 'Cá nhân'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Contact Info */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Phone className="w-5 h-5 text-green-500" />
-                          Thông tin liên hệ
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Số điện thoại:</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.phone}</span>
-                              <button className="p-1 text-green-600 hover:bg-green-100 rounded">
-                                <Phone className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          {selectedLeadDetail.email && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">Email:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.email}</span>
-                                <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
-                                  <Mail className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Nguồn:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLeadDetail.source}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column */}
-                    <div className="space-y-6">
-                      {/* Sales Info */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Briefcase className="w-5 h-5 text-purple-500" />
-                          Thông tin bán hàng
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sản phẩm quan tâm:</span>
-                            <span className="text-sm font-medium text-gray-900">CRM Solution</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sales phụ trách:</span>
-                            <span className="text-sm font-medium text-gray-900">Minh Expert</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Giá trị lead:</span>
-                            <span className="text-sm font-medium text-green-600">50.000.000 VNĐ</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Xác suất thành công:</span>
-                            <span className="text-sm font-medium text-gray-900">85%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Time Info */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <ClockIcon className="w-5 h-5 text-orange-500" />
-                          Thông tin thời gian
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Ngày tạo:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Cập nhật cuối:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLeadDetail.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Lần liên hệ cuối:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLeadDetail.lastContactedAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Số lần tương tác:</span>
-                            <span className="text-sm font-medium text-blue-600">8 lần</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedLeadDetail.tags?.map((tag, idx) => (
-                            <span 
-                              key={idx}
-                              className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {leadDetailTab === 'history' && (
-                  <div className="space-y-4">
-                    <p className="text-gray-500 text-center py-8">Lịch sử tương tác sẽ được hiển thị tại đây</p>
-                  </div>
-                )}
-
-                {leadDetailTab === 'notes' && (
-                  <div className="space-y-4">
-                    {selectedLeadDetail?.notes ? (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-900">{selectedLeadDetail.notes}</p>
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-center py-8">Chưa có ghi chú</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
-              <button 
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200"
-                onClick={() => setSelectedLeadDetail(null)}
-              >
-                Đóng
-              </button>
-              <button 
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                Chuyển đổi
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Quick Status Change Modal */}
       {showQuickStatusModal && selectedLeadForQuickAction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -6087,254 +5691,509 @@ export default function ChatManagement() {
       {/* Quick Order Modal */}
       {showQuickOrderModal && selectedLeadForQuickAction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto mx-4">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <div className="flex justify-between items-center">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Tạo đơn hàng - {selectedLeadForQuickAction.name}</h3>
-                <button 
-                  onClick={() => {
-                    setShowQuickOrderModal(false)
-                    setQuickOrderProducts([])
-                    setQuickOrderProductVariant({})
-                    setQuickOrderDiscount('0')
-                    setQuickOrderPaymentMethod('cash')
-                    setQuickOrderNote('')
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Tạo đơn hàng</h3>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
-                <strong>Lưu ý:</strong> Chọn sản phẩm/dịch vụ để tạo đơn hàng cho lead này.
-              </p>
+              <button
+                onClick={() => {
+                  setShowQuickOrderModal(false)
+                  setQuickOrderSelectedProducts([])
+                  setQuickOrderSelectedPackages({})
+                  setQuickOrderProductQuantities({})
+                  setQuickOrderNotes('')
+                  setQuickOrderSelectedCategory('Tất cả')
+                  setQuickOrderPaymentDeadline('')
+                  setQuickOrderDiscountPercent(0)
+                  setQuickOrderDiscountType('%')
+                  setQuickOrderPaymentMethod('cash')
+                  setQuickOrderPaymentMode('full')
+                  setQuickOrderPaymentInstallments(1)
+                  setQuickOrderInstallmentData([{amount: 0, date: ''}])
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="px-4 sm:px-6 py-4">
-              {/* Chọn sản phẩm */}
+
+            {/* Customer Info */}
+            <div className="flex items-center gap-3 mb-4 p-3 rounded-lg">
+              <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                  <User className="h-6 w-6" />
+                </span>
+              </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-slate-900">{selectedLeadForQuickAction.name}</h3>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {selectedLeadForQuickAction.phone && <span className="mr-3">{selectedLeadForQuickAction.phone}</span>}
+                  {selectedLeadForQuickAction.email && <span>{selectedLeadForQuickAction.email}</span>}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Order Notes */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chọn sản phẩm <span className="text-red-500">*</span>
-                </label>
-                <div className="max-h-64 overflow-y-auto space-y-3 border border-gray-300 rounded-lg p-3">
-                  {[
-                    { id: 'crm-basic', name: 'CRM Basic', desc: 'Hệ thống CRM cơ bản cho doanh nghiệp nhỏ', price: 500000 },
-                    { id: 'crm-pro', name: 'CRM Professional', desc: 'Hệ thống CRM chuyên nghiệp với nhiều tính năng nâng cao', price: 1200000, hasVariant: true },
-                    { id: 'crm-enterprise', name: 'CRM Enterprise', desc: 'Hệ thống CRM doanh nghiệp với đầy đủ tính năng', price: 2500000 },
-                    { id: 'ai-analytics', name: 'AI Analytics Module', desc: 'Module phân tích dữ liệu với AI', price: 800000 },
-                    { id: 'marketing-auto', name: 'Marketing Automation', desc: 'Tự động hóa marketing và email campaigns', price: 600000 },
-                    { id: 'sales-dashboard', name: 'Sales Dashboard Pro', desc: 'Dashboard bán hàng chuyên nghiệp', price: 400000 },
-                    { id: 'mobile-license', name: 'Mobile App License', desc: 'Giấy phép sử dụng ứng dụng di động', price: 300000 },
-                  ].map((product) => (
-                    <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white">
-                      <label className="flex items-start space-x-3 cursor-pointer">
-                        <input 
-                          type="checkbox"
-                          checked={quickOrderProducts.includes(product.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setQuickOrderProducts([...quickOrderProducts, product.id])
-                            } else {
-                              setQuickOrderProducts(quickOrderProducts.filter(p => p !== product.id))
-                              const newVariants = {...quickOrderProductVariant}
-                              delete newVariants[product.id]
-                              setQuickOrderProductVariant(newVariants)
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{product.name}</h4>
-                          <p className="text-sm text-gray-600">{product.desc}</p>
-                          <p className="text-sm font-semibold text-green-600">{product.price.toLocaleString('vi-VN')} VNĐ</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={quickOrderNotes}
+                  onChange={(e) => setQuickOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn thể loại sản phẩm</label>
+                <select
+                  value={quickOrderSelectedCategory}
+                  onChange={(e) => setQuickOrderSelectedCategory(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Tất cả">Tất cả</option>
+                  <option value="Sản phẩm">Sản phẩm</option>
+                </select>
+              </div>
+
+              {/* Product Selection - 2 Column Grid */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Chọn sản phẩm & gói sản phẩm <span className="text-red-500">*</span></h4>
+                <div className="max-h-80 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {quickOrderAvailableProducts.filter(product => quickOrderSelectedCategory === 'Tất cả' || product.category === quickOrderSelectedCategory).map((product) => (
+                      <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors">
+                        {/* Product Selection */}
+                        <label className="flex items-start space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={quickOrderSelectedProducts.includes(product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setQuickOrderSelectedProducts(prev => [...prev, product.id])
+                                setQuickOrderSelectedPackages(prev => ({
+                                  ...prev,
+                                  [product.id]: quickOrderAvailablePackages[product.id]?.[0]?.id || ''
+                                }))
+                                setQuickOrderProductQuantities(prev => ({
+                                  ...prev,
+                                  [product.id]: 1
+                                }))
+                              } else {
+                                setQuickOrderSelectedProducts(prev => prev.filter(id => id !== product.id))
+                                setQuickOrderSelectedPackages(prev => {
+                                  const newPackages = { ...prev }
+                                  delete newPackages[product.id]
+                                  return newPackages
+                                })
+                                setQuickOrderProductQuantities(prev => {
+                                  const newQuantities = { ...prev }
+                                  delete newQuantities[product.id]
+                                  return newQuantities
+                                })
+                              }
+                            }}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{product.category}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                            <p className="text-sm font-semibold text-green-600 mt-1">{product.price.toLocaleString('vi-VN')} VNĐ</p>
+                          </div>
+                        </label>
+
+                        {/* Package & Quantity Selection */}
+                        {quickOrderSelectedProducts.includes(product.id) && quickOrderAvailablePackages[product.id] && (
+                          <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                                <select
+                                  value={quickOrderSelectedPackages[product.id] || ''}
+                                  onChange={(e) => setQuickOrderSelectedPackages(prev => ({
+                                    ...prev,
+                                    [product.id]: e.target.value
+                                  }))}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                >
+                                  {quickOrderAvailablePackages[product.id]?.map((pkg) => (
+                                    <option key={pkg.id} value={pkg.id}>
+                                      {pkg.name} {pkg.price > 0 ? `(+${pkg.price.toLocaleString('vi-VN')} VNĐ)` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={quickOrderProductQuantities[product.id] || 1}
+                                  onChange={(e) => setQuickOrderProductQuantities(prev => ({
+                                    ...prev,
+                                    [product.id]: Math.max(1, parseInt(e.target.value) || 1)
+                                  }))}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {quickOrderAvailableProducts.filter(product => quickOrderSelectedCategory === 'Tất cả' || product.category === quickOrderSelectedCategory).length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">Không có sản phẩm nào trong thể loại này</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment & Discount Info */}
+              {quickOrderSelectedProducts.length > 0 && (
+                <div className="space-y-4">
+                  {/* Selected Products Summary */}
+                  {(() => {
+                    const subtotal = quickOrderSelectedProducts.reduce((sum, productId) => {
+                      const product = quickOrderAvailableProducts.find(p => p.id === productId)
+                      const selectedPackageId = quickOrderSelectedPackages[productId]
+                      const selectedPackage = quickOrderAvailablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                      const quantity = quickOrderProductQuantities[productId] || 1
+                      return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                    }, 0)
+                    const totalBeforeDiscount = subtotal
+                    const discountAmount = quickOrderDiscountType === '%' 
+                      ? totalBeforeDiscount * quickOrderDiscountPercent / 100 
+                      : quickOrderDiscountPercent
+                    const afterDiscount = totalBeforeDiscount - discountAmount
+                    const vatAmount = afterDiscount * 0.1
+                    const grandTotal = afterDiscount + vatAmount
+                    
+                    return (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h5 className="text-sm font-medium text-green-800 mb-3">
+                          Đã chọn {quickOrderSelectedProducts.length} sản phẩm:
+                        </h5>
+                        <div className="space-y-2 text-sm">
+                          {quickOrderSelectedProducts.map(productId => {
+                            const product = quickOrderAvailableProducts.find(p => p.id === productId)
+                            const selectedPackageId = quickOrderSelectedPackages[productId]
+                            const selectedPackage = quickOrderAvailablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                            const quantity = quickOrderProductQuantities[productId] || 1
+                            const productTotal = ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                            
+                            return product ? (
+                              <div key={productId} className="flex justify-between text-gray-700">
+                                <span>{product.name} ({selectedPackage?.name || 'Standard'}) x{quantity}</span>
+                                <span className="font-medium text-green-600">
+                                  {productTotal.toLocaleString('vi-VN')} VNĐ
+                                </span>
+                              </div>
+                            ) : null
+                          })}
+                          {discountAmount > 0 && (
+                            <div className="flex justify-between text-gray-600 border-t border-green-200 pt-2 mt-2">
+                              <span>Giảm giá {quickOrderDiscountType === '%' ? `(${quickOrderDiscountPercent}%)` : ''}:</span>
+                              <span className="font-medium text-red-500">-{discountAmount.toLocaleString('vi-VN')} VNĐ</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-gray-600 pt-1">
+                            <span>Phí VAT (10%):</span>
+                            <span className="font-medium text-gray-700">+{vatAmount.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
+                            <span>Tổng cộng:</span>
+                            <span className="text-lg">{grandTotal.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
                         </div>
-                      </label>
-                      {product.hasVariant && quickOrderProducts.includes(product.id) && (
-                        <div className="ml-6 mt-2 p-2 bg-gray-50 rounded">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Payment Info Section */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    {/* Payment Deadline & Discount - Same Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Payment Deadline */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Thời hạn thanh toán <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={quickOrderPaymentDeadline}
+                          onChange={(e) => setQuickOrderPaymentDeadline(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        {!quickOrderPaymentDeadline && (
+                          <p className="mt-1 text-xs text-red-500">Vui lòng chọn thời hạn thanh toán</p>
+                        )}
+                      </div>
+
+                      {/* Discount */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Giảm giá
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max={quickOrderDiscountType === '%' ? 100 : undefined}
+                            value={quickOrderDiscountPercent}
+                            onChange={(e) => setQuickOrderDiscountPercent(Math.max(0, quickOrderDiscountType === '%' ? Math.min(100, parseInt(e.target.value) || 0) : parseInt(e.target.value) || 0))}
+                            placeholder="0"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
                           <select 
-                            className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-                            value={quickOrderProductVariant[product.id] || 'standard'}
-                            onChange={(e) => setQuickOrderProductVariant({...quickOrderProductVariant, [product.id]: e.target.value})}
+                            value={quickOrderDiscountType}
+                            onChange={(e) => {
+                              setQuickOrderDiscountType(e.target.value as '%' | 'VND')
+                              setQuickOrderDiscountPercent(0)
+                            }}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="standard">Gói Standard - Sản phẩm cơ bản</option>
-                            <option value="plus">Gói Plus (+400.000 VNĐ) - Thêm AI Analytics</option>
-                            <option value="premium">Gói Premium (+800.000 VNĐ) - Full modules + premium support</option>
+                            <option value="%">%</option>
+                            <option value="VND">VNĐ</option>
                           </select>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Mã giảm giá */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mã giảm giá (%)</label>
-                <div className="flex items-center space-x-2">
-                  <Input 
-                    type="number"
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    value={quickOrderDiscount}
-                    onChange={(e) => setQuickOrderDiscount(e.target.value)}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-gray-500">%</span>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">Nhập từ 0-100% để áp dụng giảm giá</p>
-              </div>
+                    {/* Payment Method */}
+                    <div className="mb-4">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Hình thức thanh toán</label>
+                        <select
+                          value={quickOrderPaymentMethod}
+                          onChange={(e) => setQuickOrderPaymentMethod(e.target.value)}
+                          className="w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="cash">Tiền mặt</option>
+                          <option value="bank_transfer">Chuyển khoản</option>
+                          <option value="installment">Trả góp</option>
+                          <option value="momo">Momo</option>
+                          <option value="card">Thẻ</option>
+                          <option value="custom">Tùy chỉnh</option>
+                        </select>
+                      </div>
+                    </div>
 
-              {/* Hình thức thanh toán */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Hình thức thanh toán</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className={cn(
-                    "flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors",
-                    quickOrderPaymentMethod === 'cash' ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                  )}>
-                    <input 
-                      type="radio" 
-                      value="cash" 
-                      checked={quickOrderPaymentMethod === 'cash'}
-                      onChange={(e) => setQuickOrderPaymentMethod(e.target.value)}
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
-                  </label>
-                  <label className={cn(
-                    "flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors",
-                    quickOrderPaymentMethod === 'bank_transfer' ? "border-blue-500 bg-blue-50" : "border-gray-300"
-                  )}>
-                    <input 
-                      type="radio" 
-                      value="bank_transfer" 
-                      checked={quickOrderPaymentMethod === 'bank_transfer'}
-                      onChange={(e) => setQuickOrderPaymentMethod(e.target.value)}
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
-                  </label>
-                </div>
-              </div>
+                    {/* Payment Mode */}
+                    <div className="mb-4">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Thực hiện thanh toán</label>
+                        <div className="flex gap-3">
+                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                            <input
+                              type="radio"
+                              name="quickOrderPaymentMode"
+                              value="full"
+                              checked={quickOrderPaymentMode === 'full'}
+                              onChange={(e) => setQuickOrderPaymentMode(e.target.value as 'full' | 'installment')}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Toàn bộ</span>
+                          </label>
+                          <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                            <input
+                              type="radio"
+                              name="quickOrderPaymentMode"
+                              value="installment"
+                              checked={quickOrderPaymentMode === 'installment'}
+                              onChange={(e) => setQuickOrderPaymentMode(e.target.value as 'full' | 'installment')}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Theo giai đoạn</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* Tổng hợp */}
-              {quickOrderProducts.length > 0 && (
-                <>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <h5 className="text-sm font-medium text-blue-800 mb-2">Đã chọn {quickOrderProducts.length} sản phẩm:</h5>
-                    <div className="space-y-1">
-                      {quickOrderProducts.map(productId => {
-                        const product = [
-                          { id: 'crm-basic', name: 'CRM Basic', price: 500000 },
-                          { id: 'crm-pro', name: 'CRM Professional', price: 1200000 },
-                          { id: 'crm-enterprise', name: 'CRM Enterprise', price: 2500000 },
-                          { id: 'ai-analytics', name: 'AI Analytics Module', price: 800000 },
-                          { id: 'marketing-auto', name: 'Marketing Automation', price: 600000 },
-                          { id: 'sales-dashboard', name: 'Sales Dashboard Pro', price: 400000 },
-                          { id: 'mobile-license', name: 'Mobile App License', price: 300000 },
-                        ].find(p => p.id === productId)
-                        const variant = quickOrderProductVariant[productId]
-                        const variantPrice = variant === 'plus' ? 400000 : variant === 'premium' ? 800000 : 0
+                    {/* Payment Installments - Only show when installment mode selected */}
+                    {quickOrderPaymentMode === 'installment' && (
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Số lần thanh toán
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="12"
+                          value={quickOrderPaymentInstallments}
+                          onChange={(e) => {
+                            const num = Math.max(1, Math.min(12, parseInt(e.target.value) || 1))
+                            setQuickOrderPaymentInstallments(num)
+                            const newInstallments = Array.from({length: num}, (_, i) => 
+                              quickOrderInstallmentData[i] || {amount: 0, date: ''}
+                            )
+                            setQuickOrderInstallmentData(newInstallments)
+                          }}
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* Installment Details */}
+                      {quickOrderInstallmentData.map((installment, index) => {
+                        const subtotalCalc = quickOrderSelectedProducts.reduce((sum, productId) => {
+                          const product = quickOrderAvailableProducts.find(p => p.id === productId)
+                          const selectedPackageId = quickOrderSelectedPackages[productId]
+                          const selectedPackage = quickOrderAvailablePackages[productId]?.find(pkg => pkg.id === selectedPackageId)
+                          const quantity = quickOrderProductQuantities[productId] || 1
+                          return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                        }, 0)
+                        const discountAmountCalc = quickOrderDiscountType === '%' 
+                          ? subtotalCalc * quickOrderDiscountPercent / 100 
+                          : quickOrderDiscountPercent
+                        const afterDiscountCalc = subtotalCalc - discountAmountCalc
+                        const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                        
+                        const otherInstallmentsTotal = quickOrderInstallmentData.reduce((sum, inst, i) => 
+                          i !== index ? sum + inst.amount : sum, 0
+                        )
+                        const maxAllowed = Math.max(0, grandTotalCalc - otherInstallmentsTotal)
+                        const isOverLimit = installment.amount > maxAllowed
+                        
                         return (
-                          <div key={productId} className="flex justify-between text-xs text-blue-700">
-                            <span>{product?.name}{variant && variant !== 'standard' ? ` (${variant})` : ''}</span>
-                            <span className="font-medium">{((product?.price || 0) + variantPrice).toLocaleString('vi-VN')} VNĐ</span>
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-white rounded-lg border border-gray-100">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Số tiền thanh toán <span className="text-xs text-gray-500">(Tối đa: {maxAllowed.toLocaleString('vi-VN')} VNĐ)</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={installment.amount.toLocaleString('vi-VN')}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value.replace(/\D/g, '')) || 0
+                                const validatedValue = Math.min(value, maxAllowed)
+                                const newData = [...quickOrderInstallmentData]
+                                newData[index] = {...newData[index], amount: validatedValue}
+                                setQuickOrderInstallmentData(newData)
+                              }}
+                              placeholder="0"
+                              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isOverLimit ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                            />
+                            {isOverLimit && (
+                              <p className="mt-1 text-xs text-red-500">Số tiền vượt quá giới hạn cho phép</p>
+                            )}
                           </div>
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ngày thanh toán đợt {index + 1}
+                              </label>
+                              <input
+                                type="date"
+                                value={installment.date}
+                                onChange={(e) => {
+                                  const newData = [...quickOrderInstallmentData]
+                                  newData[index] = {...newData[index], date: e.target.value}
+                                  setQuickOrderInstallmentData(newData)
+                                }}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            {quickOrderPaymentInstallments > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (quickOrderPaymentInstallments > 1) {
+                                    const newData = quickOrderInstallmentData.filter((_, i) => i !== index)
+                                    setQuickOrderInstallmentData(newData)
+                                    setQuickOrderPaymentInstallments(quickOrderPaymentInstallments - 1)
+                                  }
+                                }}
+                                className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Xóa đợt thanh toán"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                         )
                       })}
                     </div>
+                    )}
                   </div>
-
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                    <h5 className="text-sm font-medium text-green-800 mb-2">Tổng hợp giá trị đơn hàng</h5>
-                    {(() => {
-                      const products = [
-                        { id: 'crm-basic', price: 500000 },
-                        { id: 'crm-pro', price: 1200000 },
-                        { id: 'crm-enterprise', price: 2500000 },
-                        { id: 'ai-analytics', price: 800000 },
-                        { id: 'marketing-auto', price: 600000 },
-                        { id: 'sales-dashboard', price: 400000 },
-                        { id: 'mobile-license', price: 300000 },
-                      ]
-                      const subtotal = quickOrderProducts.reduce((sum, pid) => {
-                        const product = products.find(p => p.id === pid)
-                        const variant = quickOrderProductVariant[pid]
-                        const variantPrice = variant === 'plus' ? 400000 : variant === 'premium' ? 800000 : 0
-                        return sum + (product?.price || 0) + variantPrice
-                      }, 0)
-                      const discount = parseInt(quickOrderDiscount) || 0
-                      const total = subtotal * (1 - discount / 100)
-                      return (
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Tổng tiền gốc:</span>
-                            <span className="font-medium">{subtotal.toLocaleString('vi-VN')} VNĐ</span>
-                          </div>
-                          {discount > 0 && (
-                            <div className="flex justify-between text-red-600">
-                              <span>Giảm giá ({discount}%):</span>
-                              <span className="font-medium">-{(subtotal * discount / 100).toLocaleString('vi-VN')} VNĐ</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between font-medium text-green-700 border-t border-green-300 pt-2">
-                            <span>Tổng thành tiền:</span>
-                            <span className="text-base">{total.toLocaleString('vi-VN')} VNĐ</span>
-                          </div>
-                          <div className="text-xs text-green-600 mt-1">
-                            💰 Phương thức thanh toán: <span className="font-medium">{quickOrderPaymentMethod === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</span>
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                </>
+                </div>
               )}
 
-              <p className="text-sm text-gray-600">
-                Lead sẽ được chuyển sang trạng thái "Chờ thanh toán" với các sản phẩm đã chọn.
+              <p className="text-sm text-gray-600 mt-4">
+                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang "Hoàn thành".
               </p>
             </div>
-            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 sticky bottom-0 bg-white">
-              <button 
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
                 onClick={() => {
                   setShowQuickOrderModal(false)
-                  setQuickOrderProducts([])
-                  setQuickOrderProductVariant({})
-                  setQuickOrderDiscount('0')
+                  setQuickOrderSelectedProducts([])
+                  setQuickOrderSelectedPackages({})
+                  setQuickOrderProductQuantities({})
+                  setQuickOrderNotes('')
+                  setQuickOrderSelectedCategory('Tất cả')
+                  setQuickOrderPaymentDeadline('')
+                  setQuickOrderDiscountPercent(0)
+                  setQuickOrderDiscountType('%')
                   setQuickOrderPaymentMethod('cash')
-                  setQuickOrderNote('')
+                  setQuickOrderPaymentMode('full')
+                  setQuickOrderPaymentInstallments(1)
+                  setQuickOrderInstallmentData([{amount: 0, date: ''}])
                 }}
-                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition-all"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 Hủy
               </button>
-              <button 
-                disabled={quickOrderProducts.length === 0}
+              <button
+                disabled={quickOrderSelectedProducts.length === 0 || !quickOrderPaymentDeadline}
                 onClick={() => {
                   console.log('Order created:', {
-                    products: quickOrderProducts,
-                    variants: quickOrderProductVariant,
-                    discount: quickOrderDiscount,
-                    paymentMethod: quickOrderPaymentMethod
+                    customer: selectedLeadForQuickAction,
+                    products: quickOrderSelectedProducts,
+                    packages: quickOrderSelectedPackages,
+                    quantities: quickOrderProductQuantities,
+                    notes: quickOrderNotes,
+                    paymentDeadline: quickOrderPaymentDeadline,
+                    discount: quickOrderDiscountPercent,
+                    discountType: quickOrderDiscountType,
+                    paymentMethod: quickOrderPaymentMethod,
+                    paymentMode: quickOrderPaymentMode,
+                    installments: quickOrderPaymentMode === 'installment' ? quickOrderInstallmentData : null
                   })
                   setShowQuickOrderModal(false)
-                  setQuickOrderProducts([])
-                  setQuickOrderProductVariant({})
-                  setQuickOrderDiscount('0')
+                  setQuickOrderSelectedProducts([])
+                  setQuickOrderSelectedPackages({})
+                  setQuickOrderProductQuantities({})
+                  setQuickOrderNotes('')
+                  setQuickOrderSelectedCategory('Tất cả')
+                  setQuickOrderPaymentDeadline('')
+                  setQuickOrderDiscountPercent(0)
+                  setQuickOrderDiscountType('%')
                   setQuickOrderPaymentMethod('cash')
-                  setQuickOrderNote('')
+                  setQuickOrderPaymentMode('full')
+                  setQuickOrderPaymentInstallments(1)
+                  setQuickOrderInstallmentData([{amount: 0, date: ''}])
                 }}
                 className={cn(
-                  "w-full sm:w-auto px-4 py-2 text-sm font-medium border border-transparent rounded-lg transition-all flex items-center justify-center gap-2",
-                  quickOrderProducts.length > 0
-                    ? "text-white bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
-                    : "text-gray-400 bg-gray-300 cursor-not-allowed"
+                  "px-6 py-2 rounded-lg font-medium",
+                  quickOrderSelectedProducts.length > 0 && quickOrderPaymentDeadline
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 )}
               >
-                <CheckCircle className="w-4 h-4" />
-                <span className="truncate">Xác nhận tạo đơn ({quickOrderProducts.length} SP)</span>
+                Tạo đơn hàng
               </button>
             </div>
           </div>

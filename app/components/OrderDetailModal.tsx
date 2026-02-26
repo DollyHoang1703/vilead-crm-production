@@ -1,44 +1,40 @@
-'use client'
+﻿'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   X,
   Edit,
-  Save,
-  Upload,
-  Download,
-  MessageSquare,
-  Tag,
-  Clock,
-  DollarSign,
-  User,
-  Building2,
-  Phone,
-  Mail,
-  Calendar,
+  Info,
   FileText,
-  History,
-  AlertTriangle,
-  CheckCircle,
-  RefreshCw,
-  Send,
-  Plus,
+  Receipt,
   Trash2,
-  Eye,
-  Package,
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
-  Zap
+  MoreVertical
 } from 'lucide-react'
 
-interface InstallmentData {
+interface OrderItem {
   id: number
-  plannedAmount: number
-  plannedDate: string
-  actualAmount: number
-  actualDate: string
-  status: 'pending' | 'partial' | 'completed'
+  productName: string
+  productPackage: string
+  quantity: number
+  price: number
+  total: number
+  paymentStatus: 'paid' | 'unpaid' | 'partial'
+}
+
+interface OrderInvoice {
+  id: string
+  fileName: string
+  fileSize: number
+  fileType: string
+  uploadedAt: string
+  thumbnailUrl?: string
+}
+
+interface OrderNote {
+  id: string
+  content: string
+  createdAt: string
+  createdBy: string
 }
 
 interface Order {
@@ -55,7 +51,7 @@ interface Order {
   paymentStatus: string
   paymentMethod: string
   paymentMode?: 'full' | 'installment'
-  installments?: InstallmentData[]
+  installments?: any[]
   totalPaid?: number
   remainingDebt?: number
   notes: any[]
@@ -86,803 +82,450 @@ export default function OrderDetailModal({
   order, 
   onUpdate 
 }: OrderDetailModalProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'payment' | 'notes' | 'messages' | 'history'>('overview')
-  const [isEditing, setIsEditing] = useState(false)
-  const [editData, setEditData] = useState<any>({})
-  const [newNote, setNewNote] = useState('')
-  const [newMessage, setNewMessage] = useState('')
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
-  const [showStatusModal, setShowStatusModal] = useState(false)
-  const [statusChange, setStatusChange] = useState({
-    newStatus: '',
-    reason: ''
-  })
-  const [showRefundModal, setShowRefundModal] = useState(false)
-  const [refundData, setRefundData] = useState({
-    amount: 0,
-    method: 'transfer',
-    reason: '',
-    notes: ''
-  })
-
-  useEffect(() => {
-    if (order) {
-      setEditData(order)
-    }
-  }, [order])
+  const [activeTab, setActiveTab] = useState<'info' | 'invoices' | 'notes'>('info')
+  const [invoiceActionMenu, setInvoiceActionMenu] = useState<string | null>(null)
+  const [noteActionMenu, setNoteActionMenu] = useState<string | null>(null)
+  const [showEditInvoice, setShowEditInvoice] = useState(false)
+  const [showDeleteInvoice, setShowDeleteInvoice] = useState(false)
+  const [showEditNote, setShowEditNote] = useState(false)
+  const [showDeleteNote, setShowDeleteNote] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<OrderInvoice | null>(null)
+  const [selectedNote, setSelectedNote] = useState<OrderNote | null>(null)
+  const [editNoteContent, setEditNoteContent] = useState('')
 
   if (!isOpen || !order) return null
 
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('vi-VN') + ' đ'
+  const formatCurrency = (amount: number) => amount.toLocaleString('vi-VN') + ' đ'
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800 border-gray-200'
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200'
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200'
-      case 'refunded': return 'bg-orange-100 text-orange-800 border-orange-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'unpaid': return 'bg-red-100 text-red-800 border-red-200'
-      case 'partial': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'paid': return 'bg-green-100 text-green-800 border-green-200'
-      case 'refunded': return 'bg-orange-100 text-orange-800 border-orange-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'paid': return 'bg-green-100 text-green-800'
+      case 'unpaid': return 'bg-red-100 text-red-800'
+      case 'partial': return 'bg-yellow-100 text-yellow-800'
+      default: return 'bg-gray-100 text-gray-800'
     }
   }
-
-  const getStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'draft': 'Nháp',
-      'pending': 'Chờ xác nhận',
-      'confirmed': 'Đã xác nhận',
-      'processing': 'Đang xử lý',
-      'completed': 'Hoàn thành',
-      'cancelled': 'Đã hủy',
-      'refunded': 'Đã hoàn'
-    }
-    return statusMap[status] || status
-  }
-
   const getPaymentStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'unpaid': 'Chưa thanh toán',
-      'partial': 'Thanh toán một phần',
-      'paid': 'Đã thanh toán',
-      'refunded': 'Đã hoàn tiền'
+    switch (status) {
+      case 'paid': return 'Đã thanh toán'
+      case 'unpaid': return 'Chưa thanh toán'
+      case 'partial': return 'Thanh toán 1 phần'
+      default: return status
     }
-    return statusMap[status] || status
   }
 
-  const calculateTimeRemaining = (deadline: string) => {
-    const now = new Date()
-    const deadlineDate = new Date(deadline)
-    const diff = deadlineDate.getTime() - now.getTime()
-    
-    if (diff <= 0) return 'Quá hạn'
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    
-    if (days > 0) return `Còn ${days} ngày ${hours} giờ`
-    return `Còn ${hours} giờ`
+  const orderItems: OrderItem[] = order.items?.map((item: any, index: number) => ({
+    id: index + 1,
+    productName: item.product?.name || item.productName || 'Sản phẩm ' + (index + 1),
+    productPackage: item.variant?.name || item.productPackage || '1',
+    quantity: item.quantity || 1,
+    price: item.unitPrice || item.price || 0,
+    total: item.totalPrice || item.total || 0,
+    paymentStatus: order.paymentStatus === 'paid' ? 'paid' : order.paymentStatus === 'partial' ? 'partial' : 'unpaid'
+  })) || [
+    { id: 1, productName: 'NETCore', productPackage: '1', quantity: 1, price: 10000, total: 10000, paymentStatus: 'paid' as const },
+    { id: 2, productName: 'HRMCort', productPackage: '2', quantity: 1, price: 20000, total: 40000, paymentStatus: 'partial' as const },
+  ]
+
+  const mockInvoices: OrderInvoice[] = order.invoices?.length > 0 
+    ? order.invoices.map((inv: any) => ({
+        id: inv.id?.toString() || String(Math.random()),
+        fileName: inv.fileName || inv.name || 'invoice.png',
+        fileSize: inv.fileSize || inv.size || 1000000,
+        fileType: inv.fileType || inv.type || 'image/png',
+        uploadedAt: inv.uploadedAt || inv.createdAt || new Date().toISOString(),
+        thumbnailUrl: inv.thumbnailUrl || ''
+      }))
+    : [
+        { id: '1', fileName: '028d0cad-e7b5-4e85-94bc-92a0003a71c2.png', fileSize: 1240000, fileType: 'image/png', uploadedAt: '2026-02-26T00:53:00', thumbnailUrl: '' },
+        { id: '2', fileName: '81686d2f-77ae-478b-8165-76fbf9269dc3.png', fileSize: 997070, fileType: 'image/png', uploadedAt: '2026-02-26T00:53:00', thumbnailUrl: '' },
+      ]
+
+  const mockNotes: OrderNote[] = order.notes?.length > 0
+    ? order.notes.map((note: any) => ({
+        id: note.id?.toString() || String(Math.random()),
+        content: note.content || '',
+        createdAt: note.createdAt || new Date().toISOString(),
+        createdBy: note.createdBy || 'System'
+      }))
+    : [
+        { id: '1', content: 'Khách hàng yêu cầu giao hàng vào buổi sáng', createdAt: '2026-02-20T10:30:00', createdBy: 'Nguyễn Văn A' },
+      ]
+
+  const subtotal = order.subtotal || orderItems.reduce((sum, item) => sum + item.total, 0)
+  const discount = order.discount || 0
+  const vat = order.tax || Math.round(subtotal * 0.1)
+  const grandTotal = order.total || (subtotal - discount + vat)
+
+  const tabs = [
+    { id: 'info', label: 'Thông tin', icon: <Info className="w-4 h-4" /> },
+    { id: 'invoices', label: 'Hóa đơn', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'notes', label: 'Ghi chú', icon: <FileText className="w-4 h-4" /> },
+  ]
+
+  const handleEditNote = (note: OrderNote) => {
+    setSelectedNote(note)
+    setEditNoteContent(note.content)
+    setShowEditNote(true)
+    setNoteActionMenu(null)
   }
 
-  const handleStatusChange = () => {
-    if (!statusChange.newStatus) return
-    
-    // Add to history
-    const historyEntry = {
-      id: Date.now(),
-      action: 'status_changed',
-      timestamp: new Date().toISOString(),
-      performedBy: 'Nguyễn Sales Manager',
-      oldValue: order.status,
-      newValue: statusChange.newStatus,
-      reason: statusChange.reason
+  const handleSaveNote = () => {
+    if (selectedNote && editNoteContent.trim()) {
+      const updatedNotes = order.notes.map((n: any) => 
+        n.id === selectedNote.id ? { ...n, content: editNoteContent } : n
+      )
+      onUpdate(order.id, { notes: updatedNotes })
+      setShowEditNote(false)
+      setSelectedNote(null)
+      setEditNoteContent('')
     }
-
-    const updates = {
-      status: statusChange.newStatus,
-      history: [...order.history, historyEntry],
-      updatedAt: new Date().toISOString()
-    }
-
-    onUpdate(order.id, updates)
-    setShowStatusModal(false)
-    setStatusChange({ newStatus: '', reason: '' })
   }
 
-  const handleAddNote = () => {
-    if (!newNote.trim()) return
-
-    const note = {
-      id: Date.now(),
-      content: newNote,
-      type: 'internal',
-      createdAt: new Date().toISOString(),
-      createdBy: 'Nguyễn Sales Manager',
-      isEditable: true
+  const handleDeleteNote = () => {
+    if (selectedNote) {
+      const updatedNotes = order.notes.filter((n: any) => n.id !== selectedNote.id)
+      onUpdate(order.id, { notes: updatedNotes })
+      setShowDeleteNote(false)
+      setSelectedNote(null)
     }
-
-    const updates = {
-      notes: [...order.notes, note],
-      updatedAt: new Date().toISOString()
-    }
-
-    onUpdate(order.id, updates)
-    setNewNote('')
   }
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return
-
-    const message = {
-      id: Date.now(),
-      content: newMessage,
-      direction: 'outgoing',
-      timestamp: new Date().toISOString(),
-      sender: 'Nguyễn Sales Manager',
-      isRead: false
+  const handleDeleteInvoice = () => {
+    if (selectedInvoice) {
+      const updatedInvoices = order.invoices.filter((inv: any) => inv.id !== selectedInvoice.id)
+      onUpdate(order.id, { invoices: updatedInvoices })
+      setShowDeleteInvoice(false)
+      setSelectedInvoice(null)
     }
-
-    const updates = {
-      zaloMessages: [...order.zaloMessages, message],
-      updatedAt: new Date().toISOString()
-    }
-
-    onUpdate(order.id, updates)
-    setNewMessage('')
   }
 
-  const handleRefund = () => {
-    const historyEntry = {
-      id: Date.now(),
-      action: 'refunded',
-      timestamp: new Date().toISOString(),
-      performedBy: 'Nguyễn Sales Manager',
-      details: `Hoàn ${formatCurrency(refundData.amount)} qua ${refundData.method}`,
-      reason: refundData.reason
-    }
-
-    const updates = {
-      status: refundData.amount === order.total ? 'refunded' : order.status,
-      paymentStatus: refundData.amount === order.total ? 'refunded' : 'partial',
-      history: [...order.history, historyEntry],
-      updatedAt: new Date().toISOString()
-    }
-
-    onUpdate(order.id, updates)
-    setShowRefundModal(false)
-    setRefundData({ amount: 0, method: 'transfer', reason: '', notes: '' })
-  }
-
-  const renderOverview = () => (
-    <div className="space-y-6">
-      {/* Order Header */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Thông tin đơn hàng</h3>
-            <button
-              onClick={() => setShowStatusModal(true)}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-            >
-              Cập nhật trạng thái
-            </button>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Mã đơn:</span>
-              <span className="font-medium">{order.orderNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Trạng thái:</span>
-              <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(order.status)}`}>
-                {getStatusText(order.status)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Thanh toán:</span>
-              <span className={`px-2 py-1 text-xs font-medium rounded border ${getPaymentStatusColor(order.paymentStatus)}`}>
-                {getPaymentStatusText(order.paymentStatus)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Phương thức:</span>
-              <span className="font-medium capitalize">{order.paymentMethod}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tổng tiền:</span>
-              <span className="font-bold text-lg text-blue-600">{formatCurrency(order.total)}</span>
-            </div>
-            {order.deadline && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Thời hạn:</span>
-                <span className={`font-medium ${new Date(order.deadline) < new Date() ? 'text-red-600' : 'text-gray-900'}`}>
-                  {calculateTimeRemaining(order.deadline)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900">Thông tin khách hàng</h3>
-          
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium text-gray-900">{order.customer.name}</div>
-                {order.isVip && (
-                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
-                    <Target className="w-3 h-3 mr-1" />
-                    VIP
+  const renderInfoTab = () => (
+    <div className="space-y-4">
+      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <table className="w-full">
+          <thead className="bg-[#fafafb]">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Tên SP</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Gói SP</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Số lượng</th>
+              <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Giá</th>
+              <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Tổng tiền</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Trạng thái TT</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {orderItems.map((item) => (
+              <tr key={item.id} className="hover:bg-[#f0f7ff]">
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-900">{item.productName}</td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-700">{item.productPackage}</td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-700 text-center">{item.quantity}</td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-900 text-right">{formatCurrency(item.price)}</td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-blue-600 text-right font-medium">{formatCurrency(item.total)}</td>
+                <td className="px-3 py-2 text-center">
+                  <span className={'inline-flex px-2 py-1 text-xs font-medium rounded-full ' + getPaymentStatusColor(item.paymentStatus)}>
+                    {getPaymentStatusText(item.paymentStatus)}
                   </span>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-1 text-gray-400 hover:text-blue-600">
-                  <Phone className="w-4 h-4" />
-                </button>
-                <button className="p-1 text-gray-400 hover:text-blue-600">
-                  <Mail className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center">
-                <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                <span>{order.customer.phone}</span>
-              </div>
-              <div className="flex items-center">
-                <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                <span>{order.customer.email}</span>
-              </div>
-              {order.customer.company && (
-                <div className="flex items-center">
-                  <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                  <span>{order.customer.company}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tags */}
-      {order.tags.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Nhãn</h3>
-          <div className="flex flex-wrap gap-2">
-            {order.tags.map((tag, index) => (
-              <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm border border-blue-200">
-                {tag}
-              </span>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <MessageSquare className="w-4 h-4" />
-          <span className="text-sm">Gửi tin nhắn</span>
-        </button>
-        <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Upload className="w-4 h-4" />
-          <span className="text-sm">Gắn hóa đơn</span>
-        </button>
-        <button className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Tag className="w-4 h-4" />
-          <span className="text-sm">Gắn nhãn</span>
-        </button>
-        <button 
-          onClick={() => setShowRefundModal(true)}
-          className="flex items-center justify-center space-x-2 px-4 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span className="text-sm">Hoàn/Hủy</span>
-        </button>
+          </tbody>
+        </table>
       </div>
-
-      {/* Upsell/Cross-sell Suggestions */}
-      {(order.upsellSuggestions?.length || order.crosssellSuggestions?.length) && (
-        <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-          <h3 className="text-lg font-medium text-blue-900 mb-4">
-            <Zap className="w-5 h-5 inline mr-2" />
-            Đề xuất bán thêm
-          </h3>
-          
-          {order.upsellSuggestions && order.upsellSuggestions.length > 0 && (
-            <div className="mb-4">
-              <h4 className="font-medium text-blue-800 mb-2">Nâng cấp (Upsell)</h4>
-              <div className="space-y-2">
-                {order.upsellSuggestions.map((product: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
-                    <div>
-                      <div className="font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-600">{formatCurrency(product.basePrice)}</div>
-                    </div>
-                    <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                      Đề xuất
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {order.crosssellSuggestions && order.crosssellSuggestions.length > 0 && (
-            <div>
-              <h4 className="font-medium text-blue-800 mb-2">Sản phẩm bổ sung (Cross-sell)</h4>
-              <div className="space-y-2">
-                {order.crosssellSuggestions.map((product: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
-                    <div>
-                      <div className="font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-600">{formatCurrency(product.basePrice)}</div>
-                    </div>
-                    <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                      Đề xuất
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <div className="border-t border-gray-200 pt-4 space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Tạm tính:</span>
+          <span className="text-sm text-gray-900 text-right">{formatCurrency(subtotal)}</span>
         </div>
-      )}
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-green-600">Giảm giá:</span>
+          <span className="text-sm text-green-600 text-right">-{formatCurrency(discount)}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Thuế VAT:</span>
+          <span className="text-sm text-gray-900 text-right">{formatCurrency(vat)}</span>
+        </div>
+        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+          <span className="text-base font-semibold text-gray-900">Tổng cộng:</span>
+          <span className="text-lg font-bold text-blue-600">{formatCurrency(grandTotal)}</span>
+        </div>
+      </div>
     </div>
   )
 
-  const renderItems = () => (
+  const renderInvoicesTab = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">Chi tiết sản phẩm</h3>
-      
-      <div className="space-y-3">
-        {order.items.map((item: any, index: number) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">
-                  {item.product.name}
-                  {item.variant && (
-                    <span className="text-gray-600"> - {item.variant.name}</span>
+      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <table className="w-full">
+          <thead className="bg-[#fafafb]">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200 w-16">Ảnh</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Tên file</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Ngày tạo</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Kích thước</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase w-20">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {mockInvoices.map((invoice) => (
+              <tr key={invoice.id} className="hover:bg-[#f0f7ff]">
+                <td className="px-3 py-2 border-r border-gray-200">
+                  <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
+                    {invoice.fileType.startsWith('image/') ? (
+                      invoice.thumbnailUrl ? (
+                        <img src={invoice.thumbnailUrl} alt={invoice.fileName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">{''}</span>
+                      )
+                    ) : (
+                      <FileText className="w-5 h-5 text-gray-500" />
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-2 border-r border-gray-200">
+                  <span className="text-sm text-blue-600 hover:underline cursor-pointer">{invoice.fileName}</span>
+                </td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-600">
+                  {new Date(invoice.uploadedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {new Date(invoice.uploadedAt).toLocaleDateString('vi-VN')}
+                </td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-600">
+                  {formatFileSize(invoice.fileSize)}
+                </td>
+                <td className="px-3 py-2 text-center relative">
+                  <button
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                    onClick={() => setInvoiceActionMenu(invoiceActionMenu === invoice.id ? null : invoice.id)}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {invoiceActionMenu === invoice.id && (
+                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedInvoice(invoice)
+                          setShowEditInvoice(true)
+                          setInvoiceActionMenu(null)
+                        }}
+                      >
+                        <Edit className="w-4 h-4 text-blue-500" />
+                        Sửa
+                      </button>
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedInvoice(invoice)
+                          setShowDeleteInvoice(true)
+                          setInvoiceActionMenu(null)
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Xóa
+                      </button>
+                    </div>
                   )}
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Mã: {item.product.code} | Danh mục: {item.product.category}
-                </div>
-                {item.notes && (
-                  <div className="text-sm text-blue-600 mt-2">📝 {item.notes}</div>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="font-medium">{formatCurrency(item.unitPrice)} x {item.quantity}</div>
-                <div className="text-lg font-bold text-blue-600">{formatCurrency(item.totalPrice)}</div>
-              </div>
-            </div>
-          </div>
-        ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-
-      {/* Order Totals */}
-      <div className="border-t border-gray-200 pt-4">
-        <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Tạm tính:</span>
-            <span>{formatCurrency(order.subtotal)}</span>
-          </div>
-          {order.discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span>Giảm giá:</span>
-              <span>-{formatCurrency(order.discount)}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-sm">
-            <span>Thuế VAT:</span>
-            <span>{formatCurrency(order.tax)}</span>
-          </div>
-          <div className="border-t border-gray-200 pt-2">
-            <div className="flex justify-between text-lg font-bold">
-              <span>Tổng cộng:</span>
-              <span className="text-blue-600">{formatCurrency(order.total)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {mockInvoices.length === 0 && (
+        <div className="text-center py-8 text-gray-500">Chưa có hóa đơn nào</div>
+      )}
     </div>
   )
 
-  const renderNotes = () => (
+  const renderNotesTab = () => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Ghi chú</h3>
-      </div>
-      
-      {/* Add Note */}
-      <div className="border border-gray-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Thêm ghi chú mới..."
-            rows={3}
-            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-            maxLength={500}
-          />
-          <button
-            onClick={handleAddNote}
-            disabled={!newNote.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="mt-1 text-xs text-gray-500">
-          {newNote.length}/500 ký tự
-        </div>
-      </div>
-
-      {/* Notes List */}
-      <div className="space-y-3">
-        {order.notes.map((note: any) => (
-          <div key={note.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-sm text-gray-900">{note.content}</div>
-                <div className="text-xs text-gray-500 mt-2">
-                  {note.type === 'customer_request' && '👤 Yêu cầu khách hàng'}
-                  {note.type === 'internal' && '📝 Ghi chú nội bộ'}
-                  {note.type === 'system' && '🤖 Hệ thống'}
-                  {' • '}
-                  {note.createdBy} • {new Date(note.createdAt).toLocaleString('vi-VN')}
-                </div>
-              </div>
-              {note.isEditable && (
-                <div className="flex items-center space-x-1">
-                  <button className="p-1 text-gray-400 hover:text-blue-600">
-                    <Edit className="w-4 h-4" />
+      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <table className="w-full">
+          <thead className="bg-[#fafafb]">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Nội dung</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200 w-40">Ngày tạo</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase w-20">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {mockNotes.map((note) => (
+              <tr key={note.id} className="hover:bg-[#f0f7ff]">
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-900">
+                  {note.content}
+                </td>
+                <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-600">
+                  {new Date(note.createdAt).toLocaleDateString('vi-VN')}
+                </td>
+                <td className="px-3 py-2 text-center relative">
+                  <button
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                    onClick={() => setNoteActionMenu(noteActionMenu === note.id ? null : note.id)}
+                  >
+                    <MoreVertical className="w-4 h-4" />
                   </button>
-                  <button className="p-1 text-gray-400 hover:text-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+                  {noteActionMenu === note.id && (
+                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        onClick={() => handleEditNote(note)}
+                      >
+                        <Edit className="w-4 h-4 text-blue-500" />
+                        Sửa
+                      </button>
+                      <button
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedNote(note)
+                          setShowDeleteNote(true)
+                          setNoteActionMenu(null)
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Xóa
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      {mockNotes.length === 0 && (
+        <div className="text-center py-8 text-gray-500">Chưa có ghi chú nào</div>
+      )}
     </div>
   )
-
-  const renderMessages = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Tin nhắn Zalo/Facebook</h3>
-      </div>
-      
-      {/* Send Message */}
-      <div className="border border-gray-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Nhập tin nhắn gửi cho khách hàng..."
-            rows={3}
-            className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 flex items-center space-x-2"
-          >
-            <Send className="w-4 h-4" />
-            <span>Gửi</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Messages List */}
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {order.zaloMessages.map((message: any) => (
-          <div key={message.id} className={`flex ${message.direction === 'outgoing' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-              message.direction === 'outgoing' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-900'
-            }`}>
-              <div className="text-sm">{message.content}</div>
-              <div className={`text-xs mt-1 ${
-                message.direction === 'outgoing' ? 'text-blue-100' : 'text-gray-500'
-              }`}>
-                {message.sender} • {new Date(message.timestamp).toLocaleString('vi-VN')}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
-  const renderHistory = () => {
-    // Build timeline entries from various sources
-    const entries: Array<{
-      id: string
-      timestamp: string
-      title: string
-      description?: string
-    }> = []
-    
-    // Add order creation
-    entries.push({
-      id: 'created',
-      timestamp: order.createdAt,
-      title: 'Đơn mới được tạo'
-    })
-    
-    // Add installment payments
-    if (order.installments && order.installments.length > 0) {
-      order.installments.forEach((inst: any, index: number) => {
-        if (inst.actualAmount > 0 && inst.actualDate) {
-          entries.push({
-            id: `payment-${inst.id}`,
-            timestamp: inst.actualDate,
-            title: `Thanh toán đợt ${index + 1}: ${inst.actualAmount.toLocaleString('vi-VN')} VNĐ`
-          })
-        }
-      })
-    }
-    
-    // Add history entries
-    order.history?.forEach((entry: any) => {
-      if (entry.action !== 'created') {
-        entries.push({
-          id: entry.id,
-          timestamp: entry.timestamp,
-          title: entry.action === 'status_changed' ? 'Thay đổi trạng thái' :
-                 entry.action === 'invoice_added' ? 'Gắn hóa đơn' :
-                 entry.action === 'note_added' ? 'Thêm ghi chú' :
-                 entry.action === 'refunded' ? 'Hoàn tiền' :
-                 entry.action === 'cancelled' ? 'Hủy đơn' :
-                 entry.action === 'payment_completed' ? 'Đã thanh toán' : entry.action,
-          description: entry.oldValue && entry.newValue 
-            ? `Từ "${entry.oldValue}" thành "${entry.newValue}"` 
-            : entry.reason || entry.details
-        })
-      }
-    })
-    
-    // Sort by timestamp descending (newest first)
-    entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Lịch sử thay đổi</h3>
-        
-        <div className="mt-4">
-          {entries.map((entry, index) => (
-            <div key={entry.id} className="flex">
-              <div className="flex flex-col items-center mr-4">
-                <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0"></div>
-                {index < entries.length - 1 && (
-                  <div className="w-px flex-1 border-l-2 border-dashed border-gray-300"></div>
-                )}
-              </div>
-              <div className={`pb-3 ${index === entries.length - 1 ? 'pb-0' : ''}`}>
-                <div className="text-sm text-gray-500">
-                  {new Date(entry.timestamp).toLocaleString('vi-VN')}
-                </div>
-                <div className="text-sm text-gray-900 mt-1">{entry.title}</div>
-                {entry.description && (
-                  <div className="text-sm text-gray-600 mt-1">{entry.description}</div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-screen overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Chi tiết đơn hàng</h2>
-            <p className="text-sm text-gray-600">{order.orderNumber}</p>
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl w-full max-w-3xl shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <Info className="w-5 h-5 text-blue-500" />
+              <h3 className="font-semibold text-gray-900">Chi tiết đơn hàng - {order.orderNumber}</h3>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            {[
-              { id: 'overview', name: 'Tổng quan', icon: <Eye className="w-4 h-4" /> },
-              { id: 'items', name: 'Sản phẩm', icon: <Package className="w-4 h-4" /> },
-              { id: 'notes', name: 'Ghi chú', icon: <FileText className="w-4 h-4" /> },
-              { id: 'history', name: 'Lịch sử', icon: <History className="w-4 h-4" /> }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className={activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}>
+          <div className="border-b border-gray-200 px-4">
+            <nav className="flex space-x-6">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as 'info' | 'invoices' | 'notes')}
+                  className={'flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ' + (
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  )}
+                >
                   {tab.icon}
-                </span>
-                <span>{tab.name}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'overview' && renderOverview()}
-          {activeTab === 'items' && renderItems()}
-          {activeTab === 'notes' && renderNotes()}
-          {activeTab === 'history' && renderHistory()}
+          <div className="p-4 overflow-y-auto flex-1">
+            {activeTab === 'info' && renderInfoTab()}
+            {activeTab === 'invoices' && renderInvoicesTab()}
+            {activeTab === 'notes' && renderNotesTab()}
+          </div>
+
+          <div className="flex justify-end gap-2 p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+              Đóng
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Status Change Modal */}
-      {showStatusModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Cập nhật trạng thái</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trạng thái mới
-                  </label>
-                  <select
-                    value={statusChange.newStatus}
-                    onChange={(e) => setStatusChange(prev => ({ ...prev, newStatus: e.target.value }))}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  >
-                    <option value="">Chọn trạng thái</option>
-                    <option value="pending">Chờ xác nhận</option>
-                    <option value="confirmed">Đã xác nhận</option>
-                    <option value="processing">Đang xử lý</option>
-                    <option value="completed">Hoàn thành</option>
-                    <option value="cancelled">Đã hủy</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lý do thay đổi
-                  </label>
-                  <textarea
-                    value={statusChange.reason}
-                    onChange={(e) => setStatusChange(prev => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Nhập lý do thay đổi trạng thái..."
-                    rows={3}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
+      {showEditInvoice && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Sửa hóa đơn</h3>
+              <button onClick={() => setShowEditInvoice(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  File hiện tại: <span className="text-blue-600">{selectedInvoice.fileName}</span>
+                </label>
               </div>
-
-              <div className="flex items-center justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowStatusModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleStatusChange}
-                  disabled={!statusChange.newStatus}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300"
-                >
-                  Cập nhật
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn file mới</label>
+                <input type="file" accept="image/*,.pdf" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
               </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button onClick={() => setShowEditInvoice(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={() => setShowEditInvoice(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Lưu thay đổi</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Refund Modal */}
-      {showRefundModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      {showDeleteInvoice && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-sm mx-4 shadow-xl">
             <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Hoàn tiền/Hủy đơn</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Số tiền hoàn (VNĐ)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={order.total}
-                    value={refundData.amount}
-                    onChange={(e) => setRefundData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                    placeholder={`Tối đa: ${formatCurrency(order.total)}`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phương thức hoàn
-                  </label>
-                  <select
-                    value={refundData.method}
-                    onChange={(e) => setRefundData(prev => ({ ...prev, method: e.target.value }))}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  >
-                    <option value="transfer">Chuyển khoản</option>
-                    <option value="cash">Tiền mặt</option>
-                    <option value="voucher">Voucher</option>
-                    <option value="custom">Tùy chỉnh</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lý do hoàn/hủy
-                  </label>
-                  <textarea
-                    value={refundData.reason}
-                    onChange={(e) => setRefundData(prev => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Khách hủy, Sai hợp đồng, Chưa thanh toán..."
-                    rows={3}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowRefundModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleRefund}
-                  disabled={refundData.amount <= 0 || !refundData.reason}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-300"
-                >
-                  Xác nhận hoàn tiền
-                </button>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Xác nhận xóa</h3>
+              <p className="text-sm text-gray-600">Bạn có chắc chắn muốn xóa hóa đơn "{selectedInvoice.fileName}"? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button onClick={() => setShowDeleteInvoice(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={handleDeleteInvoice} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Xóa</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+
+      {showEditNote && selectedNote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Sửa ghi chú</h3>
+              <button onClick={() => setShowEditNote(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nội dung ghi chú <span className="text-red-500">*</span></label>
+              <textarea value={editNoteContent} onChange={(e) => setEditNoteContent(e.target.value)} rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Nhập nội dung ghi chú..." />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button onClick={() => setShowEditNote(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={handleSaveNote} disabled={!editNoteContent.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed">Lưu thay đổi</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteNote && selectedNote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-sm mx-4 shadow-xl">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Xác nhận xóa</h3>
+              <p className="text-sm text-gray-600">Bạn có chắc chắn muốn xóa ghi chú này? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button onClick={() => setShowDeleteNote(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={handleDeleteNote} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

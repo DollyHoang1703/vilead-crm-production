@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { SalesTable } from './sales/components/SalesTable'
 import type { Lead as LeadType, ColumnVisibility } from './sales/types/lead.types'
+import CustomerDetailModal from './CustomerDetailModal'
 
 interface Lead {
   id: number
@@ -118,6 +119,46 @@ interface MetricData {
   trend?: 'up' | 'down' | 'neutral'
   clickAction: () => void
 }
+
+// Helper function to convert Lead to Customer format for CustomerDetailModal
+const convertLeadToCustomer = (lead: Lead) => ({
+  id: lead.id,
+  name: lead.name,
+  contact: lead.phone,
+  email: lead.email,
+  phone2: undefined,
+  company: lead.company,
+  position: lead.position,
+  address: lead.address,
+  city: lead.region,
+  status: lead.status === 'converted' ? 'active' : lead.status === 'new' ? 'new' : 'consulting',
+  customerType: lead.customerType === 'business' ? 'Doanh nghiệp' : 'Cá nhân',
+  dateOfBirth: undefined,
+  source: lead.source,
+  assignedPerson: lead.assignedTo || lead.assignee,
+  interestedProduct: lead.product || (lead.interestedProducts ? lead.interestedProducts.join(', ') : undefined),
+  leadValue: lead.value,
+  successRate: lead.winProbability,
+  createdAt: lead.createdAt,
+  updatedAt: lead.updatedAt,
+  lastContactAt: lead.lastContactedAt || lead.lastContact || undefined,
+  totalOrders: 0,
+  totalSpent: lead.value || 0,
+  lastOrderDate: undefined,
+  lastInteraction: (lead.lastInteractionAt || lead.lastContactedAt) ?? undefined,
+  lastPurchaseDate: undefined,
+  tags: lead.tags?.map((tag, index) => ({ id: String(index), name: tag, color: 'bg-blue-100 text-blue-800' })),
+  notes: lead.quickNotes?.map((note, index) => ({
+    id: String(index),
+    content: note.content,
+    createdAt: note.timestamp,
+    createdBy: note.author,
+    attachments: []
+  })),
+  orders: [],
+  tasks: [],
+  history: []
+})
 
 export default function SalesManagement() {
   const [activeTab, setActiveTab] = useState<'pipeline'>('pipeline')
@@ -5035,427 +5076,14 @@ export default function SalesManagement() {
       )}
 
       {/* Lead Detail Modal */}
-      {showLeadDetailModal && selectedLead && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Chi tiết Lead - {selectedLead.name}
-                  </h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    selectedLead.status === 'converted' ? 'bg-green-100 text-green-800' :
-                    selectedLead.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
-                    selectedLead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedLead.status === 'negotiation' ? 'bg-orange-100 text-orange-800' :
-                    selectedLead.status === 'proposal' ? 'bg-purple-100 text-purple-800' :
-                    selectedLead.status === 'lost' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {getStatusName(selectedLead.status)}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowLeadDetailModal(false)
-                    setActiveDetailTab('contact')
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Tabs Navigation */}
-              <div className="flex border-b border-gray-200 mt-4 -mb-px">
-                <button
-                  onClick={() => setActiveDetailTab('contact')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeDetailTab === 'contact'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Thông tin liên hệ
-                </button>
-                <button
-                  onClick={() => setActiveDetailTab('history')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeDetailTab === 'history'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Lịch sử tương tác
-                </button>
-                <button
-                  onClick={() => setActiveDetailTab('notes')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    activeDetailTab === 'notes'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Ghi chú & Nội dung
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto">
-              {/* Thông tin liên hệ Tab */}
-              {activeDetailTab === 'contact' && (
-                <div className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Thông tin cơ bản */}
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <User className="w-5 h-5 text-blue-500" />
-                          Thông tin cơ bản
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Tên khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLead.name}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Công ty:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLead.company || 'Cá nhân'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Loại khách hàng:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLead.customerType === 'business' ? 'Doanh nghiệp' : 'Cá nhân'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Địa chỉ:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLead.address || 'Chưa có'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Thông tin liên hệ */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Phone className="w-5 h-5 text-green-500" />
-                          Thông tin liên hệ
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Số điện thoại:</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{selectedLead.phone}</span>
-                              <button
-                                onClick={() => window.open(`tel:${selectedLead.phone}`, '_self')}
-                                className="p-1 text-green-600 hover:bg-green-100 rounded"
-                              >
-                                <Phone className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Email:</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{selectedLead.email}</span>
-                              <button
-                                onClick={() => window.open(`mailto:${selectedLead.email}`, '_blank')}
-                                className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                              >
-                                <Mail className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Nguồn:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLead.source === 'facebook' ? 'Facebook' :
-                               selectedLead.source === 'google' ? 'Google Ads' :
-                               selectedLead.source === 'website' ? 'Website' :
-                               selectedLead.source === 'referral' ? 'Giới thiệu' :
-                               selectedLead.source === 'cold_call' ? 'Cold Call' :
-                               selectedLead.source}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Tỉnh thành:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLead.region === 'ha_noi' ? 'Hà Nội' :
-                               selectedLead.region === 'ho_chi_minh' ? 'Hồ Chí Minh' :
-                               selectedLead.region === 'da_nang' ? 'Đà Nẵng' :
-                               selectedLead.region}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Thông tin bán hàng */}
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Briefcase className="w-5 h-5 text-purple-500" />
-                          Thông tin bán hàng
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sản phẩm quan tâm:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLead.product}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Sales phụ trách:</span>
-                            <span className="text-sm font-medium text-gray-900">{selectedLead.assignedTo || 'Chưa phân công'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Giá trị lead:</span>
-                            <span className="text-sm font-medium text-green-600">
-                              {selectedLead.value ? formatCurrency(selectedLead.value.toString()) + ' VNĐ' : 'Chưa xác định'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Xác suất thành công:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLead.winProbability ? selectedLead.winProbability + '%' : 'Chưa đánh giá'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Thông tin thời gian */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-orange-500" />
-                          Thông tin thời gian
-                        </h4>
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Ngày tạo:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLead.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Cập nhật cuối:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {new Date(selectedLead.updatedAt).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Lần liên hệ cuối:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {selectedLead.lastContactedAt 
-                                ? new Date(selectedLead.lastContactedAt).toLocaleDateString('vi-VN')
-                                : 'Chưa liên hệ'
-                              }
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">Số lần tương tác:</span>
-                            <span className="text-sm font-medium text-blue-600">{selectedLead.interactionCount || 0} lần</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      {selectedLead.tags && selectedLead.tags.length > 0 && (
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Tags/Nhãn</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedLead.tags.map((tag, index) => (
-                              <span
-                                key={index}
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  tag === 'hot' ? 'bg-red-100 text-red-800' :
-                                  tag === 'warm' ? 'bg-orange-100 text-orange-800' :
-                                  tag === 'cold' ? 'bg-blue-100 text-blue-800' :
-                                  tag === 'enterprise' ? 'bg-purple-100 text-purple-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Lịch sử tương tác Tab */}
-              {activeDetailTab === 'history' && (
-                <div className="p-6">
-                  <div className="max-w-4xl mx-auto">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-blue-500" />
-                      Lịch sử tương tác và chăm sóc khách hàng
-                    </h4>
-                    
-                    {selectedLead.quickNotes && selectedLead.quickNotes.length > 0 ? (
-                      <div className="space-y-4">
-                        {selectedLead.quickNotes.slice().reverse().map((note, index) => (
-                          <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-start gap-4">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <MessageSquarePlus className="w-5 h-5 text-blue-600" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start mb-2">
-                                  <h5 className="text-sm font-semibold text-gray-900">{note.author}</h5>
-                                  <span className="text-xs text-gray-500">
-                                    {new Date(note.timestamp).toLocaleString('vi-VN')}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-700 leading-relaxed">{note.content}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg">
-                        <Activity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h5 className="text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử tương tác</h5>
-                        <p className="text-gray-500">
-                          Lead này chưa có lịch sử tương tác nào. Hãy bắt đầu liên hệ và ghi chú để theo dõi tiến trình chăm sóc khách hàng.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Ghi chú & Nội dung Tab */}
-              {activeDetailTab === 'notes' && (
-                <div className="p-6">
-                  <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Nội dung mô tả lead */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-green-500" />
-                        Nội dung mô tả lead
-                      </h4>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {selectedLead.content || 'Chưa có nội dung mô tả'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Ghi chú bổ sung */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <StickyNote className="w-5 h-5 text-yellow-500" />
-                          Ghi chú bổ sung
-                        </div>
-                        {selectedLead.notes && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setShowEditNoteModal(true)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Sửa ghi chú"
-                            >
-                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteNoteConfirm(true)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Xóa ghi chú"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
-                      </h4>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {selectedLead.notes || 'Chưa có ghi chú bổ sung'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* File đính kèm */}
-                    {selectedLead.files && selectedLead.files.length > 0 && (
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Paperclip className="w-5 h-5 text-blue-500" />
-                          File đính kèm ({selectedLead.files.length})
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {selectedLead.files.map((file, index) => (
-                            <div key={index} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                                  <Paperclip className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {file.size} • {new Date(file.uploadedAt).toLocaleDateString('vi-VN')}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Hành động tiếp theo */}
-                    {selectedLead.nextAction && (
-                      <div>
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Target className="w-5 h-5 text-red-500" />
-                          Hành động tiếp theo
-                        </h4>
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <p className="text-sm text-red-800 font-medium mb-2">{selectedLead.nextAction}</p>
-                          {selectedLead.nextActionDate && (
-                            <p className="text-xs text-red-600">
-                              Hạn: {new Date(selectedLead.nextActionDate).toLocaleDateString('vi-VN')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 flex-shrink-0">
-              <button
-                onClick={() => {
-                  setShowLeadDetailModal(false)
-                  setActiveDetailTab('contact')
-                }}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 hover:text-slate-700 transition-all duration-200"
-              >
-                Đóng
-              </button>
-              <button
-                onClick={() => {
-                  setShowLeadDetailModal(false)
-                  setActiveDetailTab('contact')
-                  handleConvertLead(selectedLead)
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                Chuyển đổi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CustomerDetailModal
+        isOpen={showLeadDetailModal}
+        onClose={() => {
+          setShowLeadDetailModal(false)
+          setActiveDetailTab('contact')
+        }}
+        customer={selectedLead ? convertLeadToCustomer(selectedLead) : null}
+      />
 
       {/* Edit Lead Modal */}
       {showEditModal && editingLead && (
