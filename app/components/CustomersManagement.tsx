@@ -56,6 +56,23 @@ interface CustomerProduct {
   status: 'active' | 'expired' | 'cancelled'
 }
 
+interface NoteAttachment {
+  id: string
+  fileName: string
+  fileSize: number
+  fileType: string
+  uploadedAt: string
+  thumbnailUrl?: string
+}
+
+interface CustomerNote {
+  id: string
+  content: string
+  createdAt: string
+  createdBy: string
+  attachments: NoteAttachment[]
+}
+
 interface Customer {
   id: number
   name: string
@@ -156,7 +173,7 @@ interface Customer {
   customFields?: Record<string, any>
   
   // Metadata
-  notes: string
+  notes?: CustomerNote[]
   internalNotes?: string
   createdAt: string
   updatedAt: string
@@ -802,7 +819,7 @@ export default function CustomersManagement() {
       predictedRevenue: 3500000,
       supportTickets: 3,
       supportPriority: 'high',
-      notes: 'Khách hàng VIP, luôn đánh giá cao dịch vụ',
+      notes: [],
       internalNotes: 'Có thể nâng cấp lên gói Enterprise',
       createdAt: '2023-01-15',
       updatedAt: '2024-01-22',
@@ -923,7 +940,7 @@ export default function CustomersManagement() {
       predictedRevenue: 800000,
       supportTickets: 1,
       supportPriority: 'medium',
-      notes: 'Quan tâm đến công nghệ AI, thường yêu cầu demo',
+      notes: [],
       createdAt: '2023-06-10',
       updatedAt: '2024-01-20',
       createdBy: 'sales_rep',
@@ -1047,7 +1064,7 @@ export default function CustomersManagement() {
       predictedRevenue: 600000,
       supportTickets: 8,
       supportPriority: 'high',
-      notes: 'Khách hàng ít tương tác, cần chăm sóc đặc biệt',
+      notes: [],
       internalNotes: 'Có vấn đề về thanh toán, cần theo dõi',
       createdAt: '2023-03-20',
       updatedAt: '2023-12-01',
@@ -1158,7 +1175,8 @@ export default function CustomersManagement() {
       totalSpent: 450000,
       averageOrderFrequency: 1,
       supportTickets: 0,
-      supportPriority: 'low',      notes: 'Khách hàng mới, tiềm năng phát triển',
+      supportPriority: 'low',
+      notes: [],
       createdAt: '2023-12-01',
       updatedAt: '2024-01-16',
       createdBy: 'sales_rep',
@@ -1243,7 +1261,8 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.5,
       supportTickets: 2,
       supportPriority: 'low',
-      notes: 'Khách hàng ngưng hoạt động từ Q3/2023',      internalNotes: 'Chuyển sang đối thủ cạnh tranh',
+      notes: [],
+      internalNotes: 'Chuyển sang đối thủ cạnh tranh',
       createdAt: '2022-05-10',
       updatedAt: '2023-09-10',
       createdBy: 'sales_manager',
@@ -1369,7 +1388,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 1.2,
       supportTickets: 0,
       supportPriority: 'medium',
-      notes: 'Freelancer làm web design, quan tâm đến tools thiết kế',
+      notes: [],
       createdAt: '2023-10-05',
       updatedAt: '2024-01-12',
       createdBy: 'online_form',
@@ -1470,7 +1489,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 2,
       supportTickets: 1,
       supportPriority: 'high',
-      notes: 'Giáo viên tiểu học, mua phần mềm giáo dục cho lớp học',
+      notes: [],
       createdAt: '2023-05-20',
       updatedAt: '2024-01-07',
       createdBy: 'facebook_lead',
@@ -1566,7 +1585,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0,
       supportTickets: 0,
       supportPriority: 'medium',
-      notes: 'Khách hàng giáo dục, mua sản phẩm định kỳ',
+      notes: [],
       createdAt: '2023-08-20',
       updatedAt: '2024-01-23',
       createdBy: 'sales_rep',
@@ -1671,7 +1690,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.5,
       supportTickets: 5,
       supportPriority: 'low',
-      notes: 'Khách hàng đã chuyển sang đối thủ cạnh tranh',
+      notes: [],
       internalNotes: 'Không thể giữ chân, giá cả không cạnh tranh',
       createdAt: '2022-03-10',
       updatedAt: '2023-08-15',
@@ -1787,7 +1806,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.3,
       supportTickets: 2,
       supportPriority: 'medium',
-      notes: 'Khách hàng theo mùa, thường mua cuối năm',
+      notes: [],
       internalNotes: 'Dự kiến sẽ quay lại Q1/2024',
       createdAt: '2022-01-20',
       updatedAt: '2023-12-20',
@@ -1911,7 +1930,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 2.5,
       supportTickets: 1,
       supportPriority: 'high',
-      notes: 'Khách hàng VIP trong lĩnh vực y tế, rất quan tâm đến bảo mật',
+      notes: [],
       internalNotes: 'Có thể mở rộng sang các bệnh viện khác',
       createdAt: '2022-08-10',
       updatedAt: '2024-01-24',
@@ -2033,7 +2052,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.8,
       supportTickets: 4,
       supportPriority: 'medium',
-      notes: 'Chuyên về dự án xây dựng lớn, thường mua theo batch',
+      notes: [],
       internalNotes: 'Có tiềm năng mở rộng sang các tỉnh khác',
       createdAt: '2023-02-15',
       updatedAt: '2024-01-19',
@@ -2156,7 +2175,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 2,
       supportTickets: 2,
       supportPriority: 'low',
-      notes: 'Chủ cửa hàng thời trang, quan tâm đến marketing online',
+      notes: [],
       internalNotes: 'Có thể upsell social media management tools',
       createdAt: '2023-05-20',
       updatedAt: '2024-01-18',
@@ -2278,7 +2297,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 1,
       supportTickets: 6,
       supportPriority: 'high',
-      notes: 'Chủ chuỗi nhà hàng, gần đây ít tương tác',
+      notes: [],
       internalNotes: 'Cần follow up gấp, có nguy cơ churn cao',
       createdAt: '2023-01-10',
       updatedAt: '2024-01-05',
@@ -2410,7 +2429,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 2,
       supportTickets: 0,
       supportPriority: 'low',
-      notes: 'Khách hàng mới trong lĩnh vực sách, rất tích cực',
+      notes: [],
       internalNotes: 'Tiềm năng phát triển tốt, có thể mở rộng',
       createdAt: '2024-01-10',
       updatedAt: '2024-01-23',
@@ -2510,7 +2529,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 1.5,
       supportTickets: 3,
       supportPriority: 'medium',
-      notes: 'Chủ xưởng ô tô, đã quay lại sau khi tạm ngưng',
+      notes: [],
       internalNotes: 'Từng dừng hợp tác 2 tháng, nay đã quay lại',
       createdAt: '2023-09-20',
       updatedAt: '2024-01-17',
@@ -2629,7 +2648,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.6,
       supportTickets: 5,
       supportPriority: 'low',
-      notes: 'Chuỗi nhà thuốc, tạm ngưng do thay đổi hệ thống nội bộ',
+      notes: [],
       internalNotes: 'Có thể quay lại trong Q2/2024',
       createdAt: '2022-04-10',
       updatedAt: '2023-11-15',
@@ -3116,7 +3135,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0,
       supportTickets: 0,
       supportPriority: 'medium',
-      notes: newCustomerData.notes,
+      notes: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: 'Admin',
@@ -6663,7 +6682,7 @@ export default function CustomersManagement() {
     />
 
     {/* OLD Customer Detail Modal - REPLACED */}
-    {false && selectedCustomer && (
+    {false as boolean && selectedCustomer && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg w-full max-w-6xl mx-4 h-[90vh] flex flex-col">
           {/* Modal Header */}
@@ -6936,14 +6955,14 @@ export default function CustomersManagement() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Ghi chú</h3>
                   {isEditingCustomer ? (
                     <textarea
-                      value={editCustomerData.notes || ''}
-                      onChange={(e) => setEditCustomerData(prev => ({ ...prev, notes: e.target.value }))}
+                      value={(editCustomerData.notes as any) || ''}
+                      onChange={(e) => setEditCustomerData(prev => ({ ...prev, notes: e.target.value as any }))}
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Nhập ghi chú về khách hàng..."
                     />
                   ) : (
-                    <p className="text-gray-900">{selectedCustomer.notes || 'Chưa có ghi chú'}</p>
+                    <p className="text-gray-900">{(selectedCustomer.notes as any) || 'Chưa có ghi chú'}</p>
                   )}
                 </div>
               </div>
@@ -7110,14 +7129,14 @@ export default function CustomersManagement() {
                   <h4 className="font-medium text-gray-900 mb-2">Ghi chú công khai</h4>
                   {isEditingCustomer ? (
                     <textarea
-                      value={editCustomerData.notes || ''}
-                      onChange={(e) => setEditCustomerData(prev => ({ ...prev, notes: e.target.value }))}
+                      value={(editCustomerData.notes as any) || ''}
+                      onChange={(e) => setEditCustomerData(prev => ({ ...prev, notes: e.target.value as any }))}
                       rows={4}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Ghi chú có thể chia sẻ với team..."
                     />
                   ) : (
-                    <p className="text-gray-900">{selectedCustomer.notes || 'Chưa có ghi chú công khai'}</p>
+                    <p className="text-gray-900">{(selectedCustomer.notes as any) || 'Chưa có ghi chú công khai'}</p>
                   )}
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
