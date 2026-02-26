@@ -725,12 +725,25 @@ const sampleTeams = [
   { id: 'team6', name: 'Content Team', departmentId: 'dept4' },
 ]
 
+// Role type definition
+type RoleType = {
+  id: number
+  name: string
+  description: string
+  status: string
+  department: string
+  team: string
+  users: number
+  scopeEnabled: boolean
+  scope: 'department' | 'team' | 'global' | ''
+}
+
 // Role data
-const initialRolesList = [
-  { id: 1, name: 'Leader', description: 'Quản lý cấp cao', status: 'active', department: 'Kinh doanh', team: 'Sale Team A', users: 5 },
-  { id: 2, name: 'DEV', description: 'Nhân viên phát triển', status: 'active', department: 'Kỹ thuật', team: 'Dev Team', users: 8 },
-  { id: 3, name: 'Tester', description: 'Nhân viên kiểm thử', status: 'active', department: 'Kỹ thuật', team: 'QA Team', users: 3 },
-  { id: 4, name: 'Trưởng phòng ban khác', description: 'Quản lý phòng ban', status: 'active', department: 'Hành chính', team: 'Admin Team', users: 2 },
+const initialRolesList: RoleType[] = [
+  { id: 1, name: 'Admin', description: 'Quản trị viên toàn quyền', status: 'active', department: '', team: '', users: 1, scopeEnabled: true, scope: 'global' },
+  { id: 2, name: 'Sale', description: 'Nhân viên bán hàng', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
+  { id: 3, name: 'Leader', description: 'Quản lý team bán hàng', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
+  { id: 4, name: 'Sale Manager', description: 'Quản lý phòng kinh doanh', status: 'active', department: '', team: '', users: 0, scopeEnabled: false, scope: '' },
 ]
 
 // Permission modules grouped by category
@@ -846,6 +859,209 @@ const permissionModuleGroups = [
 // Flat list of all modules for state initialization
 const allPermissionModules = permissionModuleGroups.flatMap(group => group.modules)
 
+// Default permissions by role - for basic role templates
+type PermissionSet = { canRead: boolean; canUpdate: boolean; canSoftDelete: boolean; canDestroy: boolean }
+const createPermission = (r: boolean, u: boolean, sd: boolean, d: boolean): PermissionSet => ({
+  canRead: r, canUpdate: u, canSoftDelete: sd, canDestroy: d
+})
+
+const defaultPermissionsByRole: Record<string, Record<string, PermissionSet>> = {
+  // Admin - Full access to everything
+  'Admin': Object.fromEntries(allPermissionModules.map(m => [m.id, createPermission(true, true, true, true)])),
+  
+  // Sale - Basic sales operations, no delete, no org access
+  'Sale': {
+    // Khách hàng & Lead
+    person: createPermission(true, true, false, false),
+    opportunity: createPermission(true, true, false, false),
+    leadQualityFlag: createPermission(true, true, false, false),
+    personProductInterest: createPermission(true, true, false, false),
+    customerBehaviorConfig: createPermission(false, false, false, false),
+    customerTierConfig: createPermission(false, false, false, false),
+    // Bán hàng & Đơn hàng
+    order: createPermission(true, true, false, false),
+    orderHistory: createPermission(true, false, false, false),
+    invoice: createPermission(true, true, false, false),
+    invoiceProduct: createPermission(true, true, false, false),
+    payment: createPermission(true, true, false, false),
+    // Sản phẩm - read only
+    product: createPermission(true, false, false, false),
+    category: createPermission(true, false, false, false),
+    productCategory: createPermission(true, false, false, false),
+    productOption: createPermission(true, false, false, false),
+    productOptionValue: createPermission(true, false, false, false),
+    productVariant: createPermission(true, false, false, false),
+    productVariantOptionValue: createPermission(true, false, false, false),
+    // Công việc & Tác vụ
+    task: createPermission(true, true, true, false),
+    taskLabel: createPermission(true, false, false, false),
+    autoTaskTemplate: createPermission(true, false, false, false),
+    reminder: createPermission(true, true, true, false),
+    note: createPermission(true, true, true, false),
+    // Tổ chức - no access
+    company: createPermission(false, false, false, false),
+    department: createPermission(false, false, false, false),
+    team: createPermission(false, false, false, false),
+    // KPI & Hiệu suất - limited
+    dashboard: createPermission(true, false, false, false),
+    kpiAssignment: createPermission(false, false, false, false),
+    kpiDefinition: createPermission(false, false, false, false),
+    memberPerformanceStats: createPermission(false, false, false, false),
+    memberSkill: createPermission(false, false, false, false),
+    memberWorkloadSnapshot: createPermission(false, false, false, false),
+    dataPoints: createPermission(false, false, false, false),
+    // Cấu hình & Hệ thống
+    assignmentRule: createPermission(false, false, false, false),
+    assignmentSettings: createPermission(false, false, false, false),
+    notificationTemplate: createPermission(true, false, false, false),
+    embedding: createPermission(false, false, false, false),
+    workflows: createPermission(false, false, false, false),
+    // Phân loại & Nhãn
+    label: createPermission(true, true, false, false),
+    tag: createPermission(true, true, false, false),
+    // Địa lý
+    province: createPermission(true, false, false, false),
+    ward: createPermission(true, false, false, false),
+  },
+  
+  // Leader - Team management, view KPI, no org-level access
+  'Leader': {
+    // Khách hàng & Lead
+    person: createPermission(true, true, true, false),
+    opportunity: createPermission(true, true, true, false),
+    leadQualityFlag: createPermission(true, true, true, false),
+    personProductInterest: createPermission(true, true, true, false),
+    customerBehaviorConfig: createPermission(true, true, false, false),
+    customerTierConfig: createPermission(true, false, false, false),
+    // Bán hàng & Đơn hàng
+    order: createPermission(true, true, true, false),
+    orderHistory: createPermission(true, false, false, false),
+    invoice: createPermission(true, true, true, false),
+    invoiceProduct: createPermission(true, true, false, false),
+    payment: createPermission(true, true, false, false),
+    // Sản phẩm - read only
+    product: createPermission(true, false, false, false),
+    category: createPermission(true, false, false, false),
+    productCategory: createPermission(true, false, false, false),
+    productOption: createPermission(true, false, false, false),
+    productOptionValue: createPermission(true, false, false, false),
+    productVariant: createPermission(true, false, false, false),
+    productVariantOptionValue: createPermission(true, false, false, false),
+    // Công việc & Tác vụ
+    task: createPermission(true, true, true, false),
+    taskLabel: createPermission(true, true, false, false),
+    autoTaskTemplate: createPermission(true, true, false, false),
+    reminder: createPermission(true, true, true, false),
+    note: createPermission(true, true, true, false),
+    // Tổ chức - team only view
+    company: createPermission(false, false, false, false),
+    department: createPermission(false, false, false, false),
+    team: createPermission(true, false, false, false),
+    // KPI & Hiệu suất - view all
+    dashboard: createPermission(true, false, false, false),
+    kpiAssignment: createPermission(true, false, false, false),
+    kpiDefinition: createPermission(true, false, false, false),
+    memberPerformanceStats: createPermission(true, false, false, false),
+    memberSkill: createPermission(true, true, false, false),
+    memberWorkloadSnapshot: createPermission(true, false, false, false),
+    dataPoints: createPermission(true, false, false, false),
+    // Cấu hình & Hệ thống - view some
+    assignmentRule: createPermission(true, false, false, false),
+    assignmentSettings: createPermission(true, false, false, false),
+    notificationTemplate: createPermission(true, false, false, false),
+    embedding: createPermission(false, false, false, false),
+    workflows: createPermission(true, false, false, false),
+    // Phân loại & Nhãn
+    label: createPermission(true, true, true, false),
+    tag: createPermission(true, true, true, false),
+    // Địa lý
+    province: createPermission(true, false, false, false),
+    ward: createPermission(true, false, false, false),
+  },
+  
+  // Sale Manager - Department level access, can manage most things
+  'Sale Manager': {
+    // Khách hàng & Lead - full except some destroy
+    person: createPermission(true, true, true, true),
+    opportunity: createPermission(true, true, true, true),
+    leadQualityFlag: createPermission(true, true, true, true),
+    personProductInterest: createPermission(true, true, true, true),
+    customerBehaviorConfig: createPermission(true, true, true, false),
+    customerTierConfig: createPermission(true, true, true, false),
+    // Bán hàng & Đơn hàng
+    order: createPermission(true, true, true, true),
+    orderHistory: createPermission(true, true, false, false),
+    invoice: createPermission(true, true, true, true),
+    invoiceProduct: createPermission(true, true, true, false),
+    payment: createPermission(true, true, true, false),
+    // Sản phẩm - can edit but not destroy
+    product: createPermission(true, true, true, false),
+    category: createPermission(true, true, true, false),
+    productCategory: createPermission(true, true, true, false),
+    productOption: createPermission(true, true, true, false),
+    productOptionValue: createPermission(true, true, true, false),
+    productVariant: createPermission(true, true, true, false),
+    productVariantOptionValue: createPermission(true, true, true, false),
+    // Công việc & Tác vụ
+    task: createPermission(true, true, true, true),
+    taskLabel: createPermission(true, true, true, false),
+    autoTaskTemplate: createPermission(true, true, true, false),
+    reminder: createPermission(true, true, true, false),
+    note: createPermission(true, true, true, false),
+    // Tổ chức - department and team
+    company: createPermission(false, false, false, false),
+    department: createPermission(true, true, false, false),
+    team: createPermission(true, true, true, false),
+    // KPI & Hiệu suất - full management
+    dashboard: createPermission(true, true, false, false),
+    kpiAssignment: createPermission(true, true, true, false),
+    kpiDefinition: createPermission(true, true, true, false),
+    memberPerformanceStats: createPermission(true, true, false, false),
+    memberSkill: createPermission(true, true, true, false),
+    memberWorkloadSnapshot: createPermission(true, true, true, false),
+    dataPoints: createPermission(true, true, false, false),
+    // Cấu hình & Hệ thống - can configure
+    assignmentRule: createPermission(true, true, true, false),
+    assignmentSettings: createPermission(true, true, true, false),
+    notificationTemplate: createPermission(true, true, true, false),
+    embedding: createPermission(false, false, false, false),
+    workflows: createPermission(true, true, true, false),
+    // Phân loại & Nhãn - full
+    label: createPermission(true, true, true, true),
+    tag: createPermission(true, true, true, true),
+    // Địa lý
+    province: createPermission(true, false, false, false),
+    ward: createPermission(true, false, false, false),
+  },
+}
+
+// Helper function to get default permissions for a role
+const getDefaultPermissionsForRole = (roleName: string): Record<string, {
+  all: boolean;
+  canRead: boolean;
+  canUpdate: boolean;
+  canSoftDelete: boolean;
+  canDestroy: boolean;
+}> => {
+  const rolePermissions = defaultPermissionsByRole[roleName]
+  if (!rolePermissions) {
+    // Return empty permissions if role not found
+    return allPermissionModules.reduce((acc, mod) => ({
+      ...acc,
+      [mod.id]: { all: false, canRead: false, canUpdate: false, canSoftDelete: false, canDestroy: false }
+    }), {})
+  }
+  
+  return allPermissionModules.reduce((acc, mod) => {
+    const perm = rolePermissions[mod.id] || { canRead: false, canUpdate: false, canSoftDelete: false, canDestroy: false }
+    const allChecked = perm.canRead && perm.canUpdate && perm.canSoftDelete && perm.canDestroy
+    return {
+      ...acc,
+      [mod.id]: { all: allChecked, ...perm }
+    }
+  }, {})
+}
+
 // Module icon mapping
 const moduleIconMap: Record<string, LucideIcon> = {
   // Khách hàng & Lead
@@ -913,10 +1129,10 @@ const sampleEmployeesForAssign = [
 // Assign Permission Component
 const AssignPermissionContent = () => {
   const [assignRolesList] = useState([
-    { id: 1, name: 'Leader' },
-    { id: 2, name: 'DEV' },
-    { id: 3, name: 'Tester' },
-    { id: 4, name: 'Trưởng phòng ban khác' },
+    { id: 1, name: 'Admin' },
+    { id: 2, name: 'Sale' },
+    { id: 3, name: 'Leader' },
+    { id: 4, name: 'Sale Manager' },
   ])
   const [selectedAssignRoleId, setSelectedAssignRoleId] = useState<number>(1)
   const [employees] = useState(sampleEmployeesForAssign)
@@ -1128,19 +1344,22 @@ const RoleManagementNew = () => {
     permissionModuleGroups.reduce((acc, group) => ({ ...acc, [group.id]: true }), {})
   )
 
-  // Module permissions state
+  // Module permissions state - initialized with first role's default permissions
   const [modulePermissions, setModulePermissions] = useState<Record<string, {
     all: boolean
     canRead: boolean
     canUpdate: boolean
     canSoftDelete: boolean
     canDestroy: boolean
-  }>>(
-    allPermissionModules.reduce((acc, mod) => ({
-      ...acc,
-      [mod.id]: { all: false, canRead: false, canUpdate: false, canSoftDelete: false, canDestroy: false }
-    }), {})
-  )
+  }>>(() => getDefaultPermissionsForRole(rolesList[0]?.name || 'Admin'))
+
+  // Load default permissions when role changes
+  useEffect(() => {
+    const selectedRole = rolesList.find(r => r.id === selectedRoleId)
+    if (selectedRole) {
+      setModulePermissions(getDefaultPermissionsForRole(selectedRole.name))
+    }
+  }, [selectedRoleId, rolesList])
 
   const toggleGroupExpand = (groupId: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }))
@@ -1220,9 +1439,9 @@ const RoleManagementNew = () => {
     setEditRoleForm({ 
       name: selectedRoleData.name, 
       description: selectedRoleData.description,
-      scopeEnabled: true,
-      scope: 'department',
-      scopeTarget: 'dept1'
+      scopeEnabled: selectedRoleData.scopeEnabled || false,
+      scope: (selectedRoleData.scope as 'department' | 'team' | 'global') || 'department',
+      scopeTarget: ''
     })
     setIsEditingRole(true)
     setShowRoleDropdown(null)
@@ -1242,7 +1461,14 @@ const RoleManagementNew = () => {
     
     setRolesList(prev => prev.map(r => 
       r.id === selectedRoleId 
-        ? { ...r, name: editRoleForm.name, description: editRoleForm.description, ...scopeData }
+        ? { 
+            ...r, 
+            name: editRoleForm.name, 
+            description: editRoleForm.description, 
+            ...scopeData,
+            scopeEnabled: editRoleForm.scopeEnabled,
+            scope: (editRoleForm.scopeEnabled ? editRoleForm.scope : '') as RoleType['scope']
+          }
         : r
     ))
     setIsEditingRole(false)
@@ -1265,13 +1491,15 @@ const RoleManagementNew = () => {
         }
       : { department: '', team: '' }
     
-    const newRole = {
+    const newRole: RoleType = {
       id: Math.max(...rolesList.map(r => r.id)) + 1,
       name: addRoleForm.name,
       description: addRoleForm.description,
       status: 'active',
       ...scopeData,
-      users: 0
+      users: 0,
+      scopeEnabled: addRoleForm.scopeEnabled,
+      scope: addRoleForm.scopeEnabled ? addRoleForm.scope : ''
     }
     setRolesList(prev => [...prev, newRole])
     setShowAddRoleModal(false)
