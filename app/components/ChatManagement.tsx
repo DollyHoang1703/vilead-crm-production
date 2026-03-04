@@ -93,6 +93,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import CustomerDetailModal from './CustomerDetailModal'
+import { ChatShiftPermissionModal } from './chat/ChatShiftPermissionModal'
 
 // ===== TYPE DEFINITIONS =====
 
@@ -646,6 +647,32 @@ function formatDate(timestamp: string): string {
   }
 }
 
+// Format tin nhắn gửi đi: "Gửi lúc 15:35 Hôm qua bởi Nguyễn Thị Nhi"
+function formatMessageTimestamp(timestamp: string, senderName?: string): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const diffTime = today.getTime() - messageDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  
+  let relativeDate = ''
+  if (diffDays === 0) {
+    relativeDate = 'Hôm nay'
+  } else if (diffDays === 1) {
+    relativeDate = 'Hôm qua'
+  } else {
+    relativeDate = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+  }
+
+  if (senderName) {
+    return `Gửi lúc ${time} ${relativeDate} bởi ${senderName}`
+  }
+  return `${time} ${relativeDate}`
+}
+
 function groupMessagesByDate(messages: ZaloMessage[]): { date: string; messages: ZaloMessage[] }[] {
   const groups: { date: string; messages: ZaloMessage[] }[] = []
   let currentDate = ''
@@ -790,6 +817,11 @@ export default function ChatManagement() {
   const [customerConnectionCount, setCustomerConnectionCount] = useState<Map<string, CustomerConnectionCount>>(new Map())
   const [selectedLeadDetail, setSelectedLeadDetail] = useState<CRMCustomer | null>(null)
   const [leadDetailTab, setLeadDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
+  
+  // Chat Shift Permission Modal States
+  const [showShiftPermissionModal, setShowShiftPermissionModal] = useState(false)
+  const [selectedAccountForShift, setSelectedAccountForShift] = useState<ZaloAccount | null>(null)
+  const [defaultShiftTab, setDefaultShiftTab] = useState<'permission' | 'shift' | 'history'>('permission')
   
   // Quick Action Modal States
   const [selectedLeadForQuickAction, setSelectedLeadForQuickAction] = useState<CRMCustomer | null>(null)
@@ -2495,8 +2527,14 @@ export default function ChatManagement() {
                               </div>
                             ))}
                             {/* Show time after last message in group */}
-                            <span className="text-xs text-gray-500 px-1">
-                              {formatTime(msgGroup.messages[msgGroup.messages.length - 1].timestamp)}
+                            <span className="text-[11px] text-gray-400 px-1">
+                              {msgGroup.direction === 'outgoing' && msgGroup.messages[0].sender?.name
+                                ? formatMessageTimestamp(
+                                    msgGroup.messages[msgGroup.messages.length - 1].timestamp,
+                                    msgGroup.messages[0].sender.name
+                                  )
+                                : formatTime(msgGroup.messages[msgGroup.messages.length - 1].timestamp)
+                              }
                             </span>
                           </div>
                         </div>
@@ -4383,7 +4421,7 @@ export default function ChatManagement() {
                               <Button
                                 size="sm"
                                 onClick={() => toggleAccountConnection(account.id)}
-                                className="bg-orange-500 hover:bg-orange-600 text-white text-xs h-9 border-0"
+                                className="bg-orange-500 hover:bg-orange-600 text-white text-xs h-8 px-3 border-0 rounded-md"
                               >
                                 Ngắt kết nối
                               </Button>
@@ -4391,20 +4429,62 @@ export default function ChatManagement() {
                               <Button
                                 size="sm"
                                 onClick={() => toggleAccountConnection(account.id)}
-                                className="bg-green-500 hover:bg-green-600 text-white text-xs h-9 border-0"
+                                className="bg-green-500 hover:bg-green-600 text-white text-xs h-8 px-3 border-0 rounded-md"
                               >
                                 Kết nối
                               </Button>
                             )}
                             <Button
                               size="sm"
-                              className="bg-red-500 hover:bg-red-600 text-white h-9 border-0"
+                              className="bg-red-500 hover:bg-red-600 text-white h-8 w-8 p-0 border-0 rounded-md"
                               onClick={() => {
                                 setAccountToDelete(account)
                                 setShowDeleteAccountModal(true)
                               }}
                             >
                               <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {/* Row 3: Shift Permission buttons */}
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedAccountForShift(account)
+                                setDefaultShiftTab('permission')
+                                setShowShiftPermissionModal(true)
+                              }}
+                              className="text-xs h-8 px-3 border-gray-300 hover:bg-gray-50 hover:border-[#3e79f7] hover:text-[#3e79f7] rounded-md"
+                            >
+                              <User className="w-3.5 h-3.5 mr-1.5" />
+                              Thiết lập nhân viên
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedAccountForShift(account)
+                                setDefaultShiftTab('shift')
+                                setShowShiftPermissionModal(true)
+                              }}
+                              className="text-xs h-8 px-3 border-gray-300 hover:bg-gray-50 hover:border-[#3e79f7] hover:text-[#3e79f7] rounded-md"
+                            >
+                              <Calendar className="w-3.5 h-3.5 mr-1.5" />
+                              Phân ca
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedAccountForShift(account)
+                                setDefaultShiftTab('history')
+                                setShowShiftPermissionModal(true)
+                              }}
+                              className="text-xs h-8 px-3 border-gray-300 hover:bg-gray-50 hover:border-[#3e79f7] hover:text-[#3e79f7] rounded-md"
+                            >
+                              <ClockIcon className="w-3.5 h-3.5 mr-1.5" />
+                              Lịch sử
                             </Button>
                           </div>
                         </div>
@@ -4830,6 +4910,21 @@ export default function ChatManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Chat Shift Permission Modal */}
+      {selectedAccountForShift && (
+        <ChatShiftPermissionModal
+          isOpen={showShiftPermissionModal}
+          onClose={() => {
+            setShowShiftPermissionModal(false)
+            setSelectedAccountForShift(null)
+          }}
+          accountId={selectedAccountForShift.id}
+          accountName={selectedAccountForShift.name}
+          accountType={selectedAccountForShift.platform}
+          defaultTab={defaultShiftTab}
+        />
+      )}
 
       {/* Friend Request Modal */}
       <Dialog open={showFriendRequestModal} onOpenChange={setShowFriendRequestModal}>

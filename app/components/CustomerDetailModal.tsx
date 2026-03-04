@@ -1975,6 +1975,21 @@ export default function CustomerDetailModal({
 
   const renderTasksTab = () => (
     <div className="space-y-4">
+      {/* Header with Add Task Button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[#1a3353]">Danh sách công việc</h3>
+        <button
+          className="flex items-center gap-1 px-3 py-1.5 bg-[#3e79f7] hover:bg-[#2e69e7] text-white text-sm font-medium rounded-lg transition-colors"
+          onClick={() => {
+            // TODO: Implement add task functionality
+            console.log('Add task clicked')
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          Thêm công việc
+        </button>
+      </div>
+
       {/* Tasks Table */}
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="w-full">

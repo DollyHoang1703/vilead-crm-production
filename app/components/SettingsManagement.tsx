@@ -132,6 +132,7 @@ import {
 } from '@/components/ui/dialog'
 import { Progress } from '@/components/ui/progress'
 import CompanyManagement from './CompanyManagement'
+import { InterfacePermissionContent } from './settings/InterfacePermissionContent'
 
 // Interfaces
 interface User {
@@ -6887,6 +6888,7 @@ export default function SettingsManagement() {
               <TabsList className="inline-flex w-auto -mt-6 -ml-6">
                 <TabsTrigger value="roles" className="uppercase">Vai trò</TabsTrigger>
                 <TabsTrigger value="assign" className="uppercase">Gán quyền</TabsTrigger>
+                <TabsTrigger value="interface" className="uppercase">Giao diện theo vai trò</TabsTrigger>
               </TabsList>
 
               <TabsContent value="roles" className="space-y-0">
@@ -6895,6 +6897,10 @@ export default function SettingsManagement() {
 
               <TabsContent value="assign" className="space-y-0">
                 <AssignPermissionContent />
+              </TabsContent>
+
+              <TabsContent value="interface" className="space-y-0">
+                <InterfacePermissionContent />
               </TabsContent>
             </Tabs>
           </div>
