@@ -704,7 +704,7 @@ export default function TaskManagement() {
       {
         id: 'cv5',
         name: 'Team A Tasks',
-        description: 'Công việc được giao cho Team A',
+        description: 'Công việc được  Team A',
         color: '#6B7280',
         filters: {
           priority: 'medium'

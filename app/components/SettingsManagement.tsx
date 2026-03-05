@@ -6796,6 +6796,479 @@ export default function SettingsManagement() {
     )
   }
 
+  // KPI Settings Content - Quản lý nhóm chỉ số
+  const KPISettingsContent = () => {
+    const [selectedIndicatorGroup, setSelectedIndicatorGroup] = useState('revenue')
+    const [showIndicatorGroupModal, setShowIndicatorGroupModal] = useState(false)
+    const [showIndicatorModal, setShowIndicatorModal] = useState(false)
+    const [editingIndicatorGroup, setEditingIndicatorGroup] = useState<any>(null)
+    const [editingIndicator, setEditingIndicator] = useState<any>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [itemToDelete, setItemToDelete] = useState<{type: 'group' | 'indicator', id: string} | null>(null)
+    
+    // Form state
+    const [groupForm, setGroupForm] = useState({ name: '', description: '' })
+    const [indicatorForm, setIndicatorForm] = useState({ 
+      name: '', 
+      unit: '', 
+      statisticType: 'cumulative',
+      value: '',
+      expectedDirection: 'increase',
+      status: 'active',
+      description: '',
+      color: '#3e79f7'
+    })
+
+    // Sample indicator groups data
+    const [indicatorGroups, setIndicatorGroups] = useState([
+      {
+        id: 'revenue',
+        name: 'Doanh thu',
+        description: 'Các chỉ số liên quan đến doanh thu',
+        indicators: [
+          { id: 'ind-1', name: 'Tổng doanh thu', unit: 'VND', description: 'Tổng doanh thu bán hàng' },
+          { id: 'ind-2', name: 'Doanh thu mới', unit: 'VND', description: 'Doanh thu từ khách hàng mới' },
+          { id: 'ind-3', name: 'Doanh thu định kỳ', unit: 'VND', description: 'Doanh thu từ khách hàng cũ' }
+        ]
+      },
+      {
+        id: 'leads',
+        name: 'Leads',
+        description: 'Các chỉ số liên quan đến leads',
+        indicators: [
+          { id: 'ind-4', name: 'Leads mới', unit: 'leads', description: 'Số lượng leads mới thu được' },
+          { id: 'ind-5', name: 'Leads chất lượng', unit: 'leads', description: 'Leads đạt tiêu chuẩn chất lượng' },
+          { id: 'ind-6', name: 'Leads chuyển đổi', unit: 'leads', description: 'Leads đã chuyển đổi thành khách hàng' }
+        ]
+      },
+      {
+        id: 'conversion',
+        name: 'Tỷ lệ chuyển đổi',
+        description: 'Các chỉ số tỷ lệ chuyển đổi',
+        indicators: [
+          { id: 'ind-7', name: 'Tỷ lệ chuyển đổi lead', unit: '%', description: 'Phần trăm leads chuyển thành khách hàng' },
+          { id: 'ind-8', name: 'Tỷ lệ thắng cơ hội', unit: '%', description: 'Phần trăm cơ hội thắng' }
+        ]
+      },
+      {
+        id: 'activity',
+        name: 'Hoạt động',
+        description: 'Các chỉ số hoạt động',
+        indicators: [
+          { id: 'ind-9', name: 'Số cuộc gọi', unit: 'cuộc gọi', description: 'Số cuộc gọi thực hiện' },
+          { id: 'ind-10', name: 'Số cuộc họp', unit: 'cuộc họp', description: 'Số cuộc họp với khách hàng' },
+          { id: 'ind-11', name: 'Số email gửi', unit: 'email', description: 'Số email đã gửi' }
+        ]
+      }
+    ])
+
+    const selectedGroup = indicatorGroups.find(g => g.id === selectedIndicatorGroup)
+
+    const handleOpenAddGroup = () => {
+      setEditingIndicatorGroup(null)
+      setGroupForm({ name: '', description: '' })
+      setShowIndicatorGroupModal(true)
+    }
+
+    const handleOpenEditGroup = (group: any) => {
+      setEditingIndicatorGroup(group)
+      setGroupForm({ name: group.name, description: group.description || '' })
+      setShowIndicatorGroupModal(true)
+    }
+
+    const handleSaveGroup = () => {
+      if (editingIndicatorGroup) {
+        setIndicatorGroups(prev => prev.map(g => 
+          g.id === editingIndicatorGroup.id 
+            ? { ...g, name: groupForm.name, description: groupForm.description }
+            : g
+        ))
+      } else {
+        const newGroup = {
+          id: 'group-' + Date.now(),
+          name: groupForm.name,
+          description: groupForm.description,
+          indicators: []
+        }
+        setIndicatorGroups(prev => [...prev, newGroup])
+      }
+      setShowIndicatorGroupModal(false)
+      setGroupForm({ name: '', description: '' })
+    }
+
+    const handleOpenAddIndicator = () => {
+      setEditingIndicator(null)
+      setIndicatorForm({ 
+        name: '', 
+        unit: '', 
+        statisticType: 'cumulative',
+        value: '',
+        expectedDirection: 'increase',
+        status: 'active',
+        description: '',
+        color: '#3e79f7'
+      })
+      setShowIndicatorModal(true)
+    }
+
+    const handleOpenEditIndicator = (indicator: any) => {
+      setEditingIndicator(indicator)
+      setIndicatorForm({ 
+        name: indicator.name, 
+        unit: indicator.unit, 
+        statisticType: indicator.statisticType || 'cumulative',
+        value: indicator.value || '',
+        expectedDirection: indicator.expectedDirection || 'increase',
+        status: indicator.status || 'active',
+        description: indicator.description || '',
+        color: indicator.color || '#3e79f7'
+      })
+      setShowIndicatorModal(true)
+    }
+
+    const handleSaveIndicator = () => {
+      if (editingIndicator) {
+        setIndicatorGroups(prev => prev.map(g => 
+          g.id === selectedIndicatorGroup
+            ? { 
+                ...g, 
+                indicators: g.indicators.map(i => 
+                  i.id === editingIndicator.id 
+                    ? { ...i, name: indicatorForm.name, unit: indicatorForm.unit, description: indicatorForm.description }
+                    : i
+                )
+              }
+            : g
+        ))
+      } else {
+        const newIndicator = {
+          id: 'ind-' + Date.now(),
+          name: indicatorForm.name,
+          unit: indicatorForm.unit,
+          description: indicatorForm.description
+        }
+        setIndicatorGroups(prev => prev.map(g => 
+          g.id === selectedIndicatorGroup
+            ? { ...g, indicators: [...g.indicators, newIndicator] }
+            : g
+        ))
+      }
+      setShowIndicatorModal(false)
+      setIndicatorForm({ name: '', unit: '', description: '' })
+    }
+
+    const handleDeleteGroup = (groupId: string) => {
+      setItemToDelete({ type: 'group', id: groupId })
+      setShowDeleteConfirm(true)
+    }
+
+    const handleDeleteIndicator = (indicatorId: string) => {
+      setItemToDelete({ type: 'indicator', id: indicatorId })
+      setShowDeleteConfirm(true)
+    }
+
+    const confirmDelete = () => {
+      if (itemToDelete) {
+        if (itemToDelete.type === 'group') {
+          setIndicatorGroups(prev => prev.filter(g => g.id !== itemToDelete.id))
+          if (selectedIndicatorGroup === itemToDelete.id && indicatorGroups.length > 1) {
+            setSelectedIndicatorGroup(indicatorGroups.find(g => g.id !== itemToDelete.id)?.id || '')
+          }
+        } else {
+          setIndicatorGroups(prev => prev.map(g => 
+            g.id === selectedIndicatorGroup
+              ? { ...g, indicators: g.indicators.filter(i => i.id !== itemToDelete.id) }
+              : g
+          ))
+        }
+      }
+      setShowDeleteConfirm(false)
+      setItemToDelete(null)
+    }
+
+    return (
+      <>
+        <Tabs defaultValue="indicators" className="space-y-6">
+          <TabsList className="inline-flex w-auto -mt-6 -ml-6">
+            <TabsTrigger value="indicators" className="uppercase">Nhóm chỉ số</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="indicators" className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[#1a3353]">Quản lý nhóm chỉ số KPI</h2>
+                <p className="text-sm text-[#455560]">Thiết lập các nhóm chỉ số và chỉ số đo lường hiệu suất</p>
+              </div>
+              <Button size="sm" onClick={handleOpenAddIndicator}>
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm chỉ số
+              </Button>
+            </div>
+
+            {/* Main Content - Left sidebar + Right table */}
+            <div className="flex gap-4">
+              {/* Left Sidebar - Indicator Groups List */}
+              <div className="w-56 flex-shrink-0 bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="p-2">
+                  {indicatorGroups.map(group => (
+                    <div
+                      key={group.id}
+                      onClick={() => setSelectedIndicatorGroup(group.id)}
+                      className={`relative flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors mb-1 ${
+                        selectedIndicatorGroup === group.id
+                          ? 'bg-[#3e79f7] text-white'
+                          : 'text-[#455560] hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        <span className="text-sm font-medium">{group.name}</span>
+                      </div>
+                      {selectedIndicatorGroup === group.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="relative">
+                              <MoreHorizontal className="w-4 h-4 cursor-pointer hover:opacity-80" />
+                            </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleOpenEditGroup(group)}>
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteGroup(group.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Xóa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  ))}
+                  <div
+                    onClick={handleOpenAddGroup}
+                    className="flex items-center gap-2 px-3 py-2 mt-2 text-[#455560] hover:text-[#3e79f7] cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm">Thêm nhóm chỉ số</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Content - Indicators Table */}
+              <div className="flex-1 overflow-hidden">
+                <Card>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">STT</TableHead>
+                          <TableHead>Tên chỉ số</TableHead>
+                          <TableHead>Đơn vị</TableHead>
+                          <TableHead>Mô tả</TableHead>
+                          <TableHead className="w-24">Thao tác</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedGroup?.indicators.map((indicator, index) => (
+                          <TableRow key={indicator.id}>
+                            <TableCell className="text-center">{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{indicator.name}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{indicator.unit}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-gray-500 max-w-[250px] truncate">{indicator.description}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="sm" onClick={() => handleOpenEditIndicator(indicator)}>
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteIndicator(indicator.id)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {(!selectedGroup?.indicators || selectedGroup.indicators.length === 0) && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                              Chưa có chỉ số nào trong nhóm này
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Add/Edit Indicator Group Modal */}
+        <Dialog open={showIndicatorGroupModal} onOpenChange={setShowIndicatorGroupModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingIndicatorGroup ? 'Sửa nhóm chỉ số' : 'Thêm nhóm chỉ số'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4 px-6">
+              <div>
+                <Label>Tên nhóm chỉ số <span className="text-red-500">*</span></Label>
+                <Input 
+                  value={groupForm.name} 
+                  onChange={(e: any) => setGroupForm(prev => ({ ...prev, name: e.target.value }))} 
+                  placeholder="Nhập tên nhóm chỉ số..."
+                />
+              </div>
+              <div>
+                <Label>Mô tả</Label>
+                <Textarea 
+                  value={groupForm.description} 
+                  onChange={(e: any) => setGroupForm(prev => ({ ...prev, description: e.target.value }))} 
+                  placeholder="Nhập mô tả..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowIndicatorGroupModal(false)}>Hủy</Button>
+              <Button onClick={handleSaveGroup} disabled={!groupForm.name}>Lưu</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add/Edit Indicator Modal */}
+        <Dialog open={showIndicatorModal} onOpenChange={setShowIndicatorModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingIndicator ? 'Sửa chỉ số' : 'Thêm chỉ số'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4 px-6">
+              {/* Tên chỉ số + màu */}
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Label>Tên chỉ số <span className="text-red-500">*</span></Label>
+                  <Input 
+                    value={indicatorForm.name} 
+                    onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, name: e.target.value }))} 
+                    placeholder="Nhập tên chỉ số..."
+                  />
+                </div>
+                {/* <div className="flex-shrink-0">
+                  <Label>Màu</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={indicatorForm.color}
+                      onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, color: e.target.value }))}
+                      className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                    />
+                  </div>
+                </div> */}
+              </div>
+
+              {/* Thống kê theo + Giá trị */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Thống kê theo</Label>
+                  <Select value={indicatorForm.statisticType} onValueChange={(value: any) => setIndicatorForm(prev => ({ ...prev, statisticType: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại thống kê" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cumulative">Đơn vị đo</SelectItem>
+                      <SelectItem value="average">Khối lượng công việc</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Đơn vị đo chỉ số<span className="text-red-500">*</span></Label>
+                  <Input 
+                    type="number"
+                    value={indicatorForm.value} 
+                    onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, value: e.target.value }))} 
+                    placeholder="VND, Lead, Nhân sự,..."
+                  />
+                </div>
+              </div>
+
+              {/* Hướng đi mong đợi + Trạng thái */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Hướng đi mong đợi</Label>
+                  <Select value={indicatorForm.expectedDirection} onValueChange={(value: any) => setIndicatorForm(prev => ({ ...prev, expectedDirection: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn hướng" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="increase">Tăng lên</SelectItem>
+                      <SelectItem value="decrease">Giảm xuống</SelectItem>
+                      <SelectItem value="maintain">Duy trì</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Trạng thái</Label>
+                  <Select value={indicatorForm.status} onValueChange={(value: any) => setIndicatorForm(prev => ({ ...prev, status: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Hoạt động</SelectItem>
+                      <SelectItem value="inactive">Tạm dừng</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Mô tả */}
+              <div>
+                <Label>Mô tả</Label>
+                <Textarea 
+                  value={indicatorForm.description} 
+                  onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, description: e.target.value }))} 
+                  placeholder="Nhập mô tả..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowIndicatorModal(false)}>Hủy</Button>
+              <Button onClick={handleSaveIndicator} disabled={!indicatorForm.name || !indicatorForm.unit}>Lưu</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Xác nhận xóa</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600">
+                {itemToDelete?.type === 'group' 
+                  ? 'Bạn có muốn xóa nhóm chỉ số này? Tất cả các chỉ số trong nhóm cũng sẽ bị xóa.'
+                  : 'Bạn có muốn xóa chỉ số này?'
+                }
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Hủy</Button>
+              <Button variant="destructive" onClick={confirmDelete}>Xóa</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
+  }
+
   return (
     <div className="flex min-h-[600px]">
       {/* Sidebar Menu - Fixed */}
@@ -6849,7 +7322,19 @@ export default function SettingsManagement() {
             <Briefcase className="w-4 h-4" />
             Bán hàng
           </button>
-          {/* 5. Thông báo */}
+          {/* 5. KPI */}
+          <button
+            onClick={() => setActiveTab('kpi')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'kpi'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Target className="w-4 h-4" />
+            KPI
+          </button>
+          {/* 6. Thông báo */}
           <button
             onClick={() => setActiveTab('notifications')}
             disabled
@@ -7716,6 +8201,13 @@ export default function SettingsManagement() {
                 </Card>
               </TabsContent>
             </Tabs>
+          </div>
+        )}
+
+        {/* KPI Settings - Quản lý nhóm chỉ số */}
+        {activeTab === 'kpi' && (
+          <div>
+            <KPISettingsContent />
           </div>
         )}
         
