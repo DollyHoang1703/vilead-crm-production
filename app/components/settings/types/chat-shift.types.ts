@@ -79,6 +79,7 @@ export interface EmployeeShiftAssignment {
   permission_level: PermissionLevel
   shifts: ChatShift[]
   assigned_days: number[]  // Derived from shifts
+  useShiftScheduling?: boolean  // true = use shifts, false = full-time access (all days)
 }
 
 // Day of week mapping

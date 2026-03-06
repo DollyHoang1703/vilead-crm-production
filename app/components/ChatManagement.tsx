@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -918,6 +918,51 @@ export default function ChatManagement() {
   const [showPinnedList, setShowPinnedList] = useState(false)
   const [showUnpinDialog, setShowUnpinDialog] = useState(false)
   const [messageToUnpin, setMessageToUnpin] = useState<string | null>(null)
+  
+  // Assign Employee States
+  const [showAssignEmployeeDropdown, setShowAssignEmployeeDropdown] = useState(false)
+  const [assignEmployeeSearch, setAssignEmployeeSearch] = useState('')
+  // Track assigned employee per conversation
+  const [conversationAssignments, setConversationAssignments] = useState<Map<string, string>>(new Map())
+  
+  // Sample employees with 'member' (Truy cập) permission for assignment
+  const assignableEmployees = [
+    { id: 'emp-1', name: 'Nguyễn Văn A', phone: '84387968624', avatar: '', permission_level: 'member' as const },
+    { id: 'emp-2', name: 'Trần Thị B', phone: '84912345678', avatar: '', permission_level: 'member' as const },
+    { id: 'emp-3', name: 'Lê Văn C', phone: '84909876543', avatar: '', permission_level: 'member' as const },
+    { id: 'emp-4', name: 'Phạm Thị D', phone: '84888123456', avatar: '', permission_level: 'member' as const },
+    { id: 'emp-5', name: 'Hoàng Văn E', phone: '84977654321', avatar: '', permission_level: 'member' as const },
+  ]
+  
+  // Filter assignable employees based on search
+  const filteredAssignableEmployees = useMemo(() => {
+    if (!assignEmployeeSearch.trim()) return assignableEmployees
+    const searchLower = assignEmployeeSearch.toLowerCase()
+    return assignableEmployees.filter(emp => 
+      emp.name.toLowerCase().includes(searchLower) ||
+      emp.phone.includes(assignEmployeeSearch)
+    )
+  }, [assignEmployeeSearch])
+  
+  // Get assigned employee for current conversation
+  const getAssignedEmployee = (conversationId: string) => {
+    const assignedId = conversationAssignments.get(conversationId)
+    if (!assignedId) return null
+    return assignableEmployees.find(emp => emp.id === assignedId) || null
+  }
+  
+  // Handle assigning conversation to employee
+  const handleAssignConversation = (employeeId: string) => {
+    if (!selectedConversation) return
+    setConversationAssignments(prev => {
+      const newMap = new Map(prev)
+      newMap.set(selectedConversation.id, employeeId)
+      return newMap
+    })
+    setShowAssignEmployeeDropdown(false)
+    setAssignEmployeeSearch('')
+  }
+  
   // Reminder states
   const [reminders, setReminders] = useState<Reminder[]>([
     {
@@ -994,6 +1039,19 @@ export default function ChatManagement() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Close assign employee dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (showAssignEmployeeDropdown && !target.closest('[data-assign-employee-dropdown]')) {
+        setShowAssignEmployeeDropdown(false)
+        setAssignEmployeeSearch('')
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showAssignEmployeeDropdown])
 
   // Select conversation and load messages
   const handleSelectConversation = (conversation: ZaloConversation) => {
@@ -2184,6 +2242,87 @@ export default function ChatManagement() {
                       </span>
                     </Button>
                   )}
+                  {/* Assign Employee Button/Avatar with Dropdown */}
+                  <div className="relative" data-assign-employee-dropdown>
+                    {(() => {
+                      const assignedEmp = selectedConversation ? getAssignedEmployee(selectedConversation.id) : null
+                      return (
+                        <>
+                          {assignedEmp ? (
+                            // Show assigned employee avatar
+                            <button
+                              onClick={() => setShowAssignEmployeeDropdown(!showAssignEmployeeDropdown)}
+                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                              title={`Phân công: ${assignedEmp.name}`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                                {assignedEmp.name.split(' ').map(n => n[0]).slice(-2).join('').toUpperCase()}
+                              </div>
+                              <div className="hidden sm:block text-left">
+                                <div className="text-xs font-medium text-gray-900 max-w-[80px] truncate">{assignedEmp.name}</div>
+                                <div className="text-[10px] text-gray-500">{assignedEmp.phone}</div>
+                              </div>
+                            </button>
+                          ) : (
+                            // Show UserPlus button when not assigned
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" 
+                              title="Phân công nhân viên"
+                              onClick={() => setShowAssignEmployeeDropdown(!showAssignEmployeeDropdown)}
+                            >
+                              <UserPlus className="w-4 h-4 text-gray-600" />
+                            </Button>
+                          )}
+                        </>
+                      )
+                    })()}
+                    {showAssignEmployeeDropdown && (
+                      <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                        <div className="p-3 border-b border-gray-100">
+                          <div className="relative">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                              type="text"
+                              value={assignEmployeeSearch}
+                              onChange={(e) => setAssignEmployeeSearch(e.target.value)}
+                              placeholder="Phân công nhân viên"
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3e79f7] focus:border-transparent"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[250px] overflow-y-auto p-2">
+                          {filteredAssignableEmployees.length > 0 ? (
+                            filteredAssignableEmployees.map(emp => (
+                              <div
+                                key={emp.id}
+                                onClick={() => handleAssignConversation(emp.id)}
+                                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                              >
+                                <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                                  {emp.name.split(' ').map(n => n[0]).slice(-2).join('').toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 truncate">
+                                    {emp.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {emp.phone}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center text-sm text-gray-500 py-4">
+                              Không tìm thấy nhân viên
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" title="Gọi điện">
                     <Phone className="w-4 h-4 text-gray-600" />
                   </Button>

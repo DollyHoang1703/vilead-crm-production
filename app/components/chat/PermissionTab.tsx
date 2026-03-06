@@ -137,16 +137,16 @@ export function PermissionTab({
         <table className="w-full">
           <thead className="bg-[#fafafb]">
             <tr>
-              <th className="px-4 py-3 text-left w-12">
+              {<th className="px-4 py-3 text-left w-12">
                 <Checkbox
                   checked={selectedEmployees.size === filteredEmployees.length && filteredEmployees.length > 0}
                   onCheckedChange={toggleAll}
                   className="data-[state=checked]:bg-[#3e79f7] data-[state=checked]:border-[#3e79f7]"
                 />
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+              </th>}
+              {<th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Tên nhân viên
-              </th>
+              </th>}
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                 Email
               </th>
@@ -239,7 +239,7 @@ export function PermissionTab({
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  {/* <td className="px-4 py-3">
                     {selectedEmployees.size > 0 && isSelected && (
                       <button
                         onClick={() => handleApplyToOthers(emp.id)}
@@ -250,7 +250,7 @@ export function PermissionTab({
                         Áp dụng
                       </button>
                     )}
-                  </td>
+                  </td> */}
                 </tr>
               )
             })}

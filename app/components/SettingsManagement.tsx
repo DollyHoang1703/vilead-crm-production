@@ -6954,7 +6954,16 @@ export default function SettingsManagement() {
         ))
       }
       setShowIndicatorModal(false)
-      setIndicatorForm({ name: '', unit: '', description: '' })
+      setIndicatorForm({ 
+        name: '', 
+        unit: '', 
+        statisticType: 'cumulative',
+        value: '',
+        expectedDirection: 'increase',
+        status: 'active',
+        description: '',
+        color: '#3e79f7'
+      })
     }
 
     const handleDeleteGroup = (groupId: string) => {

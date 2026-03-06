@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
-import { Plus, Clock, X, Copy, Users } from 'lucide-react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Plus, Clock, X, Copy, Users, Search, Check } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { DaySelector, DayBadges } from './DaySelector'
@@ -21,6 +21,8 @@ interface ShiftTabProps {
   onAddShift: (employeeId: string, shift: Omit<ChatShift, 'id' | 'zalo_connection_id' | 'created_at'>) => void
   onRemoveShift: (employeeId: string, shiftId: string) => void
   onApplyShiftToDay: (employeeId: string, shiftId: string, targetDay: number) => void
+  onApplyShiftsToOthers?: (sourceEmployeeId: string, targetEmployeeIds: string[]) => void
+  onToggleFullTime?: (employeeId: string, isFullTime: boolean) => void
 }
 
 interface NewShiftForm {
@@ -43,13 +45,26 @@ export function ShiftTab({
   onAddShift,
   onRemoveShift,
   onApplyShiftToDay,
+  onApplyShiftsToOthers,
+  onToggleFullTime,
 }: ShiftTabProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
     assignments.find(a => a.permission_level !== 'none')?.employee.id || null
   )
-  const [useShiftScheduling, setUseShiftScheduling] = useState(true)
+  // Track shift scheduling per employee (true = use shifts, false = full-time)
+  const [employeeShiftScheduling, setEmployeeShiftScheduling] = useState<Map<string, boolean>>(
+    () => new Map(assignments.map(a => [a.employee.id, a.useShiftScheduling ?? true]))
+  )
   const [newShiftForm, setNewShiftForm] = useState<NewShiftForm>(initialShiftForm)
   const [showApplyDropdown, setShowApplyDropdown] = useState<string | null>(null)
+  const [showApplyToOthersModal, setShowApplyToOthersModal] = useState(false)
+  const [selectedTargetEmployees, setSelectedTargetEmployees] = useState<string[]>([])
+  const [applyToOthersSearch, setApplyToOthersSearch] = useState('')
+
+  // Get current employee's shift scheduling state
+  const useShiftScheduling = selectedEmployeeId 
+    ? (employeeShiftScheduling.get(selectedEmployeeId) ?? true)
+    : true
 
   // Get current employee's assignment
   const currentAssignment = useMemo(() => {
@@ -70,10 +85,82 @@ export function ShiftTab({
     return map
   }, [currentAssignment])
 
-  // Filter employees with member or admin permission
+  // Filter employees with member permission only (not admin - admins bypass shift scheduling)
   const eligibleEmployees = useMemo(() => {
-    return assignments.filter(a => a.permission_level === 'member' || a.permission_level === 'admin')
+    return assignments.filter(a => a.permission_level === 'member')
   }, [assignments])
+
+  // Filter target employees for "Apply to others" modal (exclude current employee)
+  const targetEmployeesForApply = useMemo(() => {
+    return eligibleEmployees.filter(a => a.employee.id !== selectedEmployeeId)
+  }, [eligibleEmployees, selectedEmployeeId])
+
+  // Filtered target employees based on search
+  const filteredTargetEmployees = useMemo(() => {
+    if (!applyToOthersSearch.trim()) return targetEmployeesForApply
+    const searchLower = applyToOthersSearch.toLowerCase()
+    return targetEmployeesForApply.filter(a => 
+      a.employee.name.toLowerCase().includes(searchLower) ||
+      (a.employee.phone && a.employee.phone.includes(applyToOthersSearch))
+    )
+  }, [targetEmployeesForApply, applyToOthersSearch])
+
+  // Handle toggle shift scheduling - when turned off, employee has full-time access
+  const handleToggleShiftScheduling = (checked: boolean) => {
+    if (!selectedEmployeeId) return
+    
+    // Update local state
+    setEmployeeShiftScheduling(prev => {
+      const newMap = new Map(prev)
+      newMap.set(selectedEmployeeId, checked)
+      return newMap
+    })
+    
+    // Notify parent
+    if (onToggleFullTime) {
+      onToggleFullTime(selectedEmployeeId, !checked)
+    }
+  }
+
+  // Get display days for an employee based on their shift scheduling state
+  const getDisplayDays = (assignment: EmployeeShiftAssignment): number[] => {
+    const useScheduling = employeeShiftScheduling.get(assignment.employee.id) ?? true
+    if (!useScheduling) {
+      // Full-time access - all days are active
+      return [2, 3, 4, 5, 6, 7, 1]
+    }
+    // Using shifts - only show days with shifts assigned
+    return assignment.assigned_days
+  }
+
+  // Handle applying shifts to other employees
+  const handleApplyShiftsToOthers = () => {
+    if (!selectedEmployeeId || selectedTargetEmployees.length === 0) return
+    if (onApplyShiftsToOthers) {
+      onApplyShiftsToOthers(selectedEmployeeId, selectedTargetEmployees)
+    }
+    setShowApplyToOthersModal(false)
+    setSelectedTargetEmployees([])
+    setApplyToOthersSearch('')
+  }
+
+  // Toggle target employee selection
+  const toggleTargetEmployee = (employeeId: string) => {
+    setSelectedTargetEmployees(prev => 
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    )
+  }
+
+  // Select/deselect all target employees
+  const toggleSelectAll = () => {
+    if (selectedTargetEmployees.length === filteredTargetEmployees.length) {
+      setSelectedTargetEmployees([])
+    } else {
+      setSelectedTargetEmployees(filteredTargetEmployees.map(a => a.employee.id))
+    }
+  }
 
   // Handle adding a new shift
   const handleAddShift = () => {
@@ -151,7 +238,7 @@ export function ShiftTab({
                       {assignment.employee.name}
                     </div>
                     <div className="mt-1">
-                      <DayBadges days={assignment.assigned_days} />
+                      <DayBadges days={getDisplayDays(assignment)} />
                     </div>
                   </div>
                 </div>
@@ -181,7 +268,7 @@ export function ShiftTab({
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={useShiftScheduling}
-                      onCheckedChange={(checked) => setUseShiftScheduling(checked as boolean)}
+                      onCheckedChange={(checked) => handleToggleShiftScheduling(checked as boolean)}
                       className="data-[state=checked]:bg-[#3e79f7] data-[state=checked]:border-[#3e79f7]"
                     />
                     <span className="text-sm text-gray-700">Phân theo ca trực</span>
@@ -190,7 +277,10 @@ export function ShiftTab({
               </div>
               
               {/* Apply to others button */}
-              <button className="mt-2 px-3 py-1.5 border border-[#3e79f7] text-[#3e79f7] text-sm rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+              <button 
+                onClick={() => setShowApplyToOthersModal(true)}
+                className="mt-2 px-3 py-1.5 border border-[#3e79f7] text-[#3e79f7] text-sm rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1"
+              >
                 <Users className="w-4 h-4" />
                 Cùng áp dụng cho nhân viên khác
               </button>
@@ -358,8 +448,15 @@ export function ShiftTab({
               )}
 
               {!useShiftScheduling && (
-                <div className="flex items-center justify-center h-40 text-gray-500 text-sm">
-                  Nhân viên này không sử dụng phân ca trực tự động
+                <div className="flex flex-col items-center justify-center h-40 text-gray-500 text-sm space-y-3">
+                  <div className="flex items-center gap-2 text-green-600">
+                    <Check className="w-5 h-5" />
+                    <span className="font-medium">Truy cập toàn thời gian</span>
+                  </div>
+                  <p className="text-gray-400 text-xs text-center">
+                    Nhân viên này được truy cập tài khoản 24/7<br/>
+                    (Tất cả các ngày trong tuần đều được tích)
+                  </p>
                 </div>
               )}
             </div>
@@ -370,6 +467,131 @@ export function ShiftTab({
           </div>
         )}
       </div>
+
+      {/* Apply to Others Modal */}
+      {showApplyToOthersModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg w-[400px] max-h-[500px] flex flex-col shadow-xl">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold text-[#1a3353]">Phân công nhân viên</h3>
+                <button
+                  onClick={() => {
+                    setShowApplyToOthersModal(false)
+                    setSelectedTargetEmployees([])
+                    setApplyToOthersSearch('')
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Copy lịch ca của <span className="font-medium text-gray-700">{currentAssignment?.employee.name}</span> sang nhân viên khác
+              </p>
+            </div>
+
+            {/* Search */}
+            <div className="p-3 border-b border-gray-200">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={applyToOthersSearch}
+                  onChange={(e) => setApplyToOthersSearch(e.target.value)}
+                  placeholder="Phân công nhân viên"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3e79f7] focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Select All */}
+            {filteredTargetEmployees.length > 0 && (
+              <div className="px-4 py-2 border-b border-gray-100">
+                <label 
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-3 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={selectedTargetEmployees.length === filteredTargetEmployees.length}
+                    className="h-5 w-5 data-[state=checked]:bg-[#3e79f7] data-[state=checked]:border-[#3e79f7]"
+                  />
+                  <span className="text-sm text-gray-700">Chọn tất cả ({filteredTargetEmployees.length})</span>
+                </label>
+              </div>
+            )}
+
+            {/* Employee List */}
+            <div className="flex-1 overflow-y-auto p-2 max-h-[250px]">
+              {filteredTargetEmployees.length > 0 ? (
+                filteredTargetEmployees.map(assignment => (
+                  <div
+                    key={assignment.employee.id}
+                    onClick={() => toggleTargetEmployee(assignment.employee.id)}
+                    className={cn(
+                      'flex items-center gap-3 p-2 px-4 rounded-lg cursor-pointer transition-colors',
+                      selectedTargetEmployees.includes(assignment.employee.id)
+                        ? 'bg-blue-50'
+                        : 'hover:bg-gray-50'
+                    )}
+                  >
+                    <Checkbox
+                      checked={selectedTargetEmployees.includes(assignment.employee.id)}
+                      className="h-5 w-5 flex-shrink-0 data-[state=checked]:bg-[#3e79f7] data-[state=checked]:border-[#3e79f7]"
+                    />
+                    <div className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0',
+                      getAvatarColor(assignment.employee.name)
+                    )}>
+                      {getInitials(assignment.employee.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {assignment.employee.name}
+                      </div>
+                      {assignment.employee.phone && (
+                        <div className="text-xs text-gray-500">
+                          {assignment.employee.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-sm text-gray-500 py-8">
+                  {applyToOthersSearch ? 'Không tìm thấy nhân viên' : 'Không có nhân viên khác để áp dụng'}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowApplyToOthersModal(false)
+                  setSelectedTargetEmployees([])
+                  setApplyToOthersSearch('')
+                }}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleApplyShiftsToOthers}
+                disabled={selectedTargetEmployees.length === 0}
+                className={cn(
+                  'px-4 py-2 text-sm rounded-lg transition-colors',
+                  selectedTargetEmployees.length > 0
+                    ? 'bg-[#3e79f7] text-white hover:bg-[#2563eb]'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                )}
+              >
+                Áp dụng ({selectedTargetEmployees.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
