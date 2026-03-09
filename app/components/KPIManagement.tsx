@@ -2255,73 +2255,45 @@ export default function KPIManagement() {
                   </select>
                 </div> */}
 
-                {/* Chỉ số (Indicator) - Two dropdowns */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nhóm chỉ số</label>
-                    <select
-                      value={newKPI.indicatorGroup}
-                      onChange={(e) => setNewKPI({
+                {/* Chỉ số (Indicator) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Loại KPI</label>
+                  <select
+                    value={newKPI.indicator}
+                    onChange={(e) => {
+                      const unitMap: Record<string, string> = {
+                        'revenue': 'VND',
+                        'leads': 'leads',
+                        'conversion': '%',
+                        'tasks': 'công việc'
+                      }
+                      setNewKPI({
                         ...newKPI, 
-                        indicatorGroup: e.target.value,
-                        indicator: '', // Reset indicator when group changes
+                        indicator: e.target.value,
+                        unit: unitMap[e.target.value] || 'VND',
                         category: (e.target.value || 'revenue') as KPITarget['category']
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Chọn nhóm chỉ số</option>
-                      {indicatorGroups.map((group) => (
-                        <option key={group.id} value={group.id}>{group.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chỉ số</label>
-                    <select
-                      value={newKPI.indicator}
-                      onChange={(e) => {
-                        const selectedGroup = indicatorGroups.find(g => g.id === newKPI.indicatorGroup)
-                        const selectedIndicator = selectedGroup?.indicators.find(i => i.id === e.target.value)
-                        setNewKPI({
-                          ...newKPI, 
-                          indicator: e.target.value,
-                          unit: selectedIndicator?.unit || 'VND'
-                        })
-                      }}
-                      disabled={!newKPI.indicatorGroup}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Chọn chỉ số</option>
-                      {indicatorGroups.find(g => g.id === newKPI.indicatorGroup)?.indicators.map((ind) => (
-                        <option key={ind.id} value={ind.id}>{ind.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                      })
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Chọn loại KPI</option>
+                    <option value="revenue">Doanh số</option>
+                    <option value="leads">Leads</option>
+                    <option value="conversion">Chuyển đổi</option>
+                    <option value="tasks">Công việc</option>
+                  </select>
                 </div>
 
-                {/* Mục tiêu và Đơn vị (Target Value and Unit) */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị mục tiêu</label>
-                    <input
-                      type="number"
-                      value={newKPI.targetValue || ''}
-                      onChange={(e) => setNewKPI({...newKPI, targetValue: Number(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Đơn vị</label>
-                    <input
-                      type="text"
-                      value={newKPI.unit}
-                      disabled={true}
-                      onChange={(e) => setNewKPI({...newKPI, unit: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="VND, %, leads..."
-                    />
-                  </div>
+                {/* Giá trị mục tiêu (Target Value) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giá trị mục tiêu</label>
+                  <input
+                    type="number"
+                    value={newKPI.targetValue || ''}
+                    onChange={(e) => setNewKPI({...newKPI, targetValue: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
+                  />
                 </div>
 
                 {/* Thời gian (Period - Year/Month/Week Selection) */}
@@ -2994,7 +2966,15 @@ export default function KPIManagement() {
                                     <ChevronDown className={`w-4 h-4 text-gray-400 mr-2 transition-transform ${isDeptExpanded ? '' : '-rotate-90'}`} />
                                   )}
                                   {teamKPIs.length === 0 && <div className="w-6" />}
-                                  <span className="text-sm text-gray-900 font-medium">{deptKPI.assignedTo[0]} » {deptKPI.name}: {deptKPI.targetValue} ({deptKPI.unit})</span>
+                                  <span 
+                                    className="text-sm text-blue-600 hover:underline cursor-pointer font-medium"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedKPIForDetail(deptKPI)
+                                    }}
+                                  >
+                                    {deptKPI.assignedTo[0]} » {deptKPI.name}: {deptKPI.targetValue} ({deptKPI.unit})
+                                  </span>
                                 </div>
                                 <div className="flex items-center space-x-4">
                                   <div className="flex items-center space-x-2">
@@ -3039,7 +3019,15 @@ export default function KPIManagement() {
                                           <ChevronDown className={`w-4 h-4 text-gray-400 mr-2 transition-transform ${isTeamExpanded ? '' : '-rotate-90'}`} />
                                         )}
                                         {indKPIs.length === 0 && <div className="w-6" />}
-                                        <span className="text-sm text-gray-800">{teamKPI.assignedTo[0]} » {teamKPI.name}: {teamKPI.targetValue} ({teamKPI.unit})</span>
+                                        <span 
+                                          className="text-sm text-blue-600 hover:underline cursor-pointer"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setSelectedKPIForDetail(teamKPI)
+                                          }}
+                                        >
+                                          {teamKPI.assignedTo[0]} » {teamKPI.name}: {teamKPI.targetValue} ({teamKPI.unit})
+                                        </span>
                                       </div>
                                       <div className="flex items-center space-x-4">
                                         <div className="flex items-center space-x-2">
@@ -3075,7 +3063,7 @@ export default function KPIManagement() {
                                                 setSelectedKPIForDetail(indKPI)
                                               }}
                                             >
-                                              {indKPI.name}: {indKPI.targetValue} ({indKPI.unit})
+                                              {indKPI.assignedTo[0]} » {indKPI.name}: {indKPI.targetValue} ({indKPI.unit})
                                             </span>
                                           </div>
                                         </div>
