@@ -8233,11 +8233,11 @@ export default function SettingsManagement() {
         )}
 
         {/* KPI Settings - Quản lý nhóm chỉ số */}
-        {activeTab === 'kpi' && (
+        {/* {activeTab === 'kpi' && (
           <div>
             <KPISettingsContent />
           </div>
-        )}
+        )} */}
         
         {/* Thông báo - 3 tabs: Mẫu nội dung, Quy tắc, Nhật ký */}
         {activeTab === 'notifications' && (
@@ -8365,7 +8365,6 @@ export default function SettingsManagement() {
             </Tabs>
           </div>
         )}
-        
         {activeTab === 'interface' && <InterfaceManagement />}
         {activeTab === 'integrations' && <IntegrationManagement />}
         {activeTab === 'templates' && <DataTemplateManagement />}
@@ -8381,7 +8380,6 @@ export default function SettingsManagement() {
               Tạo quy tắc mới để phân bổ leads tự động cho nhóm bán hàng
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-5 px-6 py-4 overflow-y-auto flex-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
