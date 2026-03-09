@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import FormulaBuilder, { FormulaVariable } from './FormulaBuilder'
 import {
   Settings,
   Users,
@@ -6811,12 +6812,14 @@ export default function SettingsManagement() {
     const [indicatorForm, setIndicatorForm] = useState({ 
       name: '', 
       unit: '', 
-      statisticType: 'cumulative',
+      statisticType: 'unit' as 'unit' | 'percentage',
       value: '',
       expectedDirection: 'increase',
       status: 'active',
       description: '',
-      color: '#3e79f7'
+      color: '#3e79f7',
+      formula: '',
+      variables: [] as FormulaVariable[]
     })
 
     // Sample indicator groups data
@@ -6901,12 +6904,14 @@ export default function SettingsManagement() {
       setIndicatorForm({ 
         name: '', 
         unit: '', 
-        statisticType: 'cumulative',
+        statisticType: 'unit',
         value: '',
         expectedDirection: 'increase',
         status: 'active',
         description: '',
-        color: '#3e79f7'
+        color: '#3e79f7',
+        formula: '',
+        variables: []
       })
       setShowIndicatorModal(true)
     }
@@ -6916,12 +6921,14 @@ export default function SettingsManagement() {
       setIndicatorForm({ 
         name: indicator.name, 
         unit: indicator.unit, 
-        statisticType: indicator.statisticType || 'cumulative',
+        statisticType: indicator.statisticType || 'unit',
         value: indicator.value || '',
         expectedDirection: indicator.expectedDirection || 'increase',
         status: indicator.status || 'active',
         description: indicator.description || '',
-        color: indicator.color || '#3e79f7'
+        color: indicator.color || '#3e79f7',
+        formula: indicator.formula || '',
+        variables: indicator.variables || []
       })
       setShowIndicatorModal(true)
     }
@@ -6957,12 +6964,14 @@ export default function SettingsManagement() {
       setIndicatorForm({ 
         name: '', 
         unit: '', 
-        statisticType: 'cumulative',
+        statisticType: 'unit',
         value: '',
         expectedDirection: 'increase',
         status: 'active',
         description: '',
-        color: '#3e79f7'
+        color: '#3e79f7',
+        formula: '',
+        variables: []
       })
     }
 
@@ -7182,29 +7191,31 @@ export default function SettingsManagement() {
                 </div> */}
               </div>
 
-              {/* Thống kê theo + Giá trị */}
+              {/* Thống kê theo + Đơn vị đo (conditional) */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Thống kê theo</Label>
+                  <Label>Thống kê theo <span className="text-red-500">*</span></Label>
                   <Select value={indicatorForm.statisticType} onValueChange={(value: any) => setIndicatorForm(prev => ({ ...prev, statisticType: value }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn loại thống kê" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cumulative">Đơn vị đo</SelectItem>
-                      <SelectItem value="average">Khối lượng công việc</SelectItem>
+                      <SelectItem value="unit">Đơn vị đo</SelectItem>
+                      <SelectItem value="percentage">Tỷ lệ phần trăm</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Đơn vị đo chỉ số<span className="text-red-500">*</span></Label>
-                  <Input 
-                    type="number"
-                    value={indicatorForm.value} 
-                    onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, value: e.target.value }))} 
-                    placeholder="VND, Lead, Nhân sự,..."
-                  />
-                </div>
+                {indicatorForm.statisticType === 'unit' && (
+                  <div>
+                    <Label>Đơn vị đo chỉ số <span className="text-red-500">*</span></Label>
+                    <Input 
+                      type="text"
+                      value={indicatorForm.unit} 
+                      onChange={(e: any) => setIndicatorForm(prev => ({ ...prev, unit: e.target.value }))} 
+                      placeholder="VND, %, đơn, lead, task, lần..."
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Hướng đi mong đợi + Trạng thái */}
@@ -7246,10 +7257,19 @@ export default function SettingsManagement() {
                   rows={3}
                 />
               </div>
+
+              {/* Công thức tính - chỉ hiển thị khi Thống kê theo = Đơn vị đo */}
+              {indicatorForm.statisticType === 'unit' && (
+                <FormulaBuilder
+                  formula={indicatorForm.formula}
+                  variables={indicatorForm.variables}
+                  onChange={(formula, variables) => setIndicatorForm(prev => ({ ...prev, formula, variables }))}
+                />
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowIndicatorModal(false)}>Hủy</Button>
-              <Button onClick={handleSaveIndicator} disabled={!indicatorForm.name || !indicatorForm.unit}>Lưu</Button>
+              <Button onClick={handleSaveIndicator} disabled={!indicatorForm.name || (indicatorForm.statisticType === 'unit' && !indicatorForm.unit)}>Lưu</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

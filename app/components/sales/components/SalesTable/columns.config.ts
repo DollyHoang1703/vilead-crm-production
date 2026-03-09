@@ -74,8 +74,13 @@ export const SALES_TABLE_COLUMNS: ColumnConfig[] = [
     defaultVisible: true,
     sortable: true
   },
-  {
-    key: 'product',
+  {    key: 'estimatedRevenue',
+    label: 'Doanh thu ước tính',
+    width: '150px',
+    defaultVisible: false,
+    sortable: true
+  },
+  {    key: 'product',
     label: 'S\u1ea3n ph\u1ea9m quan t\u00e2m',
     width: '160px',
     defaultVisible: false,

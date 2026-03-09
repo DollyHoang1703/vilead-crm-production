@@ -9,6 +9,11 @@ export { default as EditEmailModal } from './EditEmailModal'
 export { default as DeleteConfirmModal } from './DeleteConfirmModal'
 export { default as LimitCard } from './LimitCard'
 
+// Brevo Integration Components
+export { default as BrevoConnectionSection } from './BrevoConnectionSection'
+export { default as AddSenderModal } from './AddSenderModal'
+export { default as PermissionModal } from './PermissionModal'
+
 // Task 10.2 - Template Library
 export { TemplateLibrary } from './TemplateLibrary'
 export { TemplateCard, CreateNewTemplateCard } from './TemplateCard'
@@ -33,7 +38,17 @@ export {
 export * from './types'
 
 // Export hooks
-export { useSenderEmails, useEmailLimits, useTemplates, useCampaigns, useCampaignEditor, useEmailReports } from './hooks'
+export { 
+  useSenderEmails, 
+  useEmailLimits, 
+  useTemplates, 
+  useCampaigns, 
+  useCampaignEditor, 
+  useEmailReports,
+  // Brevo hooks
+  useBrevoConnection,
+  useBrevoSenders
+} from './hooks'
 
 // Export utils
 export * from './utils'
@@ -47,6 +62,11 @@ export {
   MOCK_TEMPLATES,
   TEMPLATE_VARIABLES,
   replaceVariablesWithSample,
+  // Brevo mock data
+  MOCK_BREVO_CONNECTION,
+  MOCK_BREVO_CONNECTION_ERROR,
+  MOCK_BREVO_QUOTA,
+  MOCK_BREVO_SENDER_EMAILS,
   // Task 10.5 Report mock data
   MOCK_EMAIL_OVERVIEW,
   MOCK_TREND_DATA,

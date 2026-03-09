@@ -13,7 +13,10 @@ import {
   CustomerStatus,
   RecipientsPreview,
   EmailSendLog,
-  EmailLogStatus
+  EmailLogStatus,
+  BrevoConnection,
+  BrevoQuota,
+  BrevoSenderEmail
 } from './types';
 
 // Import notification templates v2.0 from EMAIL_TEMPLATES_SPECIFICATION.md
@@ -130,6 +133,117 @@ export const MOCK_EMAIL_LIMITS: EmailLimits = {
   updated_at: new Date('2026-01-30T15:00:00Z'),
   updated_by: 'user-001'
 };
+
+// ==================== BREVO INTEGRATION MOCK DATA ====================
+// Based on EMAIL_MARKETING_CONFIG_BREVO_UI_SPEC.md
+
+// Mock Brevo Connection - Connected state
+export const MOCK_BREVO_CONNECTION: BrevoConnection = {
+  id: 'brevo-001',
+  organization_id: 'org-001',
+  api_key_masked: 'xk-****...****a3b2',
+  brevo_company_name: 'Phòng KD ViLead',
+  brevo_email: 'admin@vilead.vn',
+  brevo_plan: 'free',
+  status: 'connected',
+  connected_at: new Date('2026-03-09T08:00:00Z'),
+  last_check_at: new Date('2026-03-09T14:30:00Z'),
+  created_by: 'user-001'
+};
+
+// Mock Brevo Connection - Not connected state  
+export const MOCK_BREVO_CONNECTION_EMPTY: BrevoConnection | null = null;
+
+// Mock Brevo Connection - Error state
+export const MOCK_BREVO_CONNECTION_ERROR: BrevoConnection = {
+  id: 'brevo-001',
+  organization_id: 'org-001',
+  api_key_masked: 'xk-****...****a3b2',
+  brevo_company_name: 'Phòng KD ViLead',
+  brevo_email: 'admin@vilead.vn',
+  brevo_plan: 'free',
+  status: 'error',
+  connected_at: new Date('2026-03-01T08:00:00Z'),
+  last_check_at: new Date('2026-03-09T10:00:00Z'),
+  created_by: 'user-001'
+};
+
+// Mock Brevo Quota
+export const MOCK_BREVO_QUOTA: BrevoQuota = {
+  daily: {
+    limit: 300,
+    used: 210,
+    percentage: 70,
+    reset_in: '6 giờ'
+  },
+  monthly: {
+    limit: 9000,
+    used: 2500,
+    percentage: 28,
+    reset_in: '22 ngày'
+  },
+  plan: 'free'
+};
+
+// Mock Brevo Sender Emails (synced from Brevo)
+export const MOCK_BREVO_SENDER_EMAILS: BrevoSenderEmail[] = [
+  {
+    id: 'bse-001',
+    email: 'sales@vilead.vn',
+    sender_name: 'Phòng Kinh doanh ViLead',
+    brevo_sender_id: 12345,
+    brevo_status: 'verified',
+    vilead_status: 'active',
+    permission_type: 'all',
+    permitted_user_ids: [],
+    synced_at: new Date('2026-03-09T08:00:00Z'),
+    created_by: 'user-001',
+    created_at: new Date('2026-03-09T08:00:00Z'),
+    updated_at: new Date('2026-03-09T08:00:00Z')
+  },
+  {
+    id: 'bse-002',
+    email: 'marketing@vilead.vn',
+    sender_name: 'Marketing Team',
+    brevo_sender_id: 12346,
+    brevo_status: 'verified',
+    vilead_status: 'active',
+    permission_type: 'specific',
+    permitted_user_ids: ['user-001', 'user-002', 'user-003'],
+    synced_at: new Date('2026-03-09T08:00:00Z'),
+    created_by: 'user-001',
+    created_at: new Date('2026-03-09T08:00:00Z'),
+    updated_at: new Date('2026-03-09T08:00:00Z')
+  },
+  {
+    id: 'bse-003',
+    email: 'support@vilead.vn',
+    sender_name: 'Hỗ trợ khách hàng',
+    brevo_sender_id: 12347,
+    brevo_status: 'pending',
+    vilead_status: 'active',
+    permission_type: 'all',
+    permitted_user_ids: [],
+    synced_at: new Date('2026-03-09T08:00:00Z'),
+    created_by: 'user-002',
+    created_at: new Date('2026-03-09T08:00:00Z'),
+    updated_at: new Date('2026-03-09T08:00:00Z')
+  },
+  {
+    id: 'bse-004',
+    email: 'noreply@vilead.vn',
+    sender_name: 'ViLead System',
+    brevo_sender_id: 12348,
+    brevo_status: 'verified',
+    vilead_status: 'disabled',
+    permission_type: 'me',
+    permitted_user_ids: [],
+    synced_at: new Date('2026-03-09T08:00:00Z'),
+    created_by: 'user-001',
+    created_at: new Date('2026-03-08T10:00:00Z'),
+    updated_at: new Date('2026-03-09T15:00:00Z')
+  }
+];
 
 // Helper function to get user by ID
 export const getUserById = (id: string): User | undefined => {

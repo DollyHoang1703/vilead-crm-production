@@ -60,6 +60,7 @@ export interface ColumnVisibility {
   source: boolean
   region: boolean
   stage: boolean
+  estimatedRevenue: boolean
   product: boolean
   customerType: boolean
   salesOwner: boolean

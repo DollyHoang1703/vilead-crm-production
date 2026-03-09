@@ -9,11 +9,12 @@ import {
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
   FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
   Info, ArrowUpRight, ArrowDownRight, X, MessageSquare, Columns,
-  Brain, BarChart, Package, Edit, ShoppingCart, StickyNote, Save
+  Brain, BarChart, Package, Edit, ShoppingCart, StickyNote, Save, Sliders
 } from 'lucide-react'
 import CustomerEventsManager from './CustomerEventsManager'
 import CustomerAnalytics from './CustomerAnalytics'
 import CustomerDetailModal from './CustomerDetailModal'
+import { CreatableSelect, CreatableSelectOption } from '@/components/ui/creatable-select'
 
 interface CustomerTag {
   id: string
@@ -371,6 +372,89 @@ export default function CustomersManagement() {
   const [sortBy, setSortBy] = useState('name')
   const [showRemarketingModal, setShowRemarketingModal] = useState(false)
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
+  const [showCustomerFieldSettingsModal, setShowCustomerFieldSettingsModal] = useState(false)
+  
+  // Customer form field visibility state
+  const [customerFormFieldVisibility, setCustomerFormFieldVisibility] = useState({
+    phone: true,
+    email: true,
+    customerName: true,
+    company: true,
+    position: true,
+    industry: true,
+    companySize: true,
+    website: false,
+    address: true,
+    source: true,
+    region: true,
+    assignedTo: true,
+    product: true,
+    content: true,
+    notes: true
+  })
+
+  // Customer source options
+  const defaultCustomerSourceOptions: CreatableSelectOption[] = [
+    { value: 'website', label: 'Website', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { value: 'facebook', label: 'Facebook', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'google', label: 'Google Ads', color: 'bg-red-100 text-red-700 border-red-200' },
+    { value: 'referral', label: 'Giới thiệu', color: 'bg-green-100 text-green-700 border-green-200' },
+    { value: 'cold-call', label: 'Cold Call', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    { value: 'exhibition', label: 'Triển lãm', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { value: 'linkedin', label: 'LinkedIn', color: 'bg-sky-100 text-sky-700 border-sky-200' },
+    { value: 'email-marketing', label: 'Email Marketing', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+    { value: 'webinar', label: 'Webinar', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+    { value: 'partner', label: 'Đối tác', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  ]
+
+  // Customer industry options
+  const defaultCustomerIndustryOptions: CreatableSelectOption[] = [
+    { value: 'technology', label: 'Công nghệ thông tin', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { value: 'finance', label: 'Tài chính - Ngân hàng', color: 'bg-green-100 text-green-700 border-green-200' },
+    { value: 'healthcare', label: 'Y tế - Sức khỏe', color: 'bg-red-100 text-red-700 border-red-200' },
+    { value: 'education', label: 'Giáo dục', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { value: 'retail', label: 'Bán lẻ', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    { value: 'manufacturing', label: 'Sản xuất', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+    { value: 'real-estate', label: 'Bất động sản', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+    { value: 'consulting', label: 'Tư vấn', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'marketing', label: 'Marketing', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+    { value: 'logistics', label: 'Vận chuyển - Logistics', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  ]
+
+  const [customCustomerSources, setCustomCustomerSources] = useState<CreatableSelectOption[]>([])
+  const [customCustomerIndustries, setCustomCustomerIndustries] = useState<CreatableSelectOption[]>([])
+  
+  const allCustomerSourceOptions = [...defaultCustomerSourceOptions, ...customCustomerSources]
+  const allCustomerIndustryOptions = [...defaultCustomerIndustryOptions, ...customCustomerIndustries]
+
+  // Handler to add new customer source
+  const handleAddNewCustomerSource = (label: string) => {
+    const newValue = label.toLowerCase().replace(/\s+/g, '-')
+    const colors = ['bg-cyan-100 text-cyan-700 border-cyan-200', 'bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-amber-100 text-amber-700 border-amber-200']
+    const randomColor = colors[customCustomerSources.length % colors.length]
+    setCustomCustomerSources(prev => [...prev, { value: newValue, label, color: randomColor }])
+  }
+
+  // Handler to add new customer industry
+  const handleAddNewCustomerIndustry = (label: string) => {
+    const newValue = label.toLowerCase().replace(/\s+/g, '-')
+    const colors = ['bg-cyan-100 text-cyan-700 border-cyan-200', 'bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-amber-100 text-amber-700 border-amber-200']
+    const randomColor = colors[customCustomerIndustries.length % colors.length]
+    setCustomCustomerIndustries(prev => [...prev, { value: newValue, label, color: randomColor }])
+  }
+
+  // Currency format helper for customer form
+  const formatCustomerCurrencyInput = (value: string): string => {
+    const numericValue = value.replace(/\D/g, '')
+    if (!numericValue) return ''
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  }
+
+  const handleCustomerEstimatedRevenueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCustomerCurrencyInput(e.target.value)
+    setNewCustomerData(prev => ({ ...prev}))
+  }
+
   const [showRankingDefinitionModal, setShowRankingDefinitionModal] = useState(false)
   const [isEditingRanking, setIsEditingRanking] = useState(false)
   const [rankingSettings, setRankingSettings] = useState({
@@ -521,7 +605,7 @@ export default function CustomersManagement() {
     company: '',
     position: '',
     industry: '',
-    companySize: 'small',
+    companySize: '',
     customerType: 'individual', // Changed from 'bronze' to 'individual'
     status: 'active',
     preferredChannel: 'email',
@@ -4156,6 +4240,13 @@ export default function CustomersManagement() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-gray-900">Thêm khách hàng mới</h3>
+                  <button
+                    onClick={() => setShowCustomerFieldSettingsModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 hover:text-gray-700 transition-all"
+                  >
+                    {/* <Sliders className="w-3.5 h-3.5" /> */}
+                    Thiết lập trường thông tin
+                  </button>
                 </div>
                 <button
                   onClick={() => setShowAddCustomerModal(false)}
@@ -4294,35 +4385,27 @@ export default function CustomersManagement() {
                     
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Ngành nghề</label>
-                      <select 
+                      <CreatableSelect
+                        options={allCustomerIndustryOptions}
                         value={newCustomerData.industry}
-                        onChange={(e) => handleInputChange('industry', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Chọn ngành nghề</option>
-                        <option value="Công nghệ">Công nghệ</option>
-                        <option value="Tài chính">Tài chính</option>
-                        <option value="Y tế">Y tế</option>
-                        <option value="Bán lẻ">Bán lẻ</option>
-                        <option value="Sản xuất">Sản xuất</option>
-                        <option value="Giáo dục">Giáo dục</option>
-                        <option value="Bất động sản">Bất động sản</option>
-                        <option value="Khác">Khác</option>
-                      </select>
+                        onChange={(value) => handleInputChange('industry', value)}
+                        onAddNew={handleAddNewCustomerIndustry}
+                        placeholder="Lựa chọn hoặc thêm mới"
+                      />
                     </div>
                     
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Quy mô công ty</label>
-                      <select 
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Quy mô công ty (số nhân viên)</label>
+                      <input
+                        type="text"
                         value={newCustomerData.companySize}
-                        onChange={(e) => handleInputChange('companySize', e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '')
+                          handleInputChange('companySize', value)
+                        }}
+                        placeholder="Nhập số nhân viên"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="small">Nhỏ (1-50 nhân viên)</option>
-                        <option value="medium">Trung bình (51-200 nhân viên)</option>
-                        <option value="large">Lớn (201-1000 nhân viên)</option>
-                        <option value="enterprise">Doanh nghiệp (1000+ nhân viên)</option>
-                      </select>
+                      />
                     </div>
                   </div>
                 </div>
@@ -4543,18 +4626,13 @@ export default function CustomersManagement() {
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn khách hàng</label>
-                    <select 
+                    <CreatableSelect
+                      options={allCustomerSourceOptions}
                       value={newCustomerData.source}
-                      onChange={(e) => handleInputChange('source', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="website">Website</option>
-                      <option value="referral">Giới thiệu</option>
-                      <option value="social_media">Mạng xã hội</option>
-                      <option value="advertising">Quảng cáo</option>
-                      <option value="event">Sự kiện</option>
-                      <option value="other">Khác</option>
-                    </select>
+                      onChange={(value) => handleInputChange('source', value)}
+                      onAddNew={handleAddNewCustomerSource}
+                      placeholder="Lựa chọn hoặc thêm mới"
+                    />
                   </div>
                 </div>
                 
@@ -4585,6 +4663,156 @@ export default function CustomersManagement() {
               >
                 Thêm khách hàng & Tạo đơn hàng ({newCustomerData.selectedProducts.length} sản phẩm)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Field Settings Modal */}
+      {showCustomerFieldSettingsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+                    <button className="px-4 py-2 text-sm font-medium bg-white text-gray-900 border-r border-gray-200">
+                      Ẩn hiện trường dữ liệu
+                    </button>
+                    <button 
+                      onClick={() => setShowCustomerFieldSettingsModal(false)}
+                      className="px-4 py-2 text-sm font-medium hover:bg-green-700 transition-all text-white bg-green-600 rounded-r-lg flex items-center gap-1"
+                    >
+                      Lưu
+                    </button>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCustomerFieldSettingsModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3">
+                {/* Required fields - disabled */}
+                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 opacity-70 cursor-not-allowed">
+                  <span className="text-sm text-gray-600">Số điện thoại</span>
+                  <input 
+                    disabled 
+                    type="checkbox" 
+                    checked 
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-not-allowed" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 opacity-70 cursor-not-allowed">
+                  <span className="text-sm text-gray-600">Email</span>
+                  <input 
+                    disabled 
+                    type="checkbox" 
+                    checked 
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-not-allowed" 
+                  />
+                </label>
+
+                {/* Configurable fields */}
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Tên khách hàng</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.customerName}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, customerName: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Công ty</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.company}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, company: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Chức vụ</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.position}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, position: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Ngành nghề</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.industry}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, industry: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Quy mô công ty</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.companySize}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, companySize: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Địa chỉ</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.address}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, address: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Nguồn</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.source}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, source: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Sản phẩm quan tâm</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.product}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, product: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Nội dung quan tâm</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.content}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, content: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Ghi chú</span>
+                  <input 
+                    type="checkbox" 
+                    checked={customerFormFieldVisibility.notes}
+                    onChange={(e) => setCustomerFormFieldVisibility(prev => ({ ...prev, notes: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                  />
+                </label>
+                
+                <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-200">
+                  <span className="text-red-500">*</span> Số điện thoại và Email là trường bắt buộc, không thể ẩn.
+                </p>
+              </div>
             </div>
           </div>
         </div>

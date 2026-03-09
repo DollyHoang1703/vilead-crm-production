@@ -34,7 +34,13 @@ import {
   EmailFunnel,
   StatusDistributionItem,
   UnsubscribeEntry,
-  ReportFilter
+  ReportFilter,
+  // Brevo integration types
+  BrevoConnection,
+  BrevoQuota,
+  BrevoSenderEmail,
+  BrevoSenderStatus,
+  ViLeadSenderStatus
 } from './types';
 import { 
   MOCK_SENDER_EMAILS, 
@@ -52,7 +58,11 @@ import {
   MOCK_STATUS_DISTRIBUTION,
   MOCK_UNSUBSCRIBES,
   MOCK_UNSUBSCRIBE_TREND,
-  DEFAULT_REPORT_FILTER
+  DEFAULT_REPORT_FILTER,
+  // Brevo integration mock data
+  MOCK_BREVO_CONNECTION,
+  MOCK_BREVO_QUOTA,
+  MOCK_BREVO_SENDER_EMAILS
 } from './mockData';
 import { generateId, formatTimeRemaining, hasPermissionToUse } from './utils';
 
@@ -379,6 +389,284 @@ export function useEmailLimits() {
     saving,
     error,
     updateConfig
+  };
+}
+
+// ==================== USE BREVO CONNECTION HOOK ====================
+export function useBrevoConnection() {
+  const [connection, setConnection] = useState<BrevoConnection | null>(MOCK_BREVO_CONNECTION);
+  const [quota, setQuota] = useState<BrevoQuota>(MOCK_BREVO_QUOTA);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Check if connected
+  const isConnected = useMemo(() => {
+    return connection !== null && connection.status === 'connected';
+  }, [connection]);
+
+  // Check if has error
+  const hasError = useMemo(() => {
+    return connection !== null && connection.status === 'error';
+  }, [connection]);
+
+  // Connect to Brevo
+  const connect = useCallback(async (apiKey: string): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+    setError(null);
+
+    // Simulate API call to validate API key
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Validate API key format (starts with 'xkeysib-')
+    if (!apiKey.startsWith('xkeysib-')) {
+      setLoading(false);
+      return { success: false, message: 'API Key không hợp lệ. Vui lòng kiểm tra lại.' };
+    }
+
+    // Simulate successful connection
+    const newConnection: BrevoConnection = {
+      id: generateId(),
+      organization_id: 'org-001',
+      api_key_masked: `xk-****...****${apiKey.slice(-4)}`,
+      brevo_company_name: 'Phòng KD ViLead',
+      brevo_email: 'admin@vilead.vn',
+      brevo_plan: 'free',
+      status: 'connected',
+      connected_at: new Date(),
+      last_check_at: new Date(),
+      created_by: CURRENT_USER.id
+    };
+
+    setConnection(newConnection);
+    setLoading(false);
+    return { success: true, message: 'Kết nối Brevo thành công!' };
+  }, []);
+
+  // Disconnect from Brevo
+  const disconnect = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setConnection(null);
+    setLoading(false);
+    return { success: true, message: 'Đã ngắt kết nối Brevo' };
+  }, []);
+
+  // Change API key
+  const changeApiKey = useCallback(async (apiKey: string): Promise<{ success: boolean; message: string }> => {
+    // Reuse connect logic
+    return connect(apiKey);
+  }, [connect]);
+
+  // Check connection status
+  const checkConnection = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if (connection) {
+      // Simulate successful check - update last_check_at
+      setConnection(prev => prev ? {
+        ...prev,
+        status: 'connected',
+        last_check_at: new Date()
+      } : null);
+      setLoading(false);
+      return { success: true, message: 'Kết nối Brevo hoạt động bình thường' };
+    }
+
+    setLoading(false);
+    return { success: false, message: 'Chưa có kết nối Brevo' };
+  }, [connection]);
+
+  // Get current quota from Brevo
+  const refreshQuota = useCallback(async (): Promise<void> => {
+    setLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Return mock quota data
+    setQuota(MOCK_BREVO_QUOTA);
+    setLoading(false);
+  }, []);
+
+  return {
+    connection,
+    quota,
+    isConnected,
+    hasError,
+    loading,
+    error,
+    connect,
+    disconnect,
+    changeApiKey,
+    checkConnection,
+    refreshQuota
+  };
+}
+
+// ==================== USE BREVO SENDERS HOOK ====================
+export function useBrevoSenders() {
+  const [senders, setSenders] = useState<BrevoSenderEmail[]>(MOCK_BREVO_SENDER_EMAILS);
+  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter senders
+  const filteredSenders = useMemo(() => {
+    return senders.filter(sender => {
+      const matchesSearch = searchQuery === '' ||
+        sender.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sender.sender_name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+  }, [senders, searchQuery]);
+
+  // Sync senders from Brevo
+  const syncFromBrevo = useCallback(async (): Promise<{ success: boolean; message: string }> => {
+    setSyncing(true);
+    setError(null);
+
+    // Simulate API call to Brevo
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Update synced_at for all senders
+    setSenders(prev => prev.map(sender => ({
+      ...sender,
+      synced_at: new Date()
+    })));
+
+    setSyncing(false);
+    return { success: true, message: 'Đã cập nhật danh sách Sender' };
+  }, []);
+
+  // Add new sender via Brevo API
+  const addSender = useCallback(async (data: {
+    email: string;
+    sender_name: string;
+    permission_type: 'all' | 'me' | 'specific';
+    permitted_user_ids: string[];
+  }): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+    setError(null);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Check if email already exists
+    const emailExists = senders.some(s => s.email.toLowerCase() === data.email.toLowerCase());
+    if (emailExists) {
+      setLoading(false);
+      return { success: false, message: 'Email này đã tồn tại trên Brevo. Vui lòng kiểm tra.' };
+    }
+
+    // Create new sender
+    const newSender: BrevoSenderEmail = {
+      id: generateId(),
+      email: data.email,
+      sender_name: data.sender_name,
+      brevo_sender_id: Math.floor(Math.random() * 100000),
+      brevo_status: 'pending',
+      vilead_status: 'active',
+      permission_type: data.permission_type,
+      permitted_user_ids: data.permitted_user_ids,
+      synced_at: new Date(),
+      created_by: CURRENT_USER.id,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+
+    setSenders(prev => [newSender, ...prev]);
+    setLoading(false);
+    return { success: true, message: 'Đã gửi email xác thực từ Brevo. Vui lòng kiểm tra hộp thư.' };
+  }, [senders]);
+
+  // Update sender permission (ViLead only)
+  const updatePermission = useCallback(async (
+    id: string,
+    permission_type: 'all' | 'me' | 'specific',
+    permitted_user_ids: string[]
+  ): Promise<{ success: boolean; message: string }> => {
+    setLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    setSenders(prev => prev.map(sender => {
+      if (sender.id === id) {
+        return {
+          ...sender,
+          permission_type,
+          permitted_user_ids,
+          updated_at: new Date()
+        };
+      }
+      return sender;
+    }));
+
+    setLoading(false);
+    return { success: true, message: 'Cập nhật quyền thành công' };
+  }, []);
+
+  // Toggle ViLead status (disable/enable)
+  const toggleViLeadStatus = useCallback(async (id: string): Promise<{ success: boolean; message: string }> => {
+    const sender = senders.find(s => s.id === id);
+    if (!sender) {
+      return { success: false, message: 'Không tìm thấy sender' };
+    }
+
+    setLoading(true);
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const newStatus: ViLeadSenderStatus = sender.vilead_status === 'active' ? 'disabled' : 'active';
+    const message = newStatus === 'active' ? 'Đã kích hoạt lại sender' : 'Đã vô hiệu hóa sender';
+
+    setSenders(prev => prev.map(s => {
+      if (s.id === id) {
+        return {
+          ...s,
+          vilead_status: newStatus,
+          updated_at: new Date()
+        };
+      }
+      return s;
+    }));
+
+    setLoading(false);
+    return { success: true, message };
+  }, [senders]);
+
+  // Check permission for current user
+  const checkPermission = useCallback((sender: BrevoSenderEmail): boolean => {
+    if (sender.permission_type === 'all') return true;
+    if (sender.permission_type === 'me') return sender.created_by === CURRENT_USER.id;
+    if (sender.permission_type === 'specific') {
+      return sender.permitted_user_ids.includes(CURRENT_USER.id) || sender.created_by === CURRENT_USER.id;
+    }
+    return false;
+  }, []);
+
+  return {
+    senders: filteredSenders,
+    allSenders: senders,
+    loading,
+    syncing,
+    error,
+    searchQuery,
+    setSearchQuery,
+    syncFromBrevo,
+    addSender,
+    updatePermission,
+    toggleViLeadStatus,
+    checkPermission,
+    currentUser: CURRENT_USER
   };
 }
 

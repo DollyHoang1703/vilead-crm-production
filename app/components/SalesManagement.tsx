@@ -47,8 +47,10 @@ import {
   Upload,
   FileText,
   Download as DownloadIcon,
-  Paperclip
+  Paperclip,
+  Sliders
 } from 'lucide-react'
+import { CreatableSelect, CreatableSelectOption } from '@/components/ui/creatable-select'
 import { SalesTable } from './sales/components/SalesTable'
 import type { Lead as LeadType, ColumnVisibility } from './sales/types/lead.types'
 import CustomerDetailModal from './CustomerDetailModal'
@@ -105,6 +107,8 @@ interface Lead {
   // Discount fields
   discountPercent?: number
   originalValue?: number
+  // Estimated revenue
+  estimatedRevenue?: string | number
 }
 
 interface MetricData {
@@ -369,6 +373,7 @@ export default function SalesManagement() {
     source: true,
     address: true,
     stage: true,
+    estimatedRevenue: false,
     salesOwner: true,
     tags: true,
     notes: true,
@@ -437,8 +442,94 @@ export default function SalesManagement() {
     notes: '',
     assignedTo: '',
     tags: [] as string[],
-    customerType: 'individual' as 'individual' | 'business'
+    customerType: 'individual' as 'individual' | 'business',
+    estimatedRevenue: ''
   })
+
+  // Custom options for creatable selects
+  const [customSources, setCustomSources] = useState<CreatableSelectOption[]>([])
+  const [customIndustries, setCustomIndustries] = useState<CreatableSelectOption[]>([])
+
+  // Field settings modal
+  const [showFieldSettingsModal, setShowFieldSettingsModal] = useState(false)
+  const [leadFormFieldVisibility, setLeadFormFieldVisibility] = useState({
+    name: true,
+    phone: true, // Required - cannot be hidden
+    email: true, // Required - cannot be hidden
+    estimatedRevenue: true,
+    company: true,
+    jobTitle: true,
+    industry: true,
+    companySize: true,
+    website: true,
+    address: true,
+    source: true,
+    region: true,
+    assignedTo: true,
+    product: true,
+    content: true,
+    notes: true
+  })
+
+  // Default source options
+  const defaultSourceOptions: CreatableSelectOption[] = [
+    { value: 'website', label: 'Website', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { value: 'facebook', label: 'Facebook', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'google', label: 'Google Ads', color: 'bg-red-100 text-red-700 border-red-200' },
+    { value: 'referral', label: 'Giới thiệu', color: 'bg-green-100 text-green-700 border-green-200' },
+    { value: 'cold-call', label: 'Cold Call', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    { value: 'exhibition', label: 'Triển lãm', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { value: 'linkedin', label: 'LinkedIn', color: 'bg-sky-100 text-sky-700 border-sky-200' },
+    { value: 'email-marketing', label: 'Email Marketing', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+    { value: 'webinar', label: 'Webinar', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+    { value: 'partner', label: 'Đối tác', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  ]
+
+  // Default industry options
+  const defaultIndustryOptions: CreatableSelectOption[] = [
+    { value: 'technology', label: 'Công nghệ thông tin', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { value: 'finance', label: 'Tài chính - Ngân hàng', color: 'bg-green-100 text-green-700 border-green-200' },
+    { value: 'healthcare', label: 'Y tế - Sức khỏe', color: 'bg-red-100 text-red-700 border-red-200' },
+    { value: 'education', label: 'Giáo dục', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { value: 'retail', label: 'Bán lẻ', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    { value: 'manufacturing', label: 'Sản xuất', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+    { value: 'real-estate', label: 'Bất động sản', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+    { value: 'consulting', label: 'Tư vấn', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'marketing', label: 'Marketing', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+    { value: 'logistics', label: 'Vận chuyển - Logistics', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  ]
+
+  // Combined options including custom ones
+  const allSourceOptions = [...defaultSourceOptions, ...customSources]
+  const allIndustryOptions = [...defaultIndustryOptions, ...customIndustries]
+
+  // Handler to add new source
+  const handleAddNewSource = (label: string) => {
+    const newValue = label.toLowerCase().replace(/\s+/g, '-')
+    const colors = ['bg-cyan-100 text-cyan-700 border-cyan-200', 'bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-amber-100 text-amber-700 border-amber-200']
+    const randomColor = colors[customSources.length % colors.length]
+    setCustomSources(prev => [...prev, { value: newValue, label, color: randomColor }])
+  }
+
+  // Handler to add new industry
+  const handleAddNewIndustry = (label: string) => {
+    const newValue = label.toLowerCase().replace(/\s+/g, '-')
+    const colors = ['bg-cyan-100 text-cyan-700 border-cyan-200', 'bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-amber-100 text-amber-700 border-amber-200']
+    const randomColor = colors[customIndustries.length % colors.length]
+    setCustomIndustries(prev => [...prev, { value: newValue, label, color: randomColor }])
+  }
+
+  // Currency format helper
+  const formatCurrencyInput = (value: string): string => {
+    const numericValue = value.replace(/\D/g, '')
+    if (!numericValue) return ''
+    return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  }
+
+  const handleEstimatedRevenueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyInput(e.target.value)
+    setNewLead(prev => ({ ...prev, estimatedRevenue: formatted }))
+  }
   
   // Drag & Drop handlers
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
@@ -1102,7 +1193,8 @@ export default function SalesManagement() {
       notes: '',
       assignedTo: '', // Sẽ được set thành 'Minh Expert' khi submit
       tags: [],
-      customerType: 'individual'
+      customerType: 'individual',
+      estimatedRevenue: ''
     })
 
     // Close modal and show success message
@@ -1530,6 +1622,7 @@ export default function SalesManagement() {
     source: 'Nguồn',
     region: 'Tỉnh thành',
     stage: 'Giai đoạn',
+    estimatedRevenue: 'Doanh thu ước tính',
     product: 'Sản phẩm quan tâm',
     customerType: 'Loại khách hàng',
     salesOwner: 'Sales phụ trách',
@@ -3096,7 +3189,7 @@ export default function SalesManagement() {
                       <button
                         onClick={() => setVisibleColumns({
                           checkbox: true, stt: true, customerName: true, phone: true, email: true,
-                          address: true, source: true, stage: true,
+                          address: true, source: true, stage: true, estimatedRevenue: false,
                           salesOwner: true, tags: true, 
                           notes: true, createdDate: true, actions: true
                         })}
@@ -3469,6 +3562,13 @@ export default function SalesManagement() {
                     </th>
                   )}
 
+                  {/* 8.5. Doanh thu ước tính */}
+                  {visibleColumns.estimatedRevenue && (
+                    <th style={{ width: '150px' }}>
+                      Doanh thu ước tính
+                    </th>
+                  )}
+
                   {/* 9. Sales phụ trách */}
                   {visibleColumns.salesOwner && (
                     <th style={{ width: '150px' }}>
@@ -3604,6 +3704,15 @@ export default function SalesManagement() {
                            lead.status === 'converted' ? 'Thành công' :
                            lead.status === 'lost' ? 'Thất bại' : 'Khác'}
                         </span>
+                      </td>
+                    )}
+
+                    {/* 8.5. Doanh thu ước tính */}
+                    {visibleColumns.estimatedRevenue && (
+                      <td>
+                        <div className="text-sm text-gray-900 font-medium">
+                          {lead.estimatedRevenue ? `${formatCurrency(lead.estimatedRevenue)} ₫` : '-'}
+                        </div>
                       </td>
                     )}
 
@@ -4088,6 +4197,13 @@ export default function SalesManagement() {
                       </div>
                     )}
                   </div>
+                  <button
+                    onClick={() => setShowFieldSettingsModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 hover:text-gray-700 transition-all"
+                  >
+                    {/* <Sliders className="w-3.5 h-3.5" /> */}
+                    Thiết lập trường thông tin
+                  </button>
                 </div>
                 <button
                   onClick={() => setShowAddLeadModal(false)}
@@ -4150,22 +4266,24 @@ export default function SalesManagement() {
               {/* Required Information */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="text-red-500">*</span>
-                  Thông tin bắt buộc
+                  <Building2 className="w-4 h-4 text-purple-500" />
+                  Thông tin cơ bản
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Tên khách hàng <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newLead.name}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Nhập tên khách hàng..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  {leadFormFieldVisibility.name && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Tên khách hàng
+                      </label>
+                      <input
+                        type="text"
+                        value={newLead.name}
+                        onChange={(e) => setNewLead(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Nhập tên khách hàng..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -4180,7 +4298,7 @@ export default function SalesManagement() {
                     />
                   </div>
                   
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Email <span className="text-red-500">*</span>
                     </label>
@@ -4192,6 +4310,24 @@ export default function SalesManagement() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+
+                  {leadFormFieldVisibility.estimatedRevenue && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Doanh thu ước tính
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={newLead.estimatedRevenue}
+                          onChange={handleEstimatedRevenueChange}
+                          placeholder="1.000.000"
+                          className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">VNĐ</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4203,88 +4339,83 @@ export default function SalesManagement() {
                     Thông tin công ty
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Công ty</label>
-                      <input
-                        type="text"
-                        value={newLead.company}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, company: e.target.value }))}
-                        placeholder="Tên công ty..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    {leadFormFieldVisibility.company && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Công ty</label>
+                        <input
+                          type="text"
+                          value={newLead.company}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, company: e.target.value }))}
+                          placeholder="Tên công ty..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Chức vụ</label>
-                      <input
-                        type="text"
-                        value={newLead.jobTitle}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, jobTitle: e.target.value }))}
-                        placeholder="CEO, Manager, Developer..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    {leadFormFieldVisibility.jobTitle && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Chức vụ</label>
+                        <input
+                          type="text"
+                          value={newLead.jobTitle}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, jobTitle: e.target.value }))}
+                          placeholder="CEO, Manager, Developer..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Ngành nghề</label>
-                      <select
-                        value={newLead.industry}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, industry: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Chọn ngành nghề...</option>
-                        <option value="technology">Công nghệ thông tin</option>
-                        <option value="finance">Tài chính - Ngân hàng</option>
-                        <option value="healthcare">Y tế - Sức khỏe</option>
-                        <option value="education">Giáo dục</option>
-                        <option value="retail">Bán lẻ</option>
-                        <option value="manufacturing">Sản xuất</option>
-                        <option value="real-estate">Bất động sản</option>
-                        <option value="consulting">Tư vấn</option>
-                        <option value="marketing">Marketing</option>
-                        <option value="logistics">Vận chuyển - Logistics</option>
-                        <option value="other">Khác</option>
-                      </select>
-                    </div>
+                    {leadFormFieldVisibility.industry && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Ngành nghề</label>
+                        <CreatableSelect
+                          options={allIndustryOptions}
+                          value={newLead.industry}
+                          onChange={(value) => setNewLead(prev => ({ ...prev, industry: value }))}
+                          onAddNew={handleAddNewIndustry}
+                          placeholder="Lựa chọn hoặc thêm mới"
+                        />
+                      </div>
+                    )}
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Quy mô công ty</label>
-                      <select
-                        value={newLead.companySize}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, companySize: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Chọn quy mô...</option>
-                        <option value="1-10">1-10 nhân viên</option>
-                        <option value="11-50">11-50 nhân viên</option>
-                        <option value="51-200">51-200 nhân viên</option>
-                        <option value="201-500">201-500 nhân viên</option>
-                        <option value="501-1000">501-1000 nhân viên</option>
-                        <option value="1000+">1000+ nhân viên</option>
-                      </select>
-                    </div>
+                    {leadFormFieldVisibility.companySize && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Quy mô công ty</label>
+                        <input
+                          type="text"
+                          value={newLead.companySize}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, companySize: e.target.value }))}
+                          placeholder="Quy mô bao nhiêu người..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Website</label>
-                      <input
-                        type="url"
-                        value={newLead.website}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, website: e.target.value }))}
-                        placeholder="https://domain.com"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    {leadFormFieldVisibility.website && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Website</label>
+                        <input
+                          type="url"
+                          value={newLead.website}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, website: e.target.value }))}
+                          placeholder="https://domain.com"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Địa chỉ</label>
-                      <input
-                        type="text"
-                        value={newLead.address}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, address: e.target.value }))}
-                        placeholder="Địa chỉ công ty..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    {leadFormFieldVisibility.address && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Địa chỉ</label>
+                        <input
+                          type="text"
+                          value={newLead.address}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, address: e.target.value }))}
+                          placeholder="Địa chỉ công ty..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -4296,146 +4427,150 @@ export default function SalesManagement() {
                   Nguồn lead & Phân công
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn</label>
-                    <select
-                      value={newLead.source}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, source: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="website">Website</option>
-                      <option value="facebook">Facebook</option>
-                      <option value="google">Google Ads</option>
-                      <option value="referral">Giới thiệu</option>
-                      <option value="cold-call">Cold Call</option>
-                      <option value="exhibition">Triển lãm</option>
-                      <option value="linkedin">LinkedIn</option>
-                      <option value="email-marketing">Email Marketing</option>
-                      <option value="webinar">Webinar</option>
-                      <option value="partner">Đối tác</option>
-                      <option value="other">Khác</option>
-                    </select>
-                  </div>
+                  {leadFormFieldVisibility.source && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn</label>
+                      <CreatableSelect
+                        options={allSourceOptions}
+                        value={newLead.source}
+                        onChange={(value) => setNewLead(prev => ({ ...prev, source: value }))}
+                        onAddNew={handleAddNewSource}
+                        placeholder="Lựa chọn hoặc thêm mới"
+                      />
+                    </div>
+                  )}
                   
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Tỉnh thành</label>
-                    <select
-                      value={newLead.region}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, region: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="hanoi">Hà Nội</option>
-                      <option value="hcm">TP. Hồ Chí Minh</option>
-                      <option value="danang">Đà Nẵng</option>
-                      <option value="haiphong">Hải Phòng</option>
-                      <option value="cantho">Cần Thơ</option>
-                      <option value="other">Khác</option>
-                    </select>
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Phân công cho
-                      <div 
-                        className="inline-block ml-1 relative"
-                        onMouseEnter={() => setShowTooltip('assign-to')}
-                        onMouseLeave={() => setShowTooltip(null)}
+                  {leadFormFieldVisibility.region && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tỉnh thành</label>
+                      <select
+                        value={newLead.region}
+                        onChange={(e) => setNewLead(prev => ({ ...prev, region: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help" />
-                        {showTooltip === 'assign-to' && (
-                          <div className="absolute left-0 top-5 z-50 bg-black text-white text-xs rounded-lg py-2 px-3 shadow-lg">
-                            <div className="max-w-xs">
-                              <p className="text-gray-300">Mặc định phân công cho người tạo. Có thể chọn người khác hoặc để trống để phân công tự động sau.</p>
+                        <option value="hanoi">Hà Nội</option>
+                        <option value="hcm">TP. Hồ Chí Minh</option>
+                        <option value="danang">Đà Nẵng</option>
+                        <option value="haiphong">Hải Phòng</option>
+                        <option value="cantho">Cần Thơ</option>
+                        <option value="other">Khác</option>
+                      </select>
+                    </div>
+                  )}
+                  
+                  {leadFormFieldVisibility.assignedTo && (
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Phân công cho
+                        <div 
+                          className="inline-block ml-1 relative"
+                          onMouseEnter={() => setShowTooltip('assign-to')}
+                          onMouseLeave={() => setShowTooltip(null)}
+                        >
+                          <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                          {showTooltip === 'assign-to' && (
+                            <div className="absolute left-0 top-5 z-50 bg-black text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                              <div className="max-w-xs">
+                                <p className="text-gray-300">Mặc định phân công cho người tạo. Có thể chọn người khác hoặc để trống để phân công tự động sau.</p>
+                              </div>
+                              <div className="absolute top-[-4px] left-3 w-2 h-2 bg-black transform rotate-45"></div>
                             </div>
-                            <div className="absolute top-[-4px] left-3 w-2 h-2 bg-black transform rotate-45"></div>
-                          </div>
-                        )}
-                      </div>
-                    </label>
-                    <select
-                      value={newLead.assignedTo}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, assignedTo: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Mặc định (Minh Expert - người tạo)</option>
-                      {getAvailableSalesPersons().map(person => (
-                        <option key={person.id} value={person.name}>
-                          {person.name} ({person.currentLeads} leads hiện tại)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                          )}
+                        </div>
+                      </label>
+                      <select
+                        value={newLead.assignedTo}
+                        onChange={(e) => setNewLead(prev => ({ ...prev, assignedTo: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Mặc định (Minh Expert - người tạo)</option>
+                        {getAvailableSalesPersons().map(person => (
+                          <option key={person.id} value={person.name}>
+                            {person.name} ({person.currentLeads} leads hiện tại)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Product & Sales Information */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-yellow-500" />
-                  Thông tin sản phẩm & Bán hàng
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm quan tâm</label>
-                    <select
-                      value={newLead.product}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, product: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Chọn sản phẩm...</option>
-                      <option value="CRM Solution">CRM Solution - Quản lý khách hàng</option>
-                      <option value="ERP System">ERP System - Quản lý tài nguyên doanh nghiệp</option>
-                      <option value="Website Development">Website Development - Phát triển website</option>
-                      <option value="E-commerce Platform">E-commerce Platform - Nền tảng thương mại điện tử</option>
-                      <option value="Mobile Application">Mobile Application - Ứng dụng di động</option>
-                      <option value="Marketing Automation">Marketing Automation - Tự động hóa marketing</option>
-                      <option value="Data Analytics">Data Analytics - Phân tích dữ liệu</option>
-                      <option value="Cloud Services">Cloud Services - Dịch vụ đám mây</option>
-                      <option value="AI/ML Solutions">AI/ML Solutions - Giải pháp trí tuệ nhân tạo</option>
-                      <option value="Cybersecurity">Cybersecurity - An ninh mạng</option>
-                      <option value="Digital Transformation">Digital Transformation - Chuyển đổi số</option>
-                      <option value="Custom Software">Custom Software - Phần mềm tùy chỉnh</option>
-                      <option value="Consulting Services">Consulting Services - Dịch vụ tư vấn</option>
-                      <option value="Training & Support">Training & Support - Đào tạo và hỗ trợ</option>
-                      <option value="Other">Khác</option>
-                    </select>
+              {leadFormFieldVisibility.product && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-yellow-500" />
+                    Thông tin sản phẩm & Bán hàng
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm quan tâm</label>
+                      <select
+                        value={newLead.product}
+                        onChange={(e) => setNewLead(prev => ({ ...prev, product: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Chọn sản phẩm...</option>
+                        <option value="CRM Solution">CRM Solution - Quản lý khách hàng</option>
+                        <option value="ERP System">ERP System - Quản lý tài nguyên doanh nghiệp</option>
+                        <option value="Website Development">Website Development - Phát triển website</option>
+                        <option value="E-commerce Platform">E-commerce Platform - Nền tảng thương mại điện tử</option>
+                        <option value="Mobile Application">Mobile Application - Ứng dụng di động</option>
+                        <option value="Marketing Automation">Marketing Automation - Tự động hóa marketing</option>
+                        <option value="Data Analytics">Data Analytics - Phân tích dữ liệu</option>
+                        <option value="Cloud Services">Cloud Services - Dịch vụ đám mây</option>
+                        <option value="AI/ML Solutions">AI/ML Solutions - Giải pháp trí tuệ nhân tạo</option>
+                        <option value="Cybersecurity">Cybersecurity - An ninh mạng</option>
+                        <option value="Digital Transformation">Digital Transformation - Chuyển đổi số</option>
+                        <option value="Custom Software">Custom Software - Phần mềm tùy chỉnh</option>
+                        <option value="Consulting Services">Consulting Services - Dịch vụ tư vấn</option>
+                        <option value="Training & Support">Training & Support - Đào tạo và hỗ trợ</option>
+                        <option value="Other">Khác</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Description */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-orange-500" />
-                  Mô tả chi tiết
-                </h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Nội dung quan tâm</label>
-                    <textarea
-                      value={newLead.content}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder="Mô tả nhu cầu, yêu cầu của khách hàng..."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Ghi chú</label>
-                    <textarea
-                      value={newLead.notes}
-                      onChange={(e) => setNewLead(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Ghi chú thêm về lead này..."
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+              {(leadFormFieldVisibility.content || leadFormFieldVisibility.notes) && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-orange-500" />
+                    Mô tả chi tiết
+                  </h4>
+                  <div className="space-y-4">
+                    {leadFormFieldVisibility.content && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Nội dung quan tâm</label>
+                        <textarea
+                          value={newLead.content}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, content: e.target.value }))}
+                          placeholder="Mô tả nhu cầu, yêu cầu của khách hàng..."
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                    
+                    {leadFormFieldVisibility.notes && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea
+                          value={newLead.notes}
+                          onChange={(e) => setNewLead(prev => ({ ...prev, notes: e.target.value }))}
+                          placeholder="Ghi chú thêm về lead này..."
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Preview Card */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+              {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                 <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
                   <Eye className="w-4 h-4" />
                   Xem trước Lead
@@ -4471,7 +4606,7 @@ export default function SalesManagement() {
                   }</div>
                   <div><strong>Phân công cho:</strong> {newLead.assignedTo || 'Minh Expert (người tạo)'}</div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
@@ -7900,6 +8035,207 @@ export default function SalesManagement() {
                 <Trash2 className="w-4 h-4" />
                 Đồng ý
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Field Settings Modal */}
+      {showFieldSettingsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+                    <button className="px-4 py-2 text-sm font-medium bg-white text-gray-900 border-r border-gray-200">
+                      Ẩn hiện trường dữ liệu
+                    </button>
+                    <button 
+                      onClick={() => setShowFieldSettingsModal(false)}
+                      className="px-4 py-2 text-sm font-medium hover:bg-green-700 transition-all text-white bg-green-600 rounded-r-lg flex items-center gap-1"
+                    >
+                      Lưu
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFieldSettingsModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3">
+                {/* Required fields - cannot be hidden */}
+                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 opacity-70 cursor-not-allowed">
+                  <span className="text-sm text-gray-600">Số điện thoại</span>
+                  <input
+                    type="checkbox"
+                    checked={true}
+                    disabled
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-not-allowed"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 opacity-70 cursor-not-allowed">
+                  <span className="text-sm text-gray-600">Email</span>
+                  <input
+                    type="checkbox"
+                    checked={true}
+                    disabled
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded cursor-not-allowed"
+                  />
+                </label>
+
+                {/* Optional fields */}
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Tên khách hàng</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.name}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, name: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Doanh thu ước tính</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.estimatedRevenue}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, estimatedRevenue: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Công ty</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.company}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, company: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Chức vụ</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.jobTitle}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, jobTitle: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Ngành nghề</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.industry}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, industry: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Quy mô công ty</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.companySize}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, companySize: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Website</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.website}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, website: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Địa chỉ</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.address}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, address: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Nguồn</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.source}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, source: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Tỉnh thành</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.region}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, region: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Phân công cho</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.assignedTo}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, assignedTo: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Sản phẩm quan tâm</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.product}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, product: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Nội dung quan tâm</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.content}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, content: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                  <span className="text-sm text-gray-700">Ghi chú</span>
+                  <input
+                    type="checkbox"
+                    checked={leadFormFieldVisibility.notes}
+                    onChange={(e) => setLeadFormFieldVisibility(prev => ({ ...prev, notes: e.target.checked }))}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+
+                <p className="text-xs text-gray-500 mt-4 pt-3 border-t border-gray-200">
+                  <span className="text-red-500">*</span> Số điện thoại và Email là trường bắt buộc, không thể ẩn.
+                </p>
+              </div>
             </div>
           </div>
         </div>

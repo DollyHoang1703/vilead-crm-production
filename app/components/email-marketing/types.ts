@@ -105,6 +105,67 @@ export interface EmailLimitsFormData {
   delay_between_emails: number;
 }
 
+// ==================== BREVO INTEGRATION TYPES ====================
+// Based on EMAIL_MARKETING_CONFIG_BREVO_UI_SPEC.md
+
+export type BrevoConnectionStatus = 'not_connected' | 'connected' | 'error';
+export type BrevoPlan = 'free' | 'starter' | 'business' | 'enterprise';
+export type BrevoSenderStatus = 'verified' | 'pending';
+export type ViLeadSenderStatus = 'active' | 'disabled';
+
+export interface BrevoConnection {
+  id: string;
+  organization_id: string;
+  api_key_masked: string;           // e.g., "xk-****...****a3b2"
+  brevo_company_name: string;
+  brevo_email: string;
+  brevo_plan: BrevoPlan;
+  status: BrevoConnectionStatus;
+  connected_at: Date;
+  last_check_at: Date | null;
+  created_by: string;
+}
+
+export interface BrevoQuota {
+  daily: {
+    limit: number;
+    used: number;
+    percentage: number;
+    reset_in: string;               // e.g., "6 giờ"
+  };
+  monthly: {
+    limit: number;
+    used: number;
+    percentage: number;
+    reset_in: string;               // e.g., "22 ngày"
+  };
+  plan: BrevoPlan;
+}
+
+// Extended SenderEmail for Brevo integration
+export interface BrevoSenderEmail {
+  id: string;
+  email: string;
+  sender_name: string;
+  
+  // Brevo fields
+  brevo_sender_id: number | null;
+  brevo_status: BrevoSenderStatus;
+  
+  // ViLead fields
+  vilead_status: ViLeadSenderStatus;
+  permission_type: PermissionType;
+  permitted_user_ids: string[];
+  
+  // Sync info
+  synced_at: Date | null;
+  
+  // Audit
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface EmailUsage {
   daily: { used: number; limit: number; percentage: number };
   monthly: { used: number; limit: number; percentage: number };

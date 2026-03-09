@@ -63,7 +63,7 @@ interface KPITarget {
   endDate: string
   assignedTo: string[]
   assignmentLevel: 'individual' | 'team' | 'department' | 'company'
-  status: 'active' | 'paused' | 'completed' | 'overdue'
+  status: 'not_started' | 'active' | 'paused' | 'completed' | 'overdue'
   priority: 'low' | 'medium' | 'high' | 'critical'
   progressPercentage: number
   lastUpdated: string
@@ -138,6 +138,7 @@ export default function KPIManagement() {
   // Month/year states for Add KPI form
   const [kpiMonth, setKpiMonth] = useState<number>(new Date().getMonth() + 1)
   const [kpiYear, setKpiYear] = useState<number>(new Date().getFullYear())
+  const [kpiWeek, setKpiWeek] = useState<number>(1)
   // Month/year states for Company tab filters
   const [filterMonth, setFilterMonth] = useState<number>(new Date().getMonth() + 1)
   const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear())
@@ -317,7 +318,7 @@ export default function KPIManagement() {
     indicatorGroup: '', // Indicator group
     indicator: '', // Selected indicator
     watchers: [] as string[], // Followers/watchers
-    status: 'active' as 'active' | 'paused' | 'completed' | 'overdue'
+    status: 'not_started' as 'not_started' | 'active' | 'paused' | 'completed' | 'overdue'
   })
 
   // Indicator groups for KPI
@@ -813,8 +814,38 @@ export default function KPIManagement() {
       indicatorGroup: '',
       indicator: '',
       watchers: [],
-      status: 'active'
+      status: 'not_started'
     })
+  }
+
+  // Calculate weeks in a month based on ISO standard (Monday-Sunday)
+  const getWeeksInMonth = (year: number, month: number): number[] => {
+    const firstDay = new Date(year, month - 1, 1)
+    const lastDay = new Date(year, month, 0)
+    
+    // Find first Monday
+    let firstMonday = new Date(firstDay)
+    const dayOfWeek = firstDay.getDay()
+    const daysUntilMonday = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 ? 0 : 8 - dayOfWeek)
+    firstMonday.setDate(firstDay.getDate() + daysUntilMonday)
+    
+    // Count weeks
+    const weeks: number[] = []
+    let currentMonday = new Date(firstMonday)
+    let weekNum = 1
+    
+    while (currentMonday <= lastDay && weekNum <= 4) {
+      weeks.push(weekNum)
+      currentMonday.setDate(currentMonday.getDate() + 7)
+      weekNum++
+    }
+    
+    // If there are remaining days, they belong to week 4
+    if (weeks.length === 0) {
+      weeks.push(1)
+    }
+    
+    return weeks
   }
 
   const handleEditKPI = (kpi: KPITarget) => {
@@ -1231,12 +1262,16 @@ export default function KPIManagement() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              kpi.status === 'not_started' ? 'bg-gray-100 text-gray-800' :
                               kpi.status === 'active' ? 'bg-green-100 text-green-800' :
                               kpi.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                               kpi.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                               'bg-red-100 text-red-800'
                             }`}>
-                              {kpi.status}
+                              {kpi.status === 'not_started' ? 'Chưa bắt đầu' :
+                               kpi.status === 'active' ? 'Đang hoạt động' :
+                               kpi.status === 'paused' ? 'Tạm dừng' :
+                               kpi.status === 'completed' ? 'Hoàn thành' : 'Quá hạn'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1503,12 +1538,16 @@ export default function KPIManagement() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      kpi.status === 'not_started' ? 'bg-gray-100 text-gray-800' :
                                       kpi.status === 'active' ? 'bg-green-100 text-green-800' :
                                       kpi.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                                       kpi.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                                       'bg-red-100 text-red-800'
                                     }`}>
-                                      {kpi.status}
+                                      {kpi.status === 'not_started' ? 'Chưa bắt đầu' :
+                                       kpi.status === 'active' ? 'Đang hoạt động' :
+                                       kpi.status === 'paused' ? 'Tạm dừng' :
+                                       kpi.status === 'completed' ? 'Hoàn thành' : 'Quá hạn'}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1780,12 +1819,16 @@ export default function KPIManagement() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      kpi.status === 'not_started' ? 'bg-gray-100 text-gray-800' :
                                       kpi.status === 'active' ? 'bg-green-100 text-green-800' :
                                       kpi.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                                       kpi.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                                       'bg-red-100 text-red-800'
                                     }`}>
-                                      {kpi.status}
+                                      {kpi.status === 'not_started' ? 'Chưa bắt đầu' :
+                                       kpi.status === 'active' ? 'Đang hoạt động' :
+                                       kpi.status === 'paused' ? 'Tạm dừng' :
+                                       kpi.status === 'completed' ? 'Hoàn thành' : 'Quá hạn'}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -2064,12 +2107,16 @@ export default function KPIManagement() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      kpi.status === 'not_started' ? 'bg-gray-100 text-gray-800' :
                                       kpi.status === 'active' ? 'bg-green-100 text-green-800' :
                                       kpi.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                                       kpi.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                                       'bg-red-100 text-red-800'
                                     }`}>
-                                      {kpi.status}
+                                      {kpi.status === 'not_started' ? 'Chưa bắt đầu' :
+                                       kpi.status === 'active' ? 'Đang hoạt động' :
+                                       kpi.status === 'paused' ? 'Tạm dừng' :
+                                       kpi.status === 'completed' ? 'Hoàn thành' : 'Quá hạn'}
                                     </span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -2277,13 +2324,28 @@ export default function KPIManagement() {
                   </div>
                 </div>
 
-                {/* Thời gian (Period - Month/Year Selection) */}
+                {/* Thời gian (Period - Year/Month/Week Selection) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Chọn thời gian <span className="text-red-500">*</span></label>
                   <div className="flex gap-3">
                     <select
+                      value={kpiYear}
+                      onChange={(e) => {
+                        setKpiYear(Number(e.target.value))
+                        setKpiWeek(1)
+                      }}
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(year => (
+                        <option key={year} value={year}>Năm {year}</option>
+                      ))}
+                    </select>
+                    <select
                       value={kpiMonth}
-                      onChange={(e) => setKpiMonth(Number(e.target.value))}
+                      onChange={(e) => {
+                        setKpiMonth(Number(e.target.value))
+                        setKpiWeek(1)
+                      }}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value={0}>Chọn tháng</option>
@@ -2301,12 +2363,14 @@ export default function KPIManagement() {
                       <option value={12}>Tháng 12</option>
                     </select>
                     <select
-                      value={kpiYear}
-                      onChange={(e) => setKpiYear(Number(e.target.value))}
+                      value={kpiWeek}
+                      onChange={(e) => setKpiWeek(Number(e.target.value))}
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={kpiMonth === 0}
                     >
-                      {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(year => (
-                        <option key={year} value={year}>Năm {year}</option>
+                      <option value={0}>Theo tháng</option>
+                      {kpiMonth > 0 && getWeeksInMonth(kpiYear, kpiMonth).map(week => (
+                        <option key={week} value={week}>Tuần {week}</option>
                       ))}
                     </select>
                   </div>
@@ -2344,6 +2408,7 @@ export default function KPIManagement() {
                     onChange={(e) => setNewKPI({...newKPI, status: e.target.value as typeof newKPI.status})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
+                    <option value="not_started">Chưa bắt đầu</option>
                     <option value="active">Đang hoạt động</option>
                     <option value="paused">Tạm dừng</option>
                     <option value="completed">Hoàn thành</option>
