@@ -9,7 +9,7 @@ import {
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
   FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
   Info, ArrowUpRight, ArrowDownRight, X, MessageSquare, Columns,
-  Brain, BarChart, Package, Edit, ShoppingCart, StickyNote, Save, Sliders
+  Brain, BarChart, Package, Edit, ShoppingCart, StickyNote, Save, Sliders, HelpCircle
 } from 'lucide-react'
 import CustomerEventsManager from './CustomerEventsManager'
 import CustomerAnalytics from './CustomerAnalytics'
@@ -372,6 +372,7 @@ export default function CustomersManagement() {
   const [sortBy, setSortBy] = useState('name')
   const [showRemarketingModal, setShowRemarketingModal] = useState(false)
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
+  const [addCustomerStep, setAddCustomerStep] = useState<1 | 2>(1)
   const [showCustomerFieldSettingsModal, setShowCustomerFieldSettingsModal] = useState(false)
   
   // Customer form field visibility state
@@ -617,6 +618,10 @@ export default function CustomersManagement() {
     source: 'website', // Added source field
     marketingConsent: false,
     smsConsent: false,
+    estimatedRevenue: '', // Doanh thu ước tính
+    province: 'hcm', // Tỉnh thành
+    assignedTo: '', // Phân công cho
+    interestedContent: '', // Nội dung quan tâm
     // Required product fields - now supporting multiple products
     selectedProducts: [] as Array<{
       productId: string,
@@ -3155,9 +3160,14 @@ export default function CustomersManagement() {
       return
     }
 
-    // Validate product and package selection
-    if (newCustomerData.selectedProducts.length === 0) {
-      alert('Vui lòng chọn ít nhất một sản phẩm và gói dịch vụ')
+    // Validate product selection from Step 2
+    if (selectedProducts.length === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm')
+      return
+    }
+
+    if (!paymentDeadline) {
+      alert('Vui lòng chọn thời hạn thanh toán')
       return
     }
 
@@ -3234,42 +3244,62 @@ export default function CustomersManagement() {
       }
     }
 
-    // Create order with multiple products for the new customer
-    const orderItems = newCustomerData.selectedProducts.map(product => ({
-      productId: product.productId,
-      productName: product.productName,
-      packageId: product.packageId,
-      packageName: product.packageName,
-      price: product.price,
-      features: product.features
-    }))
+    // Build order items from Step 2 state
+    const orderItems = selectedProducts.map(productId => {
+      const product = availableProducts.find(p => p.id === productId)
+      const pkgId = selectedPackages[productId]
+      const pkg = availablePackages[productId as keyof typeof availablePackages]?.find(p => p.id === pkgId)
+      const quantity = productQuantities[productId] || 1
+      return {
+        productId: productId,
+        productName: product?.name || '',
+        packageId: pkgId || '',
+        packageName: pkg?.name || 'Standard',
+        price: ((product?.price || 0) + (pkg?.price || 0)) * quantity,
+        quantity: quantity
+      }
+    })
+
+    const subtotal = orderItems.reduce((sum, item) => sum + item.price, 0)
+    const discountAmount = discountType === '%' 
+      ? subtotal * discountPercent / 100 
+      : discountPercent
+    const afterDiscount = subtotal - discountAmount
+    const vatAmount = afterDiscount * 0.1
+    const grandTotal = afterDiscount + vatAmount
     
     const newOrder = {
       id: Math.random().toString(36).substr(2, 9),
       customerId: newCustomer.id,
       customerName: newCustomer.name,
       items: orderItems,
-      totalAmount: newCustomerData.totalAmount,
-      discountPercent: newCustomerData.discountPercent,
-      paymentMethod: newCustomerData.paymentMethod,
-      finalAmount: newCustomerData.finalAmount,
-      status: 'pending_payment', // Chờ thanh toán
+      totalAmount: subtotal,
+      discountPercent: discountPercent,
+      discountType: discountType,
+      discountAmount: discountAmount,
+      vatAmount: vatAmount,
+      finalAmount: grandTotal,
+      paymentMethod: paymentMethod,
+      paymentMode: paymentMode,
+      paymentDeadline: paymentDeadline,
+      installmentData: paymentMode === 'installment' ? installmentData : [],
+      status: 'pending_payment',
       createdDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
-      notes: `Đơn hàng tự động tạo khi thêm khách hàng. Bao gồm ${orderItems.length} sản phẩm/gói.`,
+      dueDate: paymentDeadline,
+      notes: orderNotes || `Đơn hàng tự động tạo khi thêm khách hàng.`,
       itemsSummary: orderItems.map(item => `${item.productName} - ${item.packageName}`).join(', ')
     }
 
-    // Here you would normally add to the customers array and orders array
-    // For now, we'll just show a success message
-    const productsSummary = orderItems.map(item => `• ${item.productName} - ${item.packageName}: ${item.price.toLocaleString('vi-VN')} VND`).join('\n')
+    // Show success message
+    const productsSummary = orderItems.map(item => `• ${item.productName} - ${item.packageName}: ${formatCurrency(item.price.toString())} VNĐ`).join('\n')
     
-    let paymentInfo = `\nTổng tiền hàng: ${newCustomerData.totalAmount.toLocaleString('vi-VN')} VND`
-    if (newCustomerData.discountPercent > 0) {
-      paymentInfo += `\nGiảm giá (${newCustomerData.discountPercent}%): -${(newCustomerData.totalAmount * newCustomerData.discountPercent / 100).toLocaleString('vi-VN')} VND`
+    let paymentInfo = `\nTổng tiền hàng: ${formatCurrency(subtotal.toString())} VNĐ`
+    if (discountAmount > 0) {
+      paymentInfo += `\nGiảm giá: -${formatCurrency(discountAmount.toString())} VNĐ`
     }
-    paymentInfo += `\nThành tiền: ${newCustomerData.finalAmount.toLocaleString('vi-VN')} VND`
-    paymentInfo += `\nHình thức thanh toán: ${newCustomerData.paymentMethod === 'cash' ? '💵 Tiền mặt' : '🏦 Chuyển khoản'}`
+    paymentInfo += `\nVAT (10%): +${formatCurrency(vatAmount.toString())} VNĐ`
+    paymentInfo += `\nTổng cộng: ${formatCurrency(grandTotal.toString())} VNĐ`
+    paymentInfo += `\nThời hạn thanh toán: ${paymentDeadline}`
     
     alert(`Khách hàng mới đã được thêm thành công!\n\nĐơn hàng ${newOrder.id} đã được tạo với trạng thái "Chờ thanh toán"\n\nSản phẩm:\n${productsSummary}${paymentInfo}`)
     
@@ -3297,12 +3327,30 @@ export default function CustomersManagement() {
       source: 'website',
       marketingConsent: false,
       smsConsent: false,
+      estimatedRevenue: '',
+      province: 'hcm',
+      assignedTo: '',
+      interestedContent: '',
       selectedProducts: [],
       totalAmount: 0,
       discountPercent: 0,
       paymentMethod: 'cash',
       finalAmount: 0
     })
+    // Reset Step 2 states
+    setSelectedProducts([])
+    setSelectedPackages({})
+    setProductQuantities({})
+    setOrderNotes('')
+    setSelectedCategory('Tất cả')
+    setPaymentDeadline('')
+    setDiscountPercent(0)
+    setDiscountType('%')
+    setPaymentMethod('cash')
+    setPaymentMode('full')
+    setPaymentInstallments(1)
+    setInstallmentData([{amount: 0, date: ''}])
+    setAddCustomerStep(1)
     setShowAddCustomerModal(false)
   }
 
@@ -4232,33 +4280,56 @@ export default function CustomersManagement() {
         </div>
       )}
 
-      {/* Add Customer Modal */}
+      {/* Add Customer Modal - 2 Step Flow */}
       {showAddCustomerModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className={`bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto ${addCustomerStep === 1 ? 'max-w-2xl' : 'max-w-4xl'}`}>
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Thêm khách hàng mới</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {addCustomerStep === 1 ? 'Thêm khách hàng mới' : 'Tạo đơn hàng'}
+                  </h3>
+                  {addCustomerStep === 1 && (
+                    <button
+                      onClick={() => setShowCustomerFieldSettingsModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 hover:text-gray-700 transition-all"
+                    >
+                      Thiết lập trường thông tin
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Step Indicator */}
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${addCustomerStep === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
+                      {addCustomerStep === 1 ? '1' : '✓'}
+                    </div>
+                    <div className="w-8 h-0.5 bg-gray-300">
+                      <div className={`h-full ${addCustomerStep === 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                    </div>
+                    <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${addCustomerStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                      2
+                    </div>
+                  </div>
                   <button
-                    onClick={() => setShowCustomerFieldSettingsModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 hover:text-gray-700 transition-all"
+                    onClick={() => {
+                      setShowAddCustomerModal(false)
+                      setAddCustomerStep(1)
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {/* <Sliders className="w-3.5 h-3.5" /> */}
-                    Thiết lập trường thông tin
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
-                <button
-                  onClick={() => setShowAddCustomerModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             </div>
 
+            {/* Step 1: Customer Information */}
+            {addCustomerStep === 1 && (
+            <>
             <div className="p-6 space-y-6">
               {/* Customer Type Selection */}
               <div>
@@ -4299,17 +4370,15 @@ export default function CustomersManagement() {
                 </div>
               </div>
 
-              {/* Required Information */}
+              {/* Thông tin cơ bản */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="text-red-500">*</span>
-                  Thông tin bắt buộc
+                  <Building2 className="w-4 h-4 text-purple-500" />
+                  Thông tin cơ bản
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Tên khách hàng <span className="text-red-500">*</span>
-                    </label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tên khách hàng</label>
                     <input
                       type="text"
                       value={`${newCustomerData.firstName} ${newCustomerData.lastName}`.trim()}
@@ -4324,11 +4393,8 @@ export default function CustomersManagement() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Số điện thoại <span className="text-red-500">*</span>
-                    </label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Số điện thoại <span className="text-red-500">*</span></label>
                     <input
                       type="tel"
                       value={newCustomerData.phone}
@@ -4337,11 +4403,8 @@ export default function CustomersManagement() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Email <span className="text-red-500">*</span>
-                    </label>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
                     <input
                       type="email"
                       value={newCustomerData.email}
@@ -4350,10 +4413,26 @@ export default function CustomersManagement() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Doanh thu ước tính</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={newCustomerData.estimatedRevenue}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '')
+                          handleInputChange('estimatedRevenue', value ? formatCurrency(value) : '')
+                        }}
+                        placeholder="1.000.000"
+                        className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">VNĐ</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Company Information - Only show for business customers */}
+              {/* Thông tin công ty - Only show for business customers */}
               {newCustomerData.customerType === 'business' && (
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
@@ -4371,7 +4450,6 @@ export default function CustomersManagement() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Chức vụ</label>
                       <input
@@ -4382,7 +4460,6 @@ export default function CustomersManagement() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Ngành nghề</label>
                       <CreatableSelect
@@ -4393,7 +4470,6 @@ export default function CustomersManagement() {
                         placeholder="Lựa chọn hoặc thêm mới"
                       />
                     </div>
-                    
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Quy mô công ty (số nhân viên)</label>
                       <input
@@ -4411,221 +4487,15 @@ export default function CustomersManagement() {
                 </div>
               )}
 
-              {/* Product and Package Selection - Required */}
+              {/* Nguồn lead & Phân công */}
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="text-red-500">*</span>
-                  <Package className="w-4 h-4 text-purple-500" />
-                  Chọn sản phẩm và gói dịch vụ
-                </h4>
-                
-                {/* Add Product Section */}
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg mb-4">
-                  <h5 className="text-sm font-medium text-gray-700">Thêm sản phẩm mới:</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm</label>
-                      <select
-                        value={tempProduct.selectedProduct}
-                        onChange={(e) => {
-                          setTempProduct(prev => ({
-                            ...prev,
-                            selectedProduct: e.target.value,
-                            selectedPackage: '' // Reset package when product changes
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Chọn sản phẩm...</option>
-                        {products.map(product => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Gói dịch vụ</label>
-                      <select
-                        value={tempProduct.selectedPackage}
-                        onChange={(e) => {
-                          setTempProduct(prev => ({
-                            ...prev,
-                            selectedPackage: e.target.value
-                          }))
-                        }}
-                        disabled={!tempProduct.selectedProduct}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                      >
-                        <option value="">Chọn gói...</option>
-                        {tempProduct.selectedProduct && packages[tempProduct.selectedProduct as keyof typeof packages]?.map(pkg => (
-                          <option key={pkg.id} value={pkg.id}>
-                            {pkg.name} - {pkg.price.toLocaleString('vi-VN')} VND
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={addProductToCustomer}
-                        disabled={!tempProduct.selectedProduct || !tempProduct.selectedPackage}
-                        className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <Plus className="w-4 h-4 inline mr-1" />
-                        Thêm
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Selected Products List */}
-                {newCustomerData.selectedProducts.length > 0 && (
-                  <div className="space-y-3">
-                    <h5 className="text-sm font-medium text-gray-700">Sản phẩm đã chọn:</h5>
-                    <div className="space-y-2">
-                      {newCustomerData.selectedProducts.map((product, index) => (
-                        <div key={`${product.productId}-${product.packageId}`} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h6 className="text-sm font-medium text-blue-900">
-                                {product.productName} - {product.packageName}
-                              </h6>
-                              <span className="text-sm font-bold text-blue-600">
-                                {product.price.toLocaleString('vi-VN')} VND
-                              </span>
-                            </div>
-                            <div className="text-xs text-blue-700 mt-1">
-                              <strong>Tính năng:</strong> {product.features.join(', ')}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeProductFromCustomer(product.productId, product.packageId)}
-                            className="ml-3 p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Total Amount */}
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-green-900">Tổng giá trị hàng:</span>
-                        <span className="text-lg font-bold text-green-600">
-                          {newCustomerData.totalAmount.toLocaleString('vi-VN')} VND
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Payment Information */}
-                    <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
-                      <h5 className="text-sm font-medium text-blue-900 mb-3">💰 Thông tin thanh toán</h5>
-                      
-                      {/* Discount */}
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Giảm giá (%)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={newCustomerData.discountPercent}
-                          onChange={(e) => handleDiscountChange(Number(e.target.value))}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0"
-                        />
-                      </div>
-
-                      {/* Payment Method */}
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Hình thức thanh toán
-                        </label>
-                        <div className="space-y-2">
-                          <label className="flex items-center">
-                            <input
-                              type="radio"
-                              name="customerPaymentMethod"
-                              value="cash"
-                              checked={newCustomerData.paymentMethod === 'cash'}
-                              onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">💵 Tiền mặt</span>
-                          </label>
-                          <label className="flex items-center">
-                            <input
-                              type="radio"
-                              name="customerPaymentMethod"
-                              value="transfer"
-                              checked={newCustomerData.paymentMethod === 'transfer'}
-                              onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">🏦 Chuyển khoản</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Final Amount */}
-                      <div className="bg-white rounded-md p-3 border border-blue-200">
-                        <div className="flex justify-between text-sm">
-                          <span>Tổng tiền hàng:</span>
-                          <span>{newCustomerData.totalAmount.toLocaleString('vi-VN')} VND</span>
-                        </div>
-                        {newCustomerData.discountPercent > 0 && (
-                          <div className="flex justify-between text-sm text-red-600">
-                            <span>Giảm giá ({newCustomerData.discountPercent}%):</span>
-                            <span>-{(newCustomerData.totalAmount * newCustomerData.discountPercent / 100).toLocaleString('vi-VN')} VND</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-sm font-medium border-t border-gray-200 pt-2 mt-2">
-                          <span>Thành tiền:</span>
-                          <span className="text-green-600">{newCustomerData.finalAmount.toLocaleString('vi-VN')} VND</span>
-                        </div>
-                        <div className="text-xs text-gray-600 mt-1">
-                          Hình thức: {newCustomerData.paymentMethod === 'cash' ? '💵 Tiền mặt' : '🏦 Chuyển khoản'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {newCustomerData.selectedProducts.length === 0 && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-700">
-                      ⚠️ Vui lòng chọn ít nhất một sản phẩm và gói dịch vụ để tiếp tục
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Optional Information */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-gray-500" />
-                  Thông tin bổ sung
+                  <Target className="w-4 h-4 text-green-500" />
+                  Nguồn lead & Phân công
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Địa chỉ</label>
-                    <input
-                      type="text"
-                      value={newCustomerData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      placeholder="Địa chỉ..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn khách hàng</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Nguồn</label>
                     <CreatableSelect
                       options={allCustomerSourceOptions}
                       value={newCustomerData.source}
@@ -4634,36 +4504,495 @@ export default function CustomersManagement() {
                       placeholder="Lựa chọn hoặc thêm mới"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tỉnh thành</label>
+                    <select
+                      value={newCustomerData.province}
+                      onChange={(e) => handleInputChange('province', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="hanoi">Hà Nội</option>
+                      <option value="hcm">TP. Hồ Chí Minh</option>
+                      <option value="danang">Đà Nẵng</option>
+                      <option value="haiphong">Hải Phòng</option>
+                      <option value="cantho">Cần Thơ</option>
+                      <option value="other">Khác</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Phân công cho
+                      <div className="inline-block ml-1 relative">
+                        <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 cursor-help inline" />
+                      </div>
+                    </label>
+                    <select
+                      value={newCustomerData.assignedTo}
+                      onChange={(e) => handleInputChange('assignedTo', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Mặc định (Minh Expert - người tạo)</option>
+                      <option value="Nguyễn Văn A">Nguyễn Văn A (12 leads hiện tại)</option>
+                      <option value="Trần Thị B">Trần Thị B (8 leads hiện tại)</option>
+                      <option value="Lê Văn C">Lê Văn C (15 leads hiện tại)</option>
+                      <option value="Phạm Thị D">Phạm Thị D (10 leads hiện tại)</option>
+                      <option value="Hoàng Văn E">Hoàng Văn E (6 leads hiện tại)</option>
+                      <option value="Đỗ Thị F">Đỗ Thị F (9 leads hiện tại)</option>
+                    </select>
+                  </div>
                 </div>
-                
-                <div className="mt-4">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Ghi chú</label>
-                  <textarea
-                    value={newCustomerData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Ghi chú về khách hàng..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              </div>
+
+              {/* Mô tả chi tiết */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-orange-500" />
+                  Mô tả chi tiết
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Nội dung quan tâm</label>
+                    <textarea
+                      value={newCustomerData.interestedContent}
+                      onChange={(e) => handleInputChange('interestedContent', e.target.value)}
+                      placeholder="Mô tả nhu cầu, yêu cầu của khách hàng..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Ghi chú</label>
+                    <textarea
+                      value={newCustomerData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder="Ghi chú thêm về khách hàng này..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
             
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
               <button
-                onClick={() => setShowAddCustomerModal(false)}
+                onClick={() => {
+                  setShowAddCustomerModal(false)
+                  setAddCustomerStep(1)
+                }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Hủy
               </button>
               <button
-                onClick={handleAddCustomer}
-                disabled={!newCustomerData.firstName && !newCustomerData.lastName || !newCustomerData.email || !newCustomerData.phone || newCustomerData.selectedProducts.length === 0}
+                onClick={() => setAddCustomerStep(2)}
+                disabled={!newCustomerData.firstName && !newCustomerData.lastName || !newCustomerData.email || !newCustomerData.phone}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
-                Thêm khách hàng & Tạo đơn hàng ({newCustomerData.selectedProducts.length} sản phẩm)
+                Tạo đơn hàng
               </button>
             </div>
+            </>
+            )}
+
+            {/* Step 2: Order Creation */}
+            {addCustomerStep === 2 && (
+            <>
+            {/* Customer Info Summary */}
+            <div className="flex items-center gap-3 mx-6 mt-4 mb-4 p-3 rounded-lg">
+              <span className="relative flex shrink-0 overflow-hidden rounded-full h-12 w-12 bg-blue-100">
+                <span className="flex h-full w-full items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold">
+                  <User className="h-6 w-6" />
+                </span>
+              </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-slate-900">
+                    {`${newCustomerData.firstName} ${newCustomerData.lastName}`.trim() || 'Khách hàng mới'}
+                  </h3>
+                </div>
+                <p className="text-sm text-slate-600">
+                  <span className="mr-3">{newCustomerData.phone}</span>
+                  <span>{newCustomerData.email}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 space-y-4">
+              {/* Order Notes */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú đơn hàng</label>
+                <textarea
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={2}
+                  placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)..."
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chọn thể loại sản phẩm</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Tất cả">Tất cả</option>
+                  <option value="Sản phẩm">Sản phẩm</option>
+                </select>
+              </div>
+
+              {/* Product Selection - 2 Column Grid */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Chọn sản phẩm & gói sản phẩm <span className="text-red-500">*</span></h4>
+                <div className="max-h-80 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).map((product) => (
+                      <div key={product.id} className="border border-gray-200 rounded-lg p-3 bg-white hover:border-blue-300 transition-colors">
+                        <label className="flex items-start space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedProducts([...selectedProducts, product.id])
+                                const defaultPackage = availablePackages[product.id as keyof typeof availablePackages]?.[0]
+                                if (defaultPackage) {
+                                  setSelectedPackages({...selectedPackages, [product.id]: defaultPackage.id})
+                                }
+                                setProductQuantities({...productQuantities, [product.id]: 1})
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(id => id !== product.id))
+                                const newPackages = {...selectedPackages}
+                                delete newPackages[product.id]
+                                setSelectedPackages(newPackages)
+                                const newQuantities = {...productQuantities}
+                                delete newQuantities[product.id]
+                                setProductQuantities(newQuantities)
+                              }
+                            }}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">{product.category}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                            <p className="text-sm font-semibold text-green-600 mt-1">{product.price.toLocaleString('vi-VN')} VNĐ</p>
+                          </div>
+                        </label>
+                        {selectedProducts.includes(product.id) && availablePackages[product.id as keyof typeof availablePackages] && (
+                          <div className="ml-7 mt-2 p-2 bg-gray-50 rounded">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Chọn gói:</label>
+                                <select
+                                  value={selectedPackages[product.id] || ''}
+                                  onChange={(e) => setSelectedPackages({...selectedPackages, [product.id]: e.target.value})}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                >
+                                  {availablePackages[product.id as keyof typeof availablePackages]?.map(pkg => (
+                                    <option key={pkg.id} value={pkg.id}>
+                                      {pkg.name} {pkg.price > 0 ? `(+${pkg.price.toLocaleString('vi-VN')} VNĐ)` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Số lượng:</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={productQuantities[product.id] || 1}
+                                  onChange={(e) => setProductQuantities({...productQuantities, [product.id]: Math.max(1, parseInt(e.target.value) || 1)})}
+                                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {availableProducts.filter(product => selectedCategory === 'Tất cả' || product.category === selectedCategory).length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">Không có sản phẩm nào trong thể loại này</p>
+                )}
+              </div>
+
+              {/* Order Summary */}
+              {selectedProducts.length > 0 && (() => {
+                const subtotal = selectedProducts.reduce((sum, productId) => {
+                  const product = availableProducts.find(p => p.id === productId)
+                  const selectedPackageId = selectedPackages[productId]
+                  const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
+                  const quantity = productQuantities[productId] || 1
+                  return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                }, 0)
+                const totalBeforeDiscount = subtotal
+                const discountAmount = discountType === '%' 
+                  ? totalBeforeDiscount * discountPercent / 100 
+                  : discountPercent
+                const afterDiscount = totalBeforeDiscount - discountAmount
+                const vatAmount = afterDiscount * 0.1
+                const grandTotal = afterDiscount + vatAmount
+                
+                return (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-green-800 mb-3">
+                      Đã chọn {selectedProducts.length} sản phẩm:
+                    </h5>
+                    <div className="space-y-2 text-sm">
+                      {selectedProducts.map(productId => {
+                        const product = availableProducts.find(p => p.id === productId)
+                        const selectedPackageId = selectedPackages[productId]
+                        const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
+                        const quantity = productQuantities[productId] || 1
+                        const productTotal = ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                        
+                        return product ? (
+                          <div key={productId} className="flex justify-between text-gray-700">
+                            <span>{product.name} ({selectedPackage?.name || 'Standard'}) x{quantity}</span>
+                            <span className="font-medium text-green-600">
+                              {formatCurrency(productTotal.toString())} VNĐ
+                            </span>
+                          </div>
+                        ) : null
+                      })}
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between text-gray-600 border-t border-green-200 pt-2 mt-2">
+                          <span>Giảm giá {discountType === '%' ? `(${discountPercent}%)` : ''}:</span>
+                          <span className="font-medium text-red-500">-{formatCurrency(discountAmount.toString())} VNĐ</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-600 pt-1">
+                        <span>Phí VAT (10%):</span>
+                        <span className="font-medium text-gray-700">+{formatCurrency(vatAmount.toString())} VNĐ</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
+                        <span>Tổng cộng:</span>
+                        <span className="text-lg">{formatCurrency(grandTotal.toString())} VNĐ</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Payment Info Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Thời hạn thanh toán <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={paymentDeadline}
+                      onChange={(e) => setPaymentDeadline(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Giảm giá</label>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max={discountType === '%' ? 100 : undefined}
+                        value={discountPercent}
+                        onChange={(e) => setDiscountPercent(Math.max(0, discountType === '%' ? Math.min(100, parseInt(e.target.value) || 0) : parseInt(e.target.value) || 0))}
+                        placeholder="0"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <select 
+                        value={discountType}
+                        onChange={(e) => {
+                          setDiscountType(e.target.value as '%' | 'VND')
+                          setDiscountPercent(0)
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="%">%</option>
+                        <option value="VND">VNĐ</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Hình thức thanh toán</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="cash">Tiền mặt</option>
+                      <option value="bank_transfer">Chuyển khoản</option>
+                      <option value="installment">Trả góp</option>
+                      <option value="momo">Momo</option>
+                      <option value="card">Thẻ</option>
+                      <option value="custom">Tùy chỉnh</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Payment Mode */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Thực hiện thanh toán</label>
+                    <div className="flex gap-3">
+                      <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                        <input
+                          type="radio"
+                          name="newCustomerPaymentMode"
+                          value="full"
+                          checked={paymentMode === 'full'}
+                          onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Toàn bộ</span>
+                      </label>
+                      <label className="flex items-center px-3 py-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
+                        <input
+                          type="radio"
+                          name="newCustomerPaymentMode"
+                          value="installment"
+                          checked={paymentMode === 'installment'}
+                          onChange={(e) => setPaymentMode(e.target.value as 'full' | 'installment')}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Theo giai đoạn</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Installment Details */}
+                {paymentMode === 'installment' && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Số lần thanh toán</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={paymentInstallments}
+                      onChange={(e) => {
+                        const num = Math.max(1, Math.min(12, parseInt(e.target.value) || 1))
+                        setPaymentInstallments(num)
+                        const newInstallments = Array.from({length: num}, (_, i) => 
+                          installmentData[i] || {amount: 0, date: ''}
+                        )
+                        setInstallmentData(newInstallments)
+                      }}
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {installmentData.map((installment, index) => {
+                    const subtotalCalc = selectedProducts.reduce((sum, productId) => {
+                      const product = availableProducts.find(p => p.id === productId)
+                      const selectedPackageId = selectedPackages[productId]
+                      const selectedPackage = availablePackages[productId as keyof typeof availablePackages]?.find(pkg => pkg.id === selectedPackageId)
+                      const quantity = productQuantities[productId] || 1
+                      return sum + ((product?.price || 0) + (selectedPackage?.price || 0)) * quantity
+                    }, 0)
+                    const discountAmountCalc = discountType === '%' 
+                      ? subtotalCalc * discountPercent / 100 
+                      : discountPercent
+                    const afterDiscountCalc = subtotalCalc - discountAmountCalc
+                    const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                    const otherInstallmentsTotal = installmentData.reduce((sum, inst, i) => 
+                      i !== index ? sum + inst.amount : sum, 0
+                    )
+                    const maxAllowed = Math.max(0, grandTotalCalc - otherInstallmentsTotal)
+                    const isOverLimit = installment.amount > maxAllowed
+                    
+                    return (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-white rounded-lg border border-gray-100">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Số tiền thanh toán <span className="text-xs text-gray-500">(Tối đa: {formatCurrency(maxAllowed.toString())} VNĐ)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formatCurrency(installment.amount.toString())}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value.replace(/\D/g, '')) || 0
+                            const validatedValue = Math.min(value, maxAllowed)
+                            const newData = [...installmentData]
+                            newData[index] = {...newData[index], amount: validatedValue}
+                            setInstallmentData(newData)
+                          }}
+                          placeholder="0"
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isOverLimit ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày thanh toán đợt {index + 1}
+                          </label>
+                          <input
+                            type="date"
+                            value={installment.date}
+                            onChange={(e) => {
+                              const newData = [...installmentData]
+                              newData[index] = {...newData[index], date: e.target.value}
+                              setInstallmentData(newData)
+                            }}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    )
+                  })}
+                </div>
+                )}
+              </div>
+
+              <p className="text-sm text-gray-600 mt-4">
+                Khách hàng sẽ được tạo lead và đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển thành khách hàng.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-between">
+              <button
+                onClick={() => setAddCustomerStep(1)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                ← Quay lại
+              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowAddCustomerModal(false)
+                    setAddCustomerStep(1)
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddCustomer}
+                  disabled={selectedProducts.length === 0 || !paymentDeadline}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Thêm khách hàng
+                </button>
+              </div>
+            </div>
+            </>
+            )}
           </div>
         </div>
       )}
@@ -5739,17 +6068,26 @@ export default function CustomersManagement() {
                   )}
                 </div>
 
-                {/* Import Customer Button */}
-                <button 
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Nhập khách hàng</span>
-                </button>
+
 
                 {/* Add Customer Button */}
                 <button 
-                  onClick={() => setShowAddCustomerModal(true)}
+                  onClick={() => {
+                    setAddCustomerStep(1)
+                    setSelectedProducts([])
+                    setSelectedPackages({})
+                    setProductQuantities({})
+                    setOrderNotes('')
+                    setSelectedCategory('Tất cả')
+                    setPaymentDeadline('')
+                    setDiscountPercent(0)
+                    setDiscountType('%')
+                    setPaymentMethod('cash')
+                    setPaymentMode('full')
+                    setPaymentInstallments(1)
+                    setInstallmentData([{amount: 0, date: ''}])
+                    setShowAddCustomerModal(true)
+                  }}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                 >
                   <Plus className="w-4 h-4" />

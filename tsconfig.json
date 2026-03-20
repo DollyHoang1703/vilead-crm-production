@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "backup_files", "src_components_backup", "**/*_backup.tsx", "**/*_test.tsx", "**/*_debug.tsx"]
+  "exclude": ["node_modules", "backup_files", "src_components_backup", "skills", "**/*_backup.tsx", "**/*_test.tsx", "**/*_debug.tsx"]
 }
