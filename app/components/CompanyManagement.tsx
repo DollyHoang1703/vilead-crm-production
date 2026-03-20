@@ -106,6 +106,7 @@ interface Department {
   budget: number
   status: 'active' | 'inactive'
   createdAt: string
+  memberIds?: number[]
 }
 
 interface Team {
@@ -120,6 +121,14 @@ interface Team {
   description: string
   status: 'active' | 'inactive'
   createdAt: string
+}
+
+interface ConflictMember {
+  employeeId: number
+  employeeName: string
+  currentTeamId: number
+  currentTeamName: string
+  departmentName: string
 }
 
 interface RolePermissions {
@@ -302,10 +311,11 @@ const sampleDepartments: Department[] = [
     description: "Phụ trách bán hàng và phát triển khách hàng",
     managerId: 2,
     managerName: "Trần Thị Bình",
-    employeeCount: 8,
+    employeeCount: 2,
     budget: 500000000,
     status: "active",
-    createdAt: "2022-01-01"
+    createdAt: "2022-01-01",
+    memberIds: [1]
   },
   {
     id: 2,
@@ -313,10 +323,11 @@ const sampleDepartments: Department[] = [
     description: "Phụ trách marketing và truyền thông",
     managerId: 3,
     managerName: "Lê Minh Chánh",
-    employeeCount: 4,
+    employeeCount: 1,
     budget: 200000000,
     status: "active",
-    createdAt: "2022-01-01"
+    createdAt: "2022-01-01",
+    memberIds: []
   },
   {
     id: 3,
@@ -324,10 +335,11 @@ const sampleDepartments: Department[] = [
     description: "Quản lý nhân sự và tuyển dụng",
     managerId: 4,
     managerName: "Phạm Thị Dung",
-    employeeCount: 3,
+    employeeCount: 1,
     budget: 150000000,
     status: "active",
-    createdAt: "2022-01-01"
+    createdAt: "2022-01-01",
+    memberIds: []
   },
   {
     id: 4,
@@ -335,10 +347,11 @@ const sampleDepartments: Department[] = [
     description: "Phát triển và bảo trì hệ thống",
     managerId: 5,
     managerName: "Hoàng Văn Em",
-    employeeCount: 6,
+    employeeCount: 1,
     budget: 300000000,
     status: "active",
-    createdAt: "2022-01-01"
+    createdAt: "2022-01-01",
+    memberIds: []
   }
 ]
 
@@ -525,6 +538,10 @@ export default function CompanyManagement() {
   const [transferToEmployeeId, setTransferToEmployeeId] = useState('')
   const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([])
 
+  // Action menu states for department and team tables
+  const [deptActionMenuOpen, setDeptActionMenuOpen] = useState<number | null>(null)
+  const [teamActionMenuOpen, setTeamActionMenuOpen] = useState<number | null>(null)
+
   // Edit form data
   const [editFormData, setEditFormData] = useState<Partial<Employee>>({})
 
@@ -703,6 +720,15 @@ export default function CompanyManagement() {
       id: newId
     }
     setDepartments([...departments, newDepartment])
+    // Update employee departmentId for selected members
+    if (departmentData.memberIds && departmentData.memberIds.length > 0) {
+      setEmployees(prev => prev.map(emp => {
+        if (departmentData.memberIds!.includes(emp.id) || emp.id === departmentData.managerId) {
+          return { ...emp, departmentId: newId, department: departmentData.name }
+        }
+        return emp
+      }))
+    }
     setShowAddDepartmentModal(false)
   }
 
@@ -773,6 +799,22 @@ export default function CompanyManagement() {
     })
 
     setDepartments(updatedDepartments)
+    // Update employee departmentId for selected members
+    if (departmentData.memberIds !== undefined) {
+      const allMemberIds = [...(departmentData.memberIds || [])]
+      if (departmentData.managerId) allMemberIds.push(departmentData.managerId)
+      setEmployees(prev => prev.map(emp => {
+        // Add new members to this department
+        if (allMemberIds.includes(emp.id)) {
+          return { ...emp, departmentId: selectedDepartment.id, department: departmentData.name || selectedDepartment.name }
+        }
+        // Remove old members that were un-selected
+        if (emp.departmentId === selectedDepartment.id && !allMemberIds.includes(emp.id)) {
+          return { ...emp, departmentId: 0, department: '' }
+        }
+        return emp
+      }))
+    }
     setShowEditDepartmentModal(false)
     setSelectedDepartment(null)
   }
@@ -1045,6 +1087,36 @@ export default function CompanyManagement() {
       status: 'active' as Department['status'],
       createdAt: new Date().toISOString().split('T')[0]
     })
+    const [selectedMembers, setSelectedMembers] = useState<number[]>([])
+    const [memberSearch, setMemberSearch] = useState('')
+    const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [conflictMembers, setConflictMembers] = useState<ConflictMember[]>([])
+    const [confirmedConflictIds, setConfirmedConflictIds] = useState<number[]>([])
+    const [pendingFormData, setPendingFormData] = useState<Omit<Department, 'id'> | null>(null)
+
+    const findMembersInOtherDepts = (memberIds: number[]): ConflictMember[] => {
+      const conflicts: ConflictMember[] = []
+      memberIds.forEach(empId => {
+        const emp = employees.find(e => e.id === empId)
+        if (!emp) return
+        if (emp.departmentId > 0 && emp.department) {
+          conflicts.push({
+            employeeId: empId,
+            employeeName: emp.name,
+            currentTeamId: emp.departmentId,
+            currentTeamName: emp.department,
+            departmentName: emp.department
+          })
+        }
+      })
+      return conflicts
+    }
+
+    const getEmployeeDeptName = (empId: number): string | null => {
+      const emp = employees.find(e => e.id === empId)
+      if (emp && emp.departmentId > 0 && emp.department) return emp.department
+      return null
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
@@ -1052,80 +1124,196 @@ export default function CompanyManagement() {
         alert('Vui lòng điền đầy đủ thông tin bắt buộc')
         return
       }
-
       const manager = employees.find(emp => emp.id === parseInt(formData.managerId))
-      onSubmit({
+      const submitData: Omit<Department, 'id'> = {
         ...formData,
         managerId: parseInt(formData.managerId),
         managerName: manager?.name || '',
-        budget: Number(formData.budget)
-      })
+        budget: Number(formData.budget),
+        employeeCount: selectedMembers.length + (formData.managerId ? 1 : 0),
+        memberIds: selectedMembers
+      }
+      const conflicts = findMembersInOtherDepts(selectedMembers)
+      if (conflicts.length > 0) {
+        setConflictMembers(conflicts)
+        setConfirmedConflictIds(conflicts.map(c => c.employeeId))
+        setPendingFormData(submitData)
+        setShowConflictDialog(true)
+      } else {
+        onSubmit(submitData)
+      }
     }
 
+    const handleSkipConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      onSubmit({ ...pendingFormData, memberIds: membersWithoutConflict, employeeCount: membersWithoutConflict.length + (formData.managerId ? 1 : 0) })
+      setShowConflictDialog(false)
+    }
+
+    const handleConfirmConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      const finalMembers = [...membersWithoutConflict, ...confirmedConflictIds]
+      onSubmit({ ...pendingFormData, memberIds: finalMembers, employeeCount: finalMembers.length + (formData.managerId ? 1 : 0) })
+      setShowConflictDialog(false)
+    }
+
+    const toggleConflictMember = (empId: number) => {
+      setConfirmedConflictIds(prev => prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId])
+    }
+
+    const filteredEmployees = employees.filter(emp =>
+      emp.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      emp.position.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      emp.department.toLowerCase().includes(memberSearch.toLowerCase())
+    )
+
+    const toggleMember = (empId: number) => {
+      setSelectedMembers(prev => prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId])
+    }
+
+    const selectAll = () => {
+      const ids = filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).map(emp => emp.id)
+      setSelectedMembers(prev => Array.from(new Set([...prev, ...ids])))
+    }
+
+    const deselectAll = () => setSelectedMembers([])
+
     return (
+      <>
       <form onSubmit={handleSubmit} className="space-y-4 pt-2 px-6">
         <div className="space-y-2">
           <Label htmlFor="deptName">Tên phòng ban <span className="text-red-500">*</span></Label>
-          <Input
-            id="deptName"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            placeholder="Nhập tên phòng ban"
-            required
-          />
+          <Input id="deptName" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Nhập tên phòng ban" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="description">Mô tả</Label>
-          <Input
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-            placeholder="Mô tả chức năng phòng ban"
-          />
+          <Input id="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Mô tả chức năng phòng ban" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="manager">Trưởng phòng <span className="text-red-500">*</span></Label>
           <Select value={formData.managerId} onValueChange={(value) => {
             const manager = employees.find(emp => emp.id === parseInt(value))
-            setFormData({
-              ...formData, 
-              managerId: value,
-              managerName: manager?.name || ''
-            })
+            setFormData({ ...formData, managerId: value, managerName: manager?.name || '' })
           }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn trưởng phòng" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Chọn trưởng phòng" /></SelectTrigger>
             <SelectContent>
-              {employees.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id.toString()}>
-                  {emp.name} - {emp.position}
-                </SelectItem>
-              ))}
+              {employees.map((emp) => (<SelectItem key={emp.id} value={emp.id.toString()}>{emp.name} - {emp.position}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="deptStatus">Trạng thái</Label>
           <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as Department['status']})}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Hoạt động</SelectItem>
               <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {/* Member Picker */}
+        <div className="space-y-3 pt-2 border-t border-[#e6ebf1]">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Thành viên phòng ban <span className="text-[#72849a] font-normal">({selectedMembers.length} người)</span></Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]" onClick={selectAll}>Chọn tất cả</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a] hover:text-[#455560]" onClick={deselectAll}>Bỏ chọn</Button>
+            </div>
+          </div>
+          {selectedMembers.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-3 bg-[#f7f7f8] rounded-[10px] max-h-[100px] overflow-y-auto">
+              {selectedMembers.map(memberId => {
+                const emp = employees.find(e => e.id === memberId)
+                return emp ? (
+                  <Badge key={memberId} variant="secondary" className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#e6ebf1] text-[#455560] hover:bg-[#f0f7ff]">
+                    <span className="max-w-[120px] truncate">{emp.name}</span>
+                    <X className="w-3 h-3 cursor-pointer hover:text-red-500 flex-shrink-0" onClick={() => toggleMember(memberId)} />
+                  </Badge>
+                ) : null
+              })}
+            </div>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]" />
+            <Input placeholder="Tìm kiếm nhân viên theo tên, chức vụ, phòng ban..." value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} className="pl-9" />
+          </div>
+          <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+            <div className="p-2 space-y-1">
+              {filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).length === 0 ? (
+                <p className="text-sm text-[#72849a] text-center py-8">Không tìm thấy nhân viên phù hợp</p>
+              ) : (
+                filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).map(emp => (
+                  <div key={emp.id} className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(emp.id) ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' : 'hover:bg-[#f7f7f8] border border-transparent'}`} onClick={() => toggleMember(emp.id)}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selectedMembers.includes(emp.id) ? 'bg-[#3e79f7] border-[#3e79f7]' : 'border-[#d9d9d9] bg-white'}`}>
+                      {selectedMembers.includes(emp.id) && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <Avatar className="w-8 h-8"><AvatarFallback className="bg-[#3e79f7] text-white text-xs">{emp.name.split(' ').slice(-2).map(n => n[0]).join('')}</AvatarFallback></Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                        {getEmployeeDeptName(emp.id) && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">{getEmployeeDeptName(emp.id)}</Badge>}
+                      </div>
+                      <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
         <DialogFooter className="pt-4 px-6">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Hủy
-          </Button>
-          <Button type="submit">
-            Thêm phòng ban
-          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>Hủy</Button>
+          <Button type="submit">Thêm phòng ban</Button>
         </DialogFooter>
       </form>
+
+      {/* Batch Conflict Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a3353]">Xác nhận chuyển phòng ban</DialogTitle>
+            <DialogDescription>Các nhân viên sau đang thuộc phòng ban khác. Chọn nhân viên muốn chuyển sang phòng ban mới:</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 px-6">
+            <div className="flex justify-end gap-2 px-1">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7]" onClick={() => setConfirmedConflictIds(conflictMembers.map(c => c.employeeId))}>Chọn tất cả</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a]" onClick={() => setConfirmedConflictIds([])}>Bỏ chọn</Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {conflictMembers.map(conflict => {
+                const isSelected = confirmedConflictIds.includes(conflict.employeeId)
+                return (
+                  <div key={conflict.employeeId} className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-[#f0f7ff] border-[#3e79f7]/20' : 'bg-white border-gray-200 hover:bg-gray-50'}`} onClick={() => toggleConflictMember(conflict.employeeId)}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-[#3e79f7] border-[#3e79f7]' : 'border-[#d9d9d9]'}`}>
+                      {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353]">{conflict.employeeName}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-[#72849a]">Phòng ban hiện tại:</span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">{conflict.currentTeamName}</Badge>
+                      </div>
+                      <p className="text-xs text-[#72849a]">{conflict.departmentName}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-xs text-amber-600 italic px-1">* Nhân viên được chọn sẽ được chuyển từ phòng ban cũ sang phòng ban mới</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleSkipConflict}>Bỏ qua</Button>
+            <Button onClick={handleConfirmConflict} disabled={confirmedConflictIds.length === 0}>Thêm vào phòng ban ({confirmedConflictIds.length})</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     )
   }
 
@@ -2038,6 +2226,40 @@ export default function CompanyManagement() {
       budget: initialData.budget,
       status: initialData.status
     })
+    const [selectedMembers, setSelectedMembers] = useState<number[]>(
+      initialData.memberIds && initialData.memberIds.length > 0
+        ? initialData.memberIds.filter(id => id !== initialData.managerId)
+        : employees.filter(emp => emp.departmentId === initialData.id && emp.id !== initialData.managerId).map(emp => emp.id)
+    )
+    const [memberSearch, setMemberSearch] = useState('')
+    const [showConflictDialog, setShowConflictDialog] = useState(false)
+    const [conflictMembers, setConflictMembers] = useState<ConflictMember[]>([])
+    const [confirmedConflictIds, setConfirmedConflictIds] = useState<number[]>([])
+    const [pendingFormData, setPendingFormData] = useState<Partial<Department> | null>(null)
+
+    const findMembersInOtherDepts = (memberIds: number[]): ConflictMember[] => {
+      const conflicts: ConflictMember[] = []
+      memberIds.forEach(empId => {
+        const emp = employees.find(e => e.id === empId)
+        if (!emp) return
+        if (emp.departmentId > 0 && emp.departmentId !== initialData.id && emp.department) {
+          conflicts.push({
+            employeeId: empId,
+            employeeName: emp.name,
+            currentTeamId: emp.departmentId,
+            currentTeamName: emp.department,
+            departmentName: emp.department
+          })
+        }
+      })
+      return conflicts
+    }
+
+    const getEmployeeDeptName = (empId: number): string | null => {
+      const emp = employees.find(e => e.id === empId)
+      if (emp && emp.departmentId > 0 && emp.departmentId !== initialData.id && emp.department) return emp.department
+      return null
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault()
@@ -2045,80 +2267,196 @@ export default function CompanyManagement() {
         alert('Vui lòng điền đầy đủ thông tin bắt buộc')
         return
       }
-
       const manager = employees.find(emp => emp.id === parseInt(formData.managerId))
-      onSubmit({
+      const submitData: Partial<Department> = {
         ...formData,
         managerId: parseInt(formData.managerId),
         managerName: manager?.name || '',
-        budget: Number(formData.budget)
-      })
+        budget: Number(formData.budget),
+        employeeCount: selectedMembers.length + (formData.managerId ? 1 : 0),
+        memberIds: selectedMembers
+      }
+      const conflicts = findMembersInOtherDepts(selectedMembers)
+      if (conflicts.length > 0) {
+        setConflictMembers(conflicts)
+        setConfirmedConflictIds(conflicts.map(c => c.employeeId))
+        setPendingFormData(submitData)
+        setShowConflictDialog(true)
+      } else {
+        onSubmit(submitData)
+      }
     }
 
+    const handleSkipConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      onSubmit({ ...pendingFormData, memberIds: membersWithoutConflict, employeeCount: membersWithoutConflict.length + (formData.managerId ? 1 : 0) })
+      setShowConflictDialog(false)
+    }
+
+    const handleConfirmConflict = () => {
+      if (!pendingFormData) return
+      const conflictIds = conflictMembers.map(c => c.employeeId)
+      const membersWithoutConflict = selectedMembers.filter(id => !conflictIds.includes(id))
+      const finalMembers = [...membersWithoutConflict, ...confirmedConflictIds]
+      onSubmit({ ...pendingFormData, memberIds: finalMembers, employeeCount: finalMembers.length + (formData.managerId ? 1 : 0) })
+      setShowConflictDialog(false)
+    }
+
+    const toggleConflictMember = (empId: number) => {
+      setConfirmedConflictIds(prev => prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId])
+    }
+
+    const filteredEmployees = employees.filter(emp =>
+      emp.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      emp.position.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      emp.department.toLowerCase().includes(memberSearch.toLowerCase())
+    )
+
+    const toggleMember = (empId: number) => {
+      setSelectedMembers(prev => prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId])
+    }
+
+    const selectAll = () => {
+      const ids = filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).map(emp => emp.id)
+      setSelectedMembers(prev => Array.from(new Set([...prev, ...ids])))
+    }
+
+    const deselectAll = () => setSelectedMembers([])
+
     return (
+      <>
       <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-2">
         <div className="space-y-2">
           <Label htmlFor="deptName">Tên phòng ban <span className="text-red-500">*</span></Label>
-          <Input
-            id="deptName"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            placeholder="Nhập tên phòng ban"
-            required
-          />
+          <Input id="deptName" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Nhập tên phòng ban" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="description">Mô tả</Label>
-          <Input
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-            placeholder="Mô tả chức năng phòng ban"
-          />
+          <Input id="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Mô tả chức năng phòng ban" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="manager">Trưởng phòng <span className="text-red-500">*</span></Label>
           <Select value={formData.managerId} onValueChange={(value) => {
             const manager = employees.find(emp => emp.id === parseInt(value))
-            setFormData({
-              ...formData, 
-              managerId: value,
-              managerName: manager?.name || ''
-            })
+            setFormData({ ...formData, managerId: value, managerName: manager?.name || '' })
           }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn trưởng phòng" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Chọn trưởng phòng" /></SelectTrigger>
             <SelectContent>
-              {employees.map((emp) => (
-                <SelectItem key={emp.id} value={emp.id.toString()}>
-                  {emp.name} - {emp.position}
-                </SelectItem>
-              ))}
+              {employees.map((emp) => (<SelectItem key={emp.id} value={emp.id.toString()}>{emp.name} - {emp.position}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="deptStatus">Trạng thái</Label>
           <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as Department['status']})}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Hoạt động</SelectItem>
               <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {/* Member Picker */}
+        <div className="space-y-3 pt-2 border-t border-[#e6ebf1]">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Thành viên phòng ban <span className="text-[#72849a] font-normal">({selectedMembers.length} người)</span></Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1]" onClick={selectAll}>Chọn tất cả</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a] hover:text-[#455560]" onClick={deselectAll}>Bỏ chọn</Button>
+            </div>
+          </div>
+          {selectedMembers.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-3 bg-[#f7f7f8] rounded-[10px] max-h-[100px] overflow-y-auto">
+              {selectedMembers.map(memberId => {
+                const emp = employees.find(e => e.id === memberId)
+                return emp ? (
+                  <Badge key={memberId} variant="secondary" className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#e6ebf1] text-[#455560] hover:bg-[#f0f7ff]">
+                    <span className="max-w-[120px] truncate">{emp.name}</span>
+                    <X className="w-3 h-3 cursor-pointer hover:text-red-500 flex-shrink-0" onClick={() => toggleMember(memberId)} />
+                  </Badge>
+                ) : null
+              })}
+            </div>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]" />
+            <Input placeholder="Tìm kiếm nhân viên theo tên, chức vụ, phòng ban..." value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} className="pl-9" />
+          </div>
+          <ScrollArea className="h-[200px] border border-[#e6ebf1] rounded-[10px]">
+            <div className="p-2 space-y-1">
+              {filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).length === 0 ? (
+                <p className="text-sm text-[#72849a] text-center py-8">Không tìm thấy nhân viên phù hợp</p>
+              ) : (
+                filteredEmployees.filter(emp => emp.id !== parseInt(formData.managerId)).map(emp => (
+                  <div key={emp.id} className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(emp.id) ? 'bg-[#f0f7ff] border border-[#3e79f7]/20' : 'hover:bg-[#f7f7f8] border border-transparent'}`} onClick={() => toggleMember(emp.id)}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selectedMembers.includes(emp.id) ? 'bg-[#3e79f7] border-[#3e79f7]' : 'border-[#d9d9d9] bg-white'}`}>
+                      {selectedMembers.includes(emp.id) && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <Avatar className="w-8 h-8"><AvatarFallback className="bg-[#3e79f7] text-white text-xs">{emp.name.split(' ').slice(-2).map(n => n[0]).join('')}</AvatarFallback></Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[#1a3353] truncate">{emp.name}</p>
+                        {getEmployeeDeptName(emp.id) && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">{getEmployeeDeptName(emp.id)}</Badge>}
+                      </div>
+                      <p className="text-xs text-[#72849a] truncate">{emp.position} • {emp.department}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
         <DialogFooter className="pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Hủy
-          </Button>
-          <Button type="submit">
-            Cập nhật phòng ban
-          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>Hủy</Button>
+          <Button type="submit">Cập nhật phòng ban</Button>
         </DialogFooter>
       </form>
+
+      {/* Batch Conflict Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a3353]">Xác nhận chuyển phòng ban</DialogTitle>
+            <DialogDescription>Các nhân viên sau đang thuộc phòng ban khác. Chọn nhân viên muốn chuyển sang phòng ban mới:</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 px-6">
+            <div className="flex justify-end gap-2 px-1">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#3e79f7]" onClick={() => setConfirmedConflictIds(conflictMembers.map(c => c.employeeId))}>Chọn tất cả</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-[#72849a]" onClick={() => setConfirmedConflictIds([])}>Bỏ chọn</Button>
+            </div>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {conflictMembers.map(conflict => {
+                const isSelected = confirmedConflictIds.includes(conflict.employeeId)
+                return (
+                  <div key={conflict.employeeId} className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-[#f0f7ff] border-[#3e79f7]/20' : 'bg-white border-gray-200 hover:bg-gray-50'}`} onClick={() => toggleConflictMember(conflict.employeeId)}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-[#3e79f7] border-[#3e79f7]' : 'border-[#d9d9d9]'}`}>
+                      {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#1a3353]">{conflict.employeeName}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-[#72849a]">Phòng ban hiện tại:</span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200 font-normal">{conflict.currentTeamName}</Badge>
+                      </div>
+                      <p className="text-xs text-[#72849a]">{conflict.departmentName}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-xs text-amber-600 italic px-1">* Nhân viên được chọn sẽ được chuyển từ phòng ban cũ sang phòng ban mới</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleSkipConflict}>Bỏ qua</Button>
+            <Button onClick={handleConfirmConflict} disabled={confirmedConflictIds.length === 0}>Cập nhật phòng ban ({confirmedConflictIds.length})</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     )
   }
 
@@ -2838,32 +3176,44 @@ export default function CompanyManagement() {
                   <TableCell>
                     {getStatusBadge(dept.status)}
                   </TableCell>
-                  <TableCell className="sticky right-0 bg-white">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:text-[#3e79f7]"
-                        onClick={() => {
-                          setSelectedDepartment(dept)
-                          setShowEditDepartmentModal(true)
-                        }}
+                  <TableCell className="sticky right-0 bg-white relative">
+                    <div className="flex justify-center">
+                      <button
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Thao tác"
+                        onClick={() => setDeptActionMenuOpen(deptActionMenuOpen === dept.id ? null : dept.id)}
                       >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:text-red-600 text-red-500"
-                        onClick={() => {
-                          if (confirm('Bạn có chắc chắn muốn xóa phòng ban này?')) {
-                            setDepartments(departments.filter(d => d.id !== dept.id))
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Settings className="w-4 h-4" />
+                      </button>
                     </div>
+                    {deptActionMenuOpen === dept.id && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedDepartment(dept)
+                            setShowEditDepartmentModal(true)
+                            setDeptActionMenuOpen(null)
+                          }}
+                        >
+                          <Pencil className="w-4 h-4 text-blue-500" />
+                          Chỉnh sửa
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          onClick={() => {
+                            if (confirm('Bạn có chắc chắn muốn xóa phòng ban này?')) {
+                              setDepartments(departments.filter(d => d.id !== dept.id))
+                            }
+                            setDeptActionMenuOpen(null)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Xóa
+                        </button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -2954,32 +3304,44 @@ export default function CompanyManagement() {
                   <TableCell>
                     {getStatusBadge(team.status)}
                   </TableCell>
-                  <TableCell className="sticky right-0 bg-white">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:text-[#3e79f7]"
-                        onClick={() => {
-                          setSelectedTeam(team)
-                          setShowEditTeamModal(true)
-                        }}
+                  <TableCell className="sticky right-0 bg-white relative">
+                    <div className="flex justify-center">
+                      <button
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Thao tác"
+                        onClick={() => setTeamActionMenuOpen(teamActionMenuOpen === team.id ? null : team.id)}
                       >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 hover:text-red-600 text-red-500"
-                        onClick={() => {
-                          if (confirm('Bạn có chắc chắn muốn xóa nhóm này?')) {
-                            setTeams(teams.filter(t => t.id !== team.id))
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Settings className="w-4 h-4" />
+                      </button>
                     </div>
+                    {teamActionMenuOpen === team.id && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedTeam(team)
+                            setShowEditTeamModal(true)
+                            setTeamActionMenuOpen(null)
+                          }}
+                        >
+                          <Pencil className="w-4 h-4 text-blue-500" />
+                          Chỉnh sửa
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          onClick={() => {
+                            if (confirm('Bạn có chắc chắn muốn xóa nhóm này?')) {
+                              setTeams(teams.filter(t => t.id !== team.id))
+                            }
+                            setTeamActionMenuOpen(null)
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Xóa
+                        </button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -4017,7 +4379,7 @@ export default function CompanyManagement() {
 
       {/* Add Department Modal */}
       <Dialog open={showAddDepartmentModal} onOpenChange={setShowAddDepartmentModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Thêm phòng ban mới</DialogTitle>
             <DialogDescription>
@@ -4221,7 +4583,7 @@ export default function CompanyManagement() {
 
       {/* Edit Department Modal */}
       <Dialog open={showEditDepartmentModal} onOpenChange={setShowEditDepartmentModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa phòng ban</DialogTitle>
             <DialogDescription>
@@ -4230,6 +4592,7 @@ export default function CompanyManagement() {
           </DialogHeader>
           {selectedDepartment && (
             <EditDepartmentForm 
+              key={selectedDepartment.id}
               onSubmit={handleEditDepartment} 
               onCancel={() => setShowEditDepartmentModal(false)}
               initialData={selectedDepartment}

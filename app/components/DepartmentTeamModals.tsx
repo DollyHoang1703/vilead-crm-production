@@ -107,6 +107,12 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
     targetRevenue: department?.targetRevenue || 0
   })
 
+  // Member picker state
+  const [selectedMembers, setSelectedMembers] = useState<number[]>([])
+  const [memberSearch, setMemberSearch] = useState('')
+  const [showTransferConfirm, setShowTransferConfirm] = useState(false)
+  const [employeeToTransfer, setEmployeeToTransfer] = useState<Employee | null>(null)
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -116,7 +122,7 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
       ...formData,
       managerName: selectedManager?.name || formData.managerName,
       established: department?.established || new Date().toISOString().split('T')[0],
-      employeeCount: department?.employeeCount || 0,
+      employeeCount: selectedMembers.length + (formData.managerId > 0 ? 1 : 0),
       performance: department?.performance || 0,
       currentRevenue: department?.currentRevenue || 0,
       teams: department?.teams || []
@@ -129,49 +135,89 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // Member picker handlers
+  const handleMemberToggle = (employee: Employee) => {
+    if (selectedMembers.includes(employee.id)) {
+      setSelectedMembers(prev => prev.filter(id => id !== employee.id))
+    } else {
+      // Check if employee belongs to another department
+      if (employee.departmentId > 0 && employee.department && department && employee.department !== department.name) {
+        setEmployeeToTransfer(employee)
+        setShowTransferConfirm(true)
+      } else if (employee.departmentId > 0 && employee.department && !department) {
+        setEmployeeToTransfer(employee)
+        setShowTransferConfirm(true)
+      } else {
+        setSelectedMembers(prev => [...prev, employee.id])
+      }
+    }
+  }
+
+  const confirmTransfer = () => {
+    if (employeeToTransfer) {
+      setSelectedMembers(prev => [...prev, employeeToTransfer.id])
+      setEmployeeToTransfer(null)
+      setShowTransferConfirm(false)
+    }
+  }
+
+  const handleSelectAll = () => {
+    const filteredIds = filteredEmployees
+      .filter(emp => emp.id !== formData.managerId)
+      .map(emp => emp.id)
+    setSelectedMembers(filteredIds)
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedMembers([])
+  }
+
+  const handleRemoveMember = (empId: number) => {
+    setSelectedMembers(prev => prev.filter(id => id !== empId))
+  }
+
+  // Filter employees by search
+  const filteredEmployees = employees.filter(emp => {
+    const search = memberSearch.toLowerCase()
+    return (
+      emp.name.toLowerCase().includes(search) ||
+      emp.position.toLowerCase().includes(search) ||
+      emp.department.toLowerCase().includes(search)
+    )
+  })
+
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    const parts = name.split(' ')
+    if (parts.length >= 2) {
+      return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.substring(0, 2).toUpperCase()
+  }
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {department ? 'Chỉnh sửa Phòng ban' : 'Thêm Phòng ban mới'}
           </DialogTitle>
           <DialogDescription>
-            Điền thông tin chi tiết cho phòng ban
+            Nhập thông tin để tạo phòng ban mới trong công ty
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Tên phòng ban</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Nhập tên phòng ban"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="manager">Trưởng phòng</Label>
-              <Select
-                value={formData.managerId.toString()}
-                onValueChange={(value) => handleInputChange('managerId', parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn trưởng phòng" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.name} - {employee.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Tên phòng ban <span className="text-red-500">*</span></Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              placeholder="Nhập tên phòng ban"
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -185,78 +231,145 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="location">Vị trí</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                placeholder="Vị trí văn phòng"
-              />
+          {/* Member Picker Section */}
+          <div className="space-y-3 pt-2 border-t border-[#e6ebf1]">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">
+                Thành viên phòng ban <span className="text-[#72849a] font-normal">({selectedMembers.length} người)</span>
+              </Label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-1 h-7 text-xs text-[#3e79f7] hover:text-[#2a59d1] hover:bg-[#fafafb] rounded-[10px] font-medium transition-colors"
+                  onClick={handleSelectAll}
+                >
+                  Chọn tất cả
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-1 h-7 text-xs text-[#72849a] hover:text-[#455560] hover:bg-[#fafafb] rounded-[10px] font-medium transition-colors"
+                  onClick={handleDeselectAll}
+                >
+                  Bỏ chọn
+                </button>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Số điện thoại</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="Số điện thoại liên hệ"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Email liên hệ"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Trạng thái</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value)}
+            {/* Chips */}
+            {selectedMembers.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 bg-[#f7f7f8] rounded-[10px] max-h-[100px] overflow-y-auto">
+                {selectedMembers.map(memberId => {
+                  const emp = employees.find(e => e.id === memberId)
+                  if (!emp) return null
+                  return (
+                    <div
+                      key={memberId}
+                      className="flex items-center gap-1.5 px-2 py-1 bg-white border border-[#e6ebf1] text-[#455560] rounded text-xs font-medium hover:bg-[#f0f7ff] transition-colors"
+                    >
+                      <span className="max-w-[120px] truncate">{emp.name}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-3 h-3 cursor-pointer hover:text-red-500 flex-shrink-0"
+                        onClick={() => handleRemoveMember(memberId)}
+                      >
+                        <path d="M18 6 6 18"></path>
+                        <path d="m6 6 12 12"></path>
+                      </svg>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="relative">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#72849a]"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Hoạt động</SelectItem>
-                  <SelectItem value="inactive">Không hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+              <Input
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                placeholder="Tìm kiếm nhân viên theo tên, chức vụ, phòng ban..."
+                className="pl-9"
+              />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="budget">Ngân sách (VND)</Label>
-              <Input
-                id="budget"
-                type="number"
-                value={formData.budget}
-                onChange={(e) => handleInputChange('budget', parseInt(e.target.value) || 0)}
-                placeholder="Ngân sách phòng ban"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="targetRevenue">Mục tiêu doanh thu (VND)</Label>
-              <Input
-                id="targetRevenue"
-                type="number"
-                value={formData.targetRevenue}
-                onChange={(e) => handleInputChange('targetRevenue', parseInt(e.target.value) || 0)}
-                placeholder="Mục tiêu doanh thu"
-              />
+            {/* Employee List */}
+            <div className="h-[200px] border border-[#e6ebf1] rounded-[10px] overflow-y-auto">
+              <div className="p-2 space-y-1">
+                {filteredEmployees
+                  .filter(emp => emp.id !== formData.managerId)
+                  .map((employee) => {
+                    const isSelected = selectedMembers.includes(employee.id)
+                    const hasOtherDept = employee.departmentId > 0 && employee.department && (!department || employee.department !== department.name)
+                    return (
+                      <div
+                        key={employee.id}
+                        onClick={() => handleMemberToggle(employee)}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-[#f0f7ff] border border-[#3e79f7]/20'
+                            : 'hover:bg-[#f7f7f8] border border-transparent'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isSelected ? 'bg-[#3e79f7] border-[#3e79f7]' : 'border-[#d9d9d9] bg-white'
+                        }`}>
+                          {isSelected && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-white">
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                              <path d="m9 11 3 3L22 4"></path>
+                            </svg>
+                          )}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="w-8 h-8 rounded-full bg-[#3e79f7] text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+                          {getInitials(employee.name)}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-[#1a3353] truncate">{employee.name}</p>
+                            {hasOtherDept && (
+                              <span className="inline-flex items-center rounded text-[10px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border border-amber-200 font-normal flex-shrink-0">
+                                {employee.department}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#72849a] truncate">{employee.position} • {employee.department}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                {filteredEmployees.filter(emp => emp.id !== formData.managerId).length === 0 && (
+                  <div className="text-center py-6 text-sm text-gray-400">
+                    Không tìm thấy nhân viên
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -265,12 +378,35 @@ export function DepartmentModal({ isOpen, onClose, onSave, employees, department
               Hủy
             </Button>
             <Button type="submit">
-              {department ? 'Cập nhật' : 'Thêm mới'}
+              {department ? 'Cập nhật' : 'Thêm phòng ban'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Transfer Confirmation Dialog */}
+    <Dialog open={showTransferConfirm} onOpenChange={setShowTransferConfirm}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Xác nhận chuyển phòng ban</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 px-6">
+          <p className="text-sm text-gray-600">
+            Nhân viên <span className="font-semibold text-gray-900">{employeeToTransfer?.name}</span> hiện đang thuộc phòng ban <span className="font-semibold text-gray-900">{employeeToTransfer?.department}</span>. Bạn có muốn chuyển sang phòng ban mới?
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowTransferConfirm(false); setEmployeeToTransfer(null) }}>
+            Hủy
+          </Button>
+          <Button onClick={confirmTransfer}>
+            Xác nhận
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
 

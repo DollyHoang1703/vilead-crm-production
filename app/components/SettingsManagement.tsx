@@ -6093,6 +6093,38 @@ export default function SettingsManagement() {
     const [variantCombinations, setVariantCombinations] = useState<any[]>([])
     const [packageForm, setPackageForm] = useState({ name: '', price: '', productIds: [] as string[], description: '' })
 
+    // Product action menu states
+    const [productActionMenuOpen, setProductActionMenuOpen] = useState<string | null>(null)
+    const [showCategoryTransfer, setShowCategoryTransfer] = useState(false)
+    const [categoryTransferTarget, setCategoryTransferTarget] = useState('')
+    const [productToTransfer, setProductToTransfer] = useState<any>(null)
+    const [showDeleteProductConfirm, setShowDeleteProductConfirm] = useState(false)
+    const [productToDelete, setProductToDelete] = useState<any>(null)
+
+    const handleTransferCategory = () => {
+      if (productToTransfer && categoryTransferTarget) {
+        const targetCatName = categories.find(c => c.id === categoryTransferTarget)?.name
+        if (targetCatName) {
+          setProducts(prev => prev.map(p => 
+            p.id === productToTransfer.id ? { ...p, category: targetCatName } : p
+          ))
+        }
+        setShowCategoryTransfer(false)
+        setCategoryTransferTarget('')
+        setProductToTransfer(null)
+        setProductActionMenuOpen(null)
+      }
+    }
+
+    const handleDeleteProduct = () => {
+      if (productToDelete) {
+        setProducts(prev => prev.filter(p => p.id !== productToDelete.id))
+        setShowDeleteProductConfirm(false)
+        setProductToDelete(null)
+        setProductActionMenuOpen(null)
+      }
+    }
+
     const handleSaveProduct = () => {
       // Validate
       const errors: any = {}
@@ -6422,7 +6454,7 @@ export default function SettingsManagement() {
                       <TableHead className="whitespace-nowrap">Phân loại</TableHead>
                       <TableHead className="text-right whitespace-nowrap">Số lượng còn</TableHead>
                       <TableHead className="whitespace-nowrap">Trạng thái</TableHead>
-                      <TableHead className="w-24">Thao tác</TableHead>
+                      <TableHead className="w-16 text-center">Thao tác</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -6458,15 +6490,56 @@ export default function SettingsManagement() {
                             {p.status === 'active' ? 'Hoạt động' : 'Ngừng bán'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleOpenEditProduct(p)}>
-                              <Edit2 className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                        <TableCell className="relative">
+                          <div className="flex justify-center">
+                            <button
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                              title="Thao tác"
+                              onClick={() => setProductActionMenuOpen(productActionMenuOpen === p.id ? null : p.id)}
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
                           </div>
+                          {productActionMenuOpen === p.id && (
+                            <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                              {/* Thao tác nhanh */}
+                              <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                onClick={() => {
+                                  handleOpenEditProduct(p)
+                                  setProductActionMenuOpen(null)
+                                }}
+                              >
+                                <Edit2 className="w-4 h-4 text-blue-500" />
+                                Chỉnh sửa
+                              </button>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                onClick={() => {
+                                  setProductToTransfer(p)
+                                  setCategoryTransferTarget('')
+                                  setShowCategoryTransfer(true)
+                                  setProductActionMenuOpen(null)
+                                }}
+                              >
+                                <FolderOpen className="w-4 h-4 text-orange-500" />
+                                Chuyển danh mục
+                              </button>
+                              <div className="border-t border-gray-100 my-1"></div>
+                              <button
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                onClick={() => {
+                                  setProductToDelete(p)
+                                  setShowDeleteProductConfirm(true)
+                                  setProductActionMenuOpen(null)
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Xóa
+                              </button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -6789,6 +6862,58 @@ export default function SettingsManagement() {
             <DialogFooter>
               <Button variant="outline" onClick={()=>setShowDeleteCategoryConfirm(false)}>Hủy</Button>
               <Button variant="destructive" onClick={confirmDeleteCategory}>Xóa</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Category Transfer Dialog */}
+        <Dialog open={showCategoryTransfer} onOpenChange={setShowCategoryTransfer}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Chuyển danh mục sản phẩm</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 px-6">
+              <p className="text-sm text-gray-600">
+                Chuyển sản phẩm <span className="font-semibold text-gray-900">{productToTransfer?.name}</span> sang danh mục khác
+              </p>
+              <div>
+                <Label className="text-sm">Chọn danh mục chuyển <span className="text-red-500">*</span></Label>
+                <Select
+                  value={categoryTransferTarget}
+                  onValueChange={setCategoryTransferTarget}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Chọn danh mục" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter(c => c.name !== productToTransfer?.category)
+                      .map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowCategoryTransfer(false); setProductToTransfer(null) }}>Hủy</Button>
+              <Button onClick={handleTransferCategory} disabled={!categoryTransferTarget}>Chuyển</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Product Confirm Dialog */}
+        <Dialog open={showDeleteProductConfirm} onOpenChange={setShowDeleteProductConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Xác nhận xóa sản phẩm</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 px-6">
+              <p className="text-sm text-gray-600">Bạn có chắc chắn muốn xóa sản phẩm <span className="font-semibold text-gray-900">{productToDelete?.name}</span>? Hành động này không thể hoàn tác.</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowDeleteProductConfirm(false); setProductToDelete(null) }}>Hủy</Button>
+              <Button variant="destructive" onClick={handleDeleteProduct}>Xóa</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

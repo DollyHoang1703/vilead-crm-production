@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
+import {
   BarChart3,
   PieChart,
   TrendingUp,
@@ -48,9 +48,12 @@ import {
   Star,
   XCircle,
   Edit,
-  Info
+  Info,
+  UserCheck
 } from 'lucide-react'
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import EmployeeReportTab from './reports/EmployeeReportTab'
+import ReportEmployeeFilter, { getFilterMultiplier, getFilteredTeamNames } from './reports/ReportEmployeeFilter'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -122,7 +125,7 @@ interface InteractionReport {
   id: string
   period: string
   platform: string
-  totalInteractions: number  
+  totalInteractions: number
   interactionsByChannel: {
     zalo: number
     facebook: number
@@ -480,7 +483,7 @@ const getSalesPerformanceData = (period: string): SalesPerformanceReport[] => {
     }
   }))
 
-  switch(period) {
+  switch (period) {
     case 'today': return todayData
     case 'this_week': return weekData
     case 'this_month': return monthData
@@ -961,6 +964,7 @@ const sampleComparisonReports: ComparisonReport[] = [
 export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: string) => void } = {}) {
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedDateRange, setSelectedDateRange] = useState('this_week')
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' })
   const [selectedReport, setSelectedReport] = useState<any>(null)
   const [showReportModal, setShowReportModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -985,15 +989,19 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
     window.addEventListener('setReportTab', handleSetTab)
     return () => window.removeEventListener('setReportTab', handleSetTab)
   }, [])
-  
+
   // Collapsible sections state
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
-  
+
   // Filters
   const [productFilter, setProductFilter] = useState('')
   const [salesPersonFilter, setSalesPersonFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [sourceFilter, setSourceFilter] = useState('')
+  // Shared dept/team/employee filter state
+  const [reportDeptFilter, setReportDeptFilter] = useState('')
+  const [reportTeamFilter, setReportTeamFilter] = useState('')
+  const [reportEmployeeFilter, setReportEmployeeFilter] = useState('')
 
   // Interaction & Comparison states
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'zalo' | 'facebook' | 'email' | 'phone'>('all')
@@ -1099,7 +1107,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
   const filteredKPIs = sampleKPIs.filter(kpi => {
     const matchesSearch = kpi.name.toLowerCase().includes(kpiSearchTerm.toLowerCase()) ||
-                         (kpi.description && kpi.description.toLowerCase().includes(kpiSearchTerm.toLowerCase()))
+      (kpi.description && kpi.description.toLowerCase().includes(kpiSearchTerm.toLowerCase()))
     const matchesCategory = !kpiCategoryFilter || kpiCategoryFilter === 'all' || kpi.category === kpiCategoryFilter
     const matchesPeriod = !kpiPeriodFilter || kpiPeriodFilter === 'all' || kpi.period === kpiPeriodFilter
     return matchesSearch && matchesCategory && matchesPeriod && kpi.isActive
@@ -1202,7 +1210,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       {/* Quick Report Access */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('sales')}>
+          onClick={() => setActiveTab('sales')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -1217,7 +1225,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('performance')}>
+          onClick={() => setActiveTab('performance')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-green-100 rounded-lg">
@@ -1232,7 +1240,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('process')}>
+          onClick={() => setActiveTab('process')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -1247,7 +1255,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('sources')}>
+          onClick={() => setActiveTab('sources')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-yellow-100 rounded-lg">
@@ -1262,7 +1270,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('cancellation')}>
+          onClick={() => setActiveTab('cancellation')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-red-100 rounded-lg">
@@ -1277,7 +1285,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         </Card>
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setActiveTab('custom')}>
+          onClick={() => setActiveTab('custom')}>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-gray-100 rounded-lg">
@@ -1341,9 +1349,9 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <h2 className="text-2xl font-bold text-gray-900">Báo cáo Doanh số</h2>
           <p className="text-gray-600">Theo dõi doanh thu và hiệu quả bán hàng</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
-          <select 
+          <select
             value={selectedDateRange}
             onChange={(e) => setSelectedDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
@@ -1353,36 +1361,41 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             <option value="this_month">Tháng này</option>
             <option value="this_quarter">Quý này</option>
             <option value="this_year">Năm này</option>
+            <option value="custom">Chọn thời gian</option>
           </select>
-          
-          <select 
-            value={salesPersonFilter}
-            onChange={(e) => setSalesPersonFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-          >
-            <option value="">Phòng sale</option>
-            <option value="sale_department_1">Phòng Sale 1</option>
-            <option value="sale_department_2">Phòng Sale 2</option>
-            <option value="sale_department_3">Phòng Sale 3</option>
-          </select>
-          
-          <select 
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-          >
-            <option value="">Chọn team</option>
-            <option value="team_a">Team A</option>
-            <option value="team_b">Team B</option>
-            <option value="team_c">Team C</option>
-            <option value="team_d">Team D</option>
-          </select>
+          {selectedDateRange === 'custom' && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="date"
+                value={customDateRange.start}
+                onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              />
+              <span className="text-gray-500 text-sm">đến</span>
+              <input
+                type="date"
+                value={customDateRange.end}
+                onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              />
+            </div>
+          )}
+
+          <ReportEmployeeFilter
+            selectedDepartment={reportDeptFilter}
+            onDepartmentChange={setReportDeptFilter}
+            selectedTeam={reportTeamFilter}
+            onTeamChange={setReportTeamFilter}
+            selectedEmployee={reportEmployeeFilter}
+            onEmployeeChange={setReportEmployeeFilter}
+          />
         </div>
       </div>
 
       {/* Sales Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {(() => {
+          const mult = getFilterMultiplier(reportDeptFilter, reportTeamFilter, reportEmployeeFilter)
           const summaryData = {
             today: { revenue: 75000000, orders: 22, conversion: 32, paymentRate: 76 },
             this_week: { revenue: 490000000, orders: 140, conversion: 32, paymentRate: 76 },
@@ -1390,8 +1403,9 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             this_quarter: { revenue: 2070000000, orders: 580, conversion: 32, paymentRate: 76 },
             this_year: { revenue: 2070000000, orders: 580, conversion: 32, paymentRate: 76 }
           }
-          const data = summaryData[selectedDateRange as keyof typeof summaryData] || summaryData.this_week
-          
+          const raw = summaryData[selectedDateRange as keyof typeof summaryData] || summaryData.this_week
+          const data = { revenue: Math.round(raw.revenue * mult), orders: Math.round(raw.orders * mult), conversion: raw.conversion, paymentRate: raw.paymentRate }
+
           return (
             <>
               <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
@@ -1490,20 +1504,20 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 }
                 const data = statusData[selectedDateRange as keyof typeof statusData] || statusData.this_month
                 const total = data.reduce((sum, item) => sum + item.count, 0)
-                
+
                 return data.map((item) => (
-                <div key={item.status} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full bg-${item.color}-500`}></div>
-                    <span className="font-medium">{item.label}</span>
+                  <div key={item.status} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full bg-${item.color}-500`}></div>
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold">{item.count}</span>
+                      <span className="text-sm text-gray-500">
+                        ({total > 0 ? Math.round((item.count / total) * 100) : 0}%)
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold">{item.count}</span>
-                    <span className="text-sm text-gray-500">
-                      ({total > 0 ? Math.round((item.count / total) * 100) : 0}%)
-                    </span>
-                  </div>
-                </div>
                 ))
               })()}
             </div>
@@ -1538,21 +1552,21 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                   ]
                 }
                 const data = productData[selectedDateRange as keyof typeof productData] || productData.this_month
-                
+
                 return data.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">{item.product}</span>
-                      <span className="text-xs text-gray-500">{item.percentage}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-blue-600">
-                        {formatCurrency(item.revenue)}
-                      </span>
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">{item.product}</span>
+                        <span className="text-xs text-gray-500">{item.percentage}%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-blue-600">
+                          {formatCurrency(item.revenue)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
                 ))
               })()}
             </div>
@@ -1594,42 +1608,42 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                   ]
                 }
                 const data = chartData[selectedDateRange as keyof typeof chartData] || chartData.this_month
-                
+
                 return (
                   <RechartsLineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
-                  tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '8px 12px'
-                  }}
-                  formatter={(value: any) => [formatCurrency(value), 'Doanh số']}
-                  labelFormatter={(label) => {
-                    const item = data.find(d => d.date === label)
-                    return item ? item.displayDate : label
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                  activeDot={{ r: 6, fill: '#2563eb' }}
-                />
-              </RechartsLineChart>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      stroke="#6b7280"
+                      tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '8px 12px'
+                      }}
+                      formatter={(value: any) => [formatCurrency(value), 'Doanh số']}
+                      labelFormatter={(label) => {
+                        const item = data.find(d => d.date === label)
+                        return item ? item.displayDate : label
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ fill: '#3b82f6', r: 4 }}
+                      activeDot={{ r: 6, fill: '#2563eb' }}
+                    />
+                  </RechartsLineChart>
                 )
               })()}
             </ResponsiveContainer>
@@ -1655,7 +1669,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 {(selectedDateRange === 'this_month' || selectedDateRange === 'this_quarter' || selectedDateRange === 'this_year') && 'Thống kê chi tiết theo từng ngày trong tháng'}
               </CardDescription>
             </div>
-            <Button 
+            <Button
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => {
                 // Export all displayed records to Excel
@@ -1740,36 +1754,37 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                   displayData = weekData
                 }
 
-                return displayData.map((day, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{formatDate(day.date)}</TableCell>
-                  <TableCell className="font-bold text-green-600">
-                    {formatCurrency(day.revenue)}
-                  </TableCell>
-                  <TableCell>{day.orders}</TableCell>
-                  <TableCell>{day.customers}</TableCell>
-                  <TableCell className="font-semibold">
-                    {formatCurrency(day.totalValue)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={day.paymentRate >= 75 ? 'default' : 'secondary'}>
-                      {day.paymentRate}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedDate(day.date)
-                        setShowSalesDetailModal(true)
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-                ))
+                const tblMult = getFilterMultiplier(reportDeptFilter, reportTeamFilter, reportEmployeeFilter)
+                return displayData.map((rawDay, index) => { const day = { ...rawDay, revenue: Math.round(rawDay.revenue * tblMult), orders: Math.round(rawDay.orders * tblMult), customers: Math.round(rawDay.customers * tblMult), totalValue: Math.round(rawDay.totalValue * tblMult) }; return (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{formatDate(day.date)}</TableCell>
+                    <TableCell className="font-bold text-green-600">
+                      {formatCurrency(day.revenue)}
+                    </TableCell>
+                    <TableCell>{day.orders}</TableCell>
+                    <TableCell>{day.customers}</TableCell>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(day.totalValue)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={day.paymentRate >= 75 ? 'default' : 'secondary'}>
+                        {day.paymentRate}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDate(day.date)
+                          setShowSalesDetailModal(true)
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )})
               })()}
             </TableBody>
           </Table>
@@ -1789,13 +1804,13 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input 
+                    <Input
                       placeholder="Tìm kiếm đơn hàng, khách hàng..."
                       className="pl-10 w-80"
                       value={modalSearchTerm}
@@ -1847,14 +1862,14 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         { id: 9, orderCode: 'DH009', customer: 'Đinh Văn I', discount: 0, total: 11000000, net: 11000000 },
                         { id: 10, orderCode: 'DH010', customer: 'Cao Thị K', discount: 400000, total: 16000000, net: 15600000 }
                       ]
-                      
+
                       const filteredOrders = modalSearchTerm
-                        ? allOrders.filter(order => 
-                            order.orderCode.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
-                            order.customer.toLowerCase().includes(modalSearchTerm.toLowerCase())
-                          )
+                        ? allOrders.filter(order =>
+                          order.orderCode.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                          order.customer.toLowerCase().includes(modalSearchTerm.toLowerCase())
+                        )
                         : allOrders
-                      
+
                       return filteredOrders.map((order, index) => (
                         <TableRow key={order.id}>
                           <TableCell>{index + 1}</TableCell>
@@ -1891,9 +1906,9 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <h2 className="text-2xl font-bold text-gray-900">Báo cáo Hiệu suất Sales</h2>
           <p className="text-gray-600">Đánh giá hiệu quả bán hàng của từng sales</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
-          <select 
+          <select
             value={selectedDateRange}
             onChange={(e) => setSelectedDateRange(e.target.value)}
             className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
@@ -1903,39 +1918,44 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             <option value="this_month">Tháng này</option>
             <option value="this_quarter">Quý này</option>
             <option value="this_year">Năm này</option>
+            <option value="custom">Chọn thời gian</option>
           </select>
-          
-          <select 
-            value={salesPersonFilter}
-            onChange={(e) => setSalesPersonFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-          >
-            <option value="">Phòng sale</option>
-            <option value="sale_department_1">Phòng Sale 1</option>
-            <option value="sale_department_2">Phòng Sale 2</option>
-            <option value="sale_department_3">Phòng Sale 3</option>
-          </select>
-          
-          <select 
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-          >
-            <option value="">Chọn team</option>
-            <option value="team_a">Team A</option>
-            <option value="team_b">Team B</option>
-            <option value="team_c">Team C</option>
-            <option value="team_d">Team D</option>
-          </select>
-          
+          {selectedDateRange === 'custom' && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="date"
+                value={customDateRange.start}
+                onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              />
+              <span className="text-gray-500 text-sm">đến</span>
+              <input
+                type="date"
+                value={customDateRange.end}
+                onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              />
+            </div>
+          )}
+
+          <ReportEmployeeFilter
+            selectedDepartment={reportDeptFilter}
+            onDepartmentChange={setReportDeptFilter}
+            selectedTeam={reportTeamFilter}
+            onTeamChange={setReportTeamFilter}
+            selectedEmployee={reportEmployeeFilter}
+            onEmployeeChange={setReportEmployeeFilter}
+          />
         </div>
       </div>
 
       {/* Performance Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {(() => {
-          const displayData = getSalesPerformanceData(selectedDateRange)
-          
+          const allData = getSalesPerformanceData(selectedDateRange)
+          const allowedTeams = getFilteredTeamNames(reportDeptFilter, reportTeamFilter)
+          const displayData = reportDeptFilter ? allData.filter(s => allowedTeams.includes(s.salesTeam)) : allData
+
           return (
             <>
               <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
@@ -2021,61 +2041,63 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             </TableHeader>
             <TableBody>
               {(() => {
-                const displayData = getSalesPerformanceData(selectedDateRange)
+                const allPerfData = getSalesPerformanceData(selectedDateRange)
+                const perfTeams = getFilteredTeamNames(reportDeptFilter, reportTeamFilter)
+                const displayData = reportDeptFilter ? allPerfData.filter(s => perfTeams.includes(s.salesTeam)) : allPerfData
                 return displayData.map((sales) => (
-                <TableRow key={sales.id}>
-                  <TableCell className="font-medium">{sales.salesPerson}</TableCell>
-                  <TableCell>{sales.salesTeam}</TableCell>
-                  <TableCell>{sales.leadsAssigned}</TableCell>
-                  <TableCell>{sales.ordersCreated}</TableCell>
-                  <TableCell>
-                    <Badge variant={sales.conversionRate >= 50 ? 'default' : sales.conversionRate >= 30 ? 'secondary' : 'destructive'}>
-                      {sales.conversionRate}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-bold text-green-600">
-                    {formatCurrency(sales.revenue)}
-                  </TableCell>
-                  <TableCell>
-                    {sales.kpiTarget && sales.kpiCompletion ? (
-                      <div className="space-y-1">
-                        <Badge 
-                          variant={
-                            sales.kpiCompletion >= 100 ? 'default' : 
-                            sales.kpiCompletion >= 80 ? 'secondary' : 
-                            'destructive'
-                          }
-                        >
-                          {sales.kpiCompletion}%
-                        </Badge>
-                        <div className="text-xs text-gray-500">
-                          {formatCurrency(sales.kpiTarget)}
+                  <TableRow key={sales.id}>
+                    <TableCell className="font-medium">{sales.salesPerson}</TableCell>
+                    <TableCell>{sales.salesTeam}</TableCell>
+                    <TableCell>{sales.leadsAssigned}</TableCell>
+                    <TableCell>{sales.ordersCreated}</TableCell>
+                    <TableCell>
+                      <Badge variant={sales.conversionRate >= 50 ? 'default' : sales.conversionRate >= 30 ? 'secondary' : 'destructive'}>
+                        {sales.conversionRate}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-bold text-green-600">
+                      {formatCurrency(sales.revenue)}
+                    </TableCell>
+                    <TableCell>
+                      {sales.kpiTarget && sales.kpiCompletion ? (
+                        <div className="space-y-1">
+                          <Badge
+                            variant={
+                              sales.kpiCompletion >= 100 ? 'default' :
+                                sales.kpiCompletion >= 80 ? 'secondary' :
+                                  'destructive'
+                            }
+                          >
+                            {sales.kpiCompletion}%
+                          </Badge>
+                          <div className="text-xs text-gray-500">
+                            {formatCurrency(sales.kpiTarget)}
+                          </div>
                         </div>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Chưa có KPI</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs space-y-1">
+                        <div>Zalo: {sales.leadsBySource.zalo}</div>
+                        <div>FB: {sales.leadsBySource.facebook}</div>
+                        <div>Manual: {sales.leadsBySource.manual}</div>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">Chưa có KPI</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs space-y-1">
-                      <div>Zalo: {sales.leadsBySource.zalo}</div>
-                      <div>FB: {sales.leadsBySource.facebook}</div>
-                      <div>Manual: {sales.leadsBySource.manual}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedSalesForDetail(sales)
-                        setShowPerformanceDetailModal(true)
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedSalesForDetail(sales)
+                          setShowPerformanceDetailModal(true)
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
                 ))
               })()}
             </TableBody>
@@ -2093,7 +2115,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="p-6">
               <div className="flex justify-end mb-6">
                 <Button className="bg-green-600 hover:bg-green-700 text-white">
@@ -2118,7 +2140,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                     {(() => {
                       const detailData = getPerformanceDetailData(selectedSalesForDetail)
                       const totalRevenue = detailData.reduce((sum, item) => sum + item.revenue, 0)
-                      
+
                       return (
                         <>
                           {detailData.map((item) => (
@@ -2284,6 +2306,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       department: '',
       team: ''
     })
+    const [processCustomDate, setProcessCustomDate] = useState({ start: '', end: '' })
     const [currentProcessData, setCurrentProcessData] = useState<SalesProcessAnalysis[]>(sampleProcessAnalysis)
 
     const handleApplyFilter = () => {
@@ -2317,28 +2340,33 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_month">Tháng này</option>
               <option value="this_quarter">Quý này</option>
               <option value="this_year">Năm này</option>
+              <option value="custom">Chọn thời gian</option>
             </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={processFilter.department}
-              onChange={(e) => setProcessFilter({ ...processFilter, department: e.target.value })}
-            >
-              <option value="">Phòng sale</option>
-              <option value="sale_department_1">Phòng Sale 1</option>
-              <option value="sale_department_2">Phòng Sale 2</option>
-              <option value="sale_department_3">Phòng Sale 3</option>
-            </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={processFilter.team}
-              onChange={(e) => setProcessFilter({ ...processFilter, team: e.target.value })}
-            >
-              <option value="">Chọn team</option>
-              <option value="team_a">Team A</option>
-              <option value="team_b">Team B</option>
-              <option value="team_c">Team C</option>
-              <option value="team_d">Team D</option>
-            </select>
+            {processFilter.period === 'custom' && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={processCustomDate.start}
+                  onChange={(e) => setProcessCustomDate({ ...processCustomDate, start: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+                <span className="text-gray-500 text-sm">đến</span>
+                <input
+                  type="date"
+                  value={processCustomDate.end}
+                  onChange={(e) => setProcessCustomDate({ ...processCustomDate, end: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+              </div>
+            )}
+            <ReportEmployeeFilter
+              selectedDepartment={processFilter.department}
+              onDepartmentChange={(val) => setProcessFilter({ ...processFilter, department: val, team: '' })}
+              selectedTeam={processFilter.team}
+              onTeamChange={(val) => setProcessFilter({ ...processFilter, team: val })}
+              selectedEmployee={reportEmployeeFilter}
+              onEmployeeChange={setReportEmployeeFilter}
+            />
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -2354,20 +2382,22 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {currentProcessData.map((stage, index) => {
-                const isBottleneck = detectBottleneck(stage)
+              {(() => {
+                const procMult = getFilterMultiplier(processFilter.department, processFilter.team, reportEmployeeFilter)
+                return currentProcessData.map((stage, index) => {
+                const fs = { ...stage, leadsCount: Math.round(stage.leadsCount * procMult) }
+                const isBottleneck = detectBottleneck(fs)
                 return (
-                  <div key={stage.id} className="relative">
-                    <div className={`flex items-center justify-between p-4 rounded-lg ${
-                      isBottleneck
+                  <div key={fs.id} className="relative">
+                    <div className={`flex items-center justify-between p-4 rounded-lg ${isBottleneck
                         ? 'border-2 border-red-500 bg-red-50'
                         : 'border border-gray-200'
-                    }`}>
+                      }`}>
                       <div className="flex items-center space-x-4">
                         <div className="text-2xl font-bold text-blue-600">{index + 1}</div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{stage.stage}</h3>
+                            <h3 className="font-semibold">{fs.stage}</h3>
                             {isBottleneck && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
                                 <AlertTriangle className="w-3 h-3 mr-1" />
@@ -2375,7 +2405,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-500">{stage.leadsCount} leads</p>
+                          <p className="text-sm text-gray-500">{fs.leadsCount} leads</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-6">
@@ -2386,25 +2416,24 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                             <div className="flex-1">
                               <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
-                                    stage.conversionRate >= 80 ? 'bg-green-500' :
-                                    stage.conversionRate >= 60 ? 'bg-blue-500' :
-                                    stage.conversionRate >= 40 ? 'bg-yellow-500' :
-                                    stage.conversionRate >= 20 ? 'bg-orange-500' :
-                                    'bg-red-500'
-                                  }`}
-                                  style={{ width: `${stage.conversionRate}%` }}
+                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${fs.conversionRate >= 80 ? 'bg-green-500' :
+                                      fs.conversionRate >= 60 ? 'bg-blue-500' :
+                                        fs.conversionRate >= 40 ? 'bg-yellow-500' :
+                                          fs.conversionRate >= 20 ? 'bg-orange-500' :
+                                            'bg-red-500'
+                                    }`}
+                                  style={{ width: `${fs.conversionRate}%` }}
                                 ></div>
                               </div>
                             </div>
-                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{stage.conversionRate}%</p>
+                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{fs.conversionRate}%</p>
                           </div>
                         </div>
 
                         {/* Thời gian xử lý trung bình */}
                         <div className="text-right min-w-[180px]">
                           <p className="font-semibold text-sm mb-1">Thời gian xử lý trung bình</p>
-                          <p className="text-base font-bold text-gray-900">{stage.averageTimeInStage} ngày</p>
+                          <p className="text-base font-bold text-gray-900">{fs.averageTimeInStage} ngày</p>
                         </div>
 
                         {/* Tỷ lệ rớt */}
@@ -2414,25 +2443,25 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                             <div className="flex-1">
                               <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
-                                    stage.dropoffRate >= 80 ? 'bg-red-500' :
-                                    stage.dropoffRate >= 60 ? 'bg-orange-500' :
-                                    stage.dropoffRate >= 40 ? 'bg-yellow-500' :
-                                    stage.dropoffRate >= 20 ? 'bg-blue-500' :
-                                    'bg-green-500'
-                                  }`}
-                                  style={{ width: `${stage.dropoffRate}%` }}
+                                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${fs.dropoffRate >= 80 ? 'bg-red-500' :
+                                      fs.dropoffRate >= 60 ? 'bg-orange-500' :
+                                        fs.dropoffRate >= 40 ? 'bg-yellow-500' :
+                                          fs.dropoffRate >= 20 ? 'bg-blue-500' :
+                                            'bg-green-500'
+                                    }`}
+                                  style={{ width: `${fs.dropoffRate}%` }}
                                 ></div>
                               </div>
                             </div>
-                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{stage.dropoffRate}%</p>
+                            <p className="text-base font-bold text-gray-900 min-w-[45px]">{fs.dropoffRate}%</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )
-              })}
+              })
+              })()}
             </div>
 
             {/* Bottleneck Warning */}
@@ -2510,6 +2539,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       department: '',
       team: ''
     })
+    const [sourceCustomDate, setSourceCustomDate] = useState({ start: '', end: '' })
     const [currentSourceData, setCurrentSourceData] = useState(getLeadSourceData('this_month', '', ''))
 
     const handleApplySourceFilter = () => {
@@ -2541,28 +2571,33 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_month">Tháng này</option>
               <option value="this_quarter">Quý này</option>
               <option value="this_year">Năm này</option>
+              <option value="custom">Chọn thời gian</option>
             </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={sourceFilter.department}
-              onChange={(e) => setSourceFilter({ ...sourceFilter, department: e.target.value })}
-            >
-              <option value="">Phòng sale</option>
-              <option value="sale_department_1">Phòng Sale 1</option>
-              <option value="sale_department_2">Phòng Sale 2</option>
-              <option value="sale_department_3">Phòng Sale 3</option>
-            </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={sourceFilter.team}
-              onChange={(e) => setSourceFilter({ ...sourceFilter, team: e.target.value })}
-            >
-              <option value="">Chọn team</option>
-              <option value="team_a">Team A</option>
-              <option value="team_b">Team B</option>
-              <option value="team_c">Team C</option>
-              <option value="team_d">Team D</option>
-            </select>
+            {sourceFilter.period === 'custom' && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={sourceCustomDate.start}
+                  onChange={(e) => setSourceCustomDate({ ...sourceCustomDate, start: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+                <span className="text-gray-500 text-sm">đến</span>
+                <input
+                  type="date"
+                  value={sourceCustomDate.end}
+                  onChange={(e) => setSourceCustomDate({ ...sourceCustomDate, end: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+              </div>
+            )}
+            <ReportEmployeeFilter
+              selectedDepartment={sourceFilter.department}
+              onDepartmentChange={(val) => setSourceFilter({ ...sourceFilter, department: val, team: '' })}
+              selectedTeam={sourceFilter.team}
+              onTeamChange={(val) => setSourceFilter({ ...sourceFilter, team: val })}
+              selectedEmployee={reportEmployeeFilter}
+              onEmployeeChange={setReportEmployeeFilter}
+            />
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -2572,7 +2607,11 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
         {/* Source Performance */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {currentSourceData.map((source) => (
+          {(() => {
+            const srcMult = getFilterMultiplier(sourceFilter.department, sourceFilter.team, reportEmployeeFilter)
+            return currentSourceData.map((source) => {
+              const fs = { ...source, leads: Math.round(source.leads * srcMult), revenue: Math.round(source.revenue * srcMult) }
+              return (
             <Card key={source.source} className="border border-[#e6ebf1]">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -2584,11 +2623,11 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Số leads:</span>
-                    <span className="font-bold text-gray-900">{source.leads}</span>
+                    <span className="font-bold text-gray-900">{fs.leads}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Doanh số:</span>
-                    <span className="font-bold text-gray-900">{formatCurrency(source.revenue)}</span>
+                    <span className="font-bold text-gray-900">{formatCurrency(fs.revenue)}</span>
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
@@ -2597,13 +2636,12 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                     </div>
                     <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${
-                          source.quality >= 90 ? 'bg-green-500' :
-                          source.quality >= 80 ? 'bg-green-500' :
-                          source.quality >= 70 ? 'bg-yellow-500' :
-                          source.quality >= 60 ? 'bg-orange-500' :
-                          'bg-red-500'
-                        }`}
+                        className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${source.quality >= 90 ? 'bg-green-500' :
+                            source.quality >= 80 ? 'bg-green-500' :
+                              source.quality >= 70 ? 'bg-yellow-500' :
+                                source.quality >= 60 ? 'bg-orange-500' :
+                                  'bg-red-500'
+                          }`}
                         style={{ width: `${source.quality}%` }}
                       ></div>
                     </div>
@@ -2611,7 +2649,9 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )
+            })
+          })()}
         </div>
       </div>
     )
@@ -2625,7 +2665,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <h2 className="text-2xl font-bold text-gray-900">Báo cáo Tỷ lệ Hủy đơn</h2>
           <p className="text-gray-600">Phân tích các đơn hàng bị hủy và nguyên nhân</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Button variant="outline">
             <Download className="w-4 h-4 mr-2" />
@@ -2875,6 +2915,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
       department: '',
       team: ''
     })
+    const [customerCustomDate, setCustomerCustomDate] = useState({ start: '', end: '' })
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
     const [currentCustomerData, setCurrentCustomerData] = useState(getCustomerData('this_month', '', ''))
@@ -2924,28 +2965,33 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_month">Tháng này</option>
               <option value="this_quarter">Quý này</option>
               <option value="this_year">Năm này</option>
+              <option value="custom">Chọn thời gian</option>
             </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={customerFilter.department}
-              onChange={(e) => setCustomerFilter({ ...customerFilter, department: e.target.value })}
-            >
-              <option value="">Phòng sale</option>
-              <option value="sale_department_1">Phòng Sale 1</option>
-              <option value="sale_department_2">Phòng Sale 2</option>
-              <option value="sale_department_3">Phòng Sale 3</option>
-            </select>
-            <select
-              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={customerFilter.team}
-              onChange={(e) => setCustomerFilter({ ...customerFilter, team: e.target.value })}
-            >
-              <option value="">Chọn team</option>
-              <option value="team_a">Team A</option>
-              <option value="team_b">Team B</option>
-              <option value="team_c">Team C</option>
-              <option value="team_d">Team D</option>
-            </select>
+            {customerFilter.period === 'custom' && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={customerCustomDate.start}
+                  onChange={(e) => setCustomerCustomDate({ ...customerCustomDate, start: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+                <span className="text-gray-500 text-sm">đến</span>
+                <input
+                  type="date"
+                  value={customerCustomDate.end}
+                  onChange={(e) => setCustomerCustomDate({ ...customerCustomDate, end: e.target.value })}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                />
+              </div>
+            )}
+            <ReportEmployeeFilter
+              selectedDepartment={customerFilter.department}
+              onDepartmentChange={(val) => setCustomerFilter({ ...customerFilter, department: val, team: '' })}
+              selectedTeam={customerFilter.team}
+              onTeamChange={(val) => setCustomerFilter({ ...customerFilter, team: val })}
+              selectedEmployee={reportEmployeeFilter}
+              onEmployeeChange={setReportEmployeeFilter}
+            />
             <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
@@ -2953,308 +2999,319 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           </div>
         </div>
 
-      {/* Customer Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
-          <div className="absolute top-2 right-2">
-            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+        {/* Customer Stats */}
+        {(() => {
+          const custMult = getFilterMultiplier(customerFilter.department, customerFilter.team, reportEmployeeFilter)
+          const cStats = {
+            total: Math.round(currentCustomerData.stats.total * custMult),
+            enterprise: Math.round(currentCustomerData.stats.enterprise * custMult),
+            individual: Math.round(currentCustomerData.stats.individual * custMult),
+            new: Math.round(currentCustomerData.stats.new * custMult),
+            avgValue: Math.round(currentCustomerData.stats.avgValue * custMult)
+          }
+          return (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-blue-600 to-blue-400">
+            <div className="absolute top-2 right-2">
+              <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white mb-2">Tổng khách hàng</p>
+              <p className="text-4xl font-extrabold text-white mb-1">{cStats.total}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-base font-semibold text-white mb-2">Tổng khách hàng</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.total}</p>
+
+          <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
+            <div className="absolute top-2 right-2">
+              <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white mb-2">Khách hàng doanh nghiệp</p>
+              <p className="text-4xl font-extrabold text-white mb-1">{cStats.enterprise}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-indigo-600 to-indigo-400">
+            <div className="absolute top-2 right-2">
+              <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white mb-2">Khách hàng cá nhân</p>
+              <p className="text-4xl font-extrabold text-white mb-1">{cStats.individual}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
+            <div className="absolute top-2 right-2">
+              <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white mb-2">Khách hàng mới</p>
+              <p className="text-4xl font-extrabold text-white mb-1">{cStats.new}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
+            <div className="absolute top-2 right-2">
+              <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-white mb-2">Giá trị bán TB / khách hàng</p>
+              <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(cStats.avgValue)}</p>
+            </div>
           </div>
         </div>
+          )
+        })()}
 
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-purple-600 to-purple-400">
-          <div className="absolute top-2 right-2">
-            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-white mb-2">Khách hàng doanh nghiệp</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.enterprise}</p>
-          </div>
+        {/* Retention & Churn and New vs Returning */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Retention & Churn Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tần xuất mua hàng</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Top metrics */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <p className="text-3xl font-bold text-green-600">39%</p>
+                  <p className="text-sm text-gray-600 mt-1">Tỷ lệ quay lại</p>
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    +5.2%
+                  </p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <p className="text-3xl font-bold text-blue-600">2.3</p>
+                  <p className="text-sm text-gray-600 mt-1">Tần suất mua TB</p>
+                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    +8%
+                  </p>
+                </div>
+              </div>
+
+              {/* Frequency distribution */}
+              <div className="space-y-3">
+                <p className="font-semibold text-gray-900">Phân bổ tần suất mua</p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">1 lần</span>
+                    <span className="text-sm text-gray-500">(61%)</span>
+                  </div>
+                  <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="absolute top-0 left-0 h-full bg-gray-500 rounded-full flex items-center justify-end pr-2" style={{ width: '61%' }}>
+                      <span className="text-xs font-semibold text-white">298</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">2-5 lần</span>
+                    <span className="text-sm text-gray-500">(31%)</span>
+                  </div>
+                  <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full flex items-center justify-end pr-2" style={{ width: '31%' }}>
+                      <span className="text-xs font-semibold text-white">152</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">&gt;5 lần</span>
+                    <span className="text-sm text-gray-500">(8%)</span>
+                  </div>
+                  <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="absolute top-0 left-0 h-full bg-green-500 rounded-full flex items-center justify-end pr-2" style={{ width: '8%' }}>
+                      <span className="text-xs font-semibold text-white">39</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* New vs Returning Customers Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Khách hàng mới và quay lại</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* New vs Returning stats */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-green-50 rounded-lg p-6 text-center">
+                  <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-4xl font-bold text-green-600 mb-2">45</p>
+                  <p className="text-sm text-gray-600 mb-1">Khách hàng mới</p>
+                  <p className="text-xs text-green-600">+15% vs tháng trước</p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-6 text-center">
+                  <RefreshCw className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-4xl font-bold text-blue-600 mb-2">82</p>
+                  <p className="text-sm text-gray-600 mb-1">KH quay lại</p>
+                  <p className="text-xs text-blue-600">+8% vs tháng trước</p>
+                </div>
+              </div>
+
+              {/* Revenue distribution */}
+              <div className="space-y-3">
+                <p className="font-semibold text-gray-900">Tỷ lệ doanh thu</p>
+                <div className="relative h-12 bg-gray-200 rounded-full overflow-hidden flex">
+                  <div className="h-full bg-green-500 flex items-center justify-center text-white font-semibold" style={{ width: '35%' }}>
+                    KH mới 35%
+                  </div>
+                  <div className="h-full bg-blue-500 flex items-center justify-center text-white font-semibold" style={{ width: '65%' }}>
+                    KH cũ 65%
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-indigo-600 to-indigo-400">
-          <div className="absolute top-2 right-2">
-            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-white mb-2">Khách hàng cá nhân</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.individual}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-green-600 to-green-400">
-          <div className="absolute top-2 right-2">
-            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-white mb-2">Khách hàng mới</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{currentCustomerData.stats.new}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl bg-gradient-to-br from-orange-600 to-orange-400">
-          <div className="absolute top-2 right-2">
-            <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-          </div>
-          <div>
-            <p className="text-base font-semibold text-white mb-2">Giá trị bán TB / khách hàng</p>
-            <p className="text-4xl font-extrabold text-white mb-1">{formatCurrency(currentCustomerData.stats.avgValue)}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Retention & Churn and New vs Returning */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Retention & Churn Card */}
+        {/* Top 10 Customers Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Tần xuất mua hàng</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Top metrics */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-green-50 rounded-lg p-4">
-                <p className="text-3xl font-bold text-green-600">39%</p>
-                <p className="text-sm text-gray-600 mt-1">Tỷ lệ quay lại</p>
-                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  +5.2%
-                </p>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-3xl font-bold text-blue-600">2.3</p>
-                <p className="text-sm text-gray-600 mt-1">Tần suất mua TB</p>
-                <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  +8%
-                </p>
-              </div>
-            </div>
-
-            {/* Frequency distribution */}
-            <div className="space-y-3">
-              <p className="font-semibold text-gray-900">Phân bổ tần suất mua</p>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">1 lần</span>
-                  <span className="text-sm text-gray-500">(61%)</span>
-                </div>
-                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="absolute top-0 left-0 h-full bg-gray-500 rounded-full flex items-center justify-end pr-2" style={{ width: '61%' }}>
-                    <span className="text-xs font-semibold text-white">298</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">2-5 lần</span>
-                  <span className="text-sm text-gray-500">(31%)</span>
-                </div>
-                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="absolute top-0 left-0 h-full bg-blue-500 rounded-full flex items-center justify-end pr-2" style={{ width: '31%' }}>
-                    <span className="text-xs font-semibold text-white">152</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">&gt;5 lần</span>
-                  <span className="text-sm text-gray-500">(8%)</span>
-                </div>
-                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                  <div className="absolute top-0 left-0 h-full bg-green-500 rounded-full flex items-center justify-end pr-2" style={{ width: '8%' }}>
-                    <span className="text-xs font-semibold text-white">39</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* New vs Returning Customers Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Khách hàng mới và quay lại</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* New vs Returning stats */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-green-50 rounded-lg p-6 text-center">
-                <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                <p className="text-4xl font-bold text-green-600 mb-2">45</p>
-                <p className="text-sm text-gray-600 mb-1">Khách hàng mới</p>
-                <p className="text-xs text-green-600">+15% vs tháng trước</p>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-6 text-center">
-                <RefreshCw className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-4xl font-bold text-blue-600 mb-2">82</p>
-                <p className="text-sm text-gray-600 mb-1">KH quay lại</p>
-                <p className="text-xs text-blue-600">+8% vs tháng trước</p>
-              </div>
-            </div>
-
-            {/* Revenue distribution */}
-            <div className="space-y-3">
-              <p className="font-semibold text-gray-900">Tỷ lệ doanh thu</p>
-              <div className="relative h-12 bg-gray-200 rounded-full overflow-hidden flex">
-                <div className="h-full bg-green-500 flex items-center justify-center text-white font-semibold" style={{ width: '35%' }}>
-                  KH mới 35%
-                </div>
-                <div className="h-full bg-blue-500 flex items-center justify-center text-white font-semibold" style={{ width: '65%' }}>
-                  KH cũ 65%
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top 10 Customers Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Top 10 khách hàng giá trị nhất</CardTitle>
-            <button
-              onClick={() => onNavigate?.('customers')}
-              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-            >
-              Xem tất cả
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Khách hàng</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phân khúc</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tổng đơn</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tần suất</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Lần mua gần nhất</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng chi tiêu</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { rank: 1, name: 'Công ty ABC Corp', segment: 'VIP', orders: 24, frequency: '2.4/tháng', lastPurchase: '5 ngày', spent: 320000000 },
-                  { rank: 2, name: 'Tập đoàn XYZ', segment: 'VIP', orders: 18, frequency: '1.8/tháng', lastPurchase: '12 ngày', spent: 285000000 },
-                  { rank: 3, name: 'Công ty DEF Ltd', segment: 'VIP', orders: 15, frequency: '1.5/tháng', lastPurchase: '8 ngày', spent: 245000000 },
-                  { rank: 4, name: 'Nguyễn Văn Minh', segment: 'DN', orders: 12, frequency: '1.2/tháng', lastPurchase: '15 ngày', spent: 180000000 },
-                  { rank: 5, name: 'Công ty GHI', segment: 'DN', orders: 10, frequency: '1.0/tháng', lastPurchase: '22 ngày', spent: 165000000 }
-                ].map((customer) => (
-                  <tr key={customer.rank} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4">
-                      <span className="text-gray-900 font-medium">{customer.rank}</span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <p className="font-medium text-gray-900">{customer.name}</p>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        customer.segment === 'VIP' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {customer.segment}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center text-gray-900">{customer.orders}</td>
-                    <td className="py-3 px-4 text-center text-blue-600">{customer.frequency}</td>
-                    <td className="py-3 px-4 text-center text-orange-600">{customer.lastPurchase}</td>
-                    <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(customer.spent)}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                        onClick={() => handleViewCustomerOrders(customer)}
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Order Details Modal */}
-      {isOrderModalOpen && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
-                Chi tiết hiệu suất - {selectedCustomer.name}
-              </h2>
+            <div className="flex items-center justify-between">
+              <CardTitle>Top 10 khách hàng giá trị nhất</CardTitle>
               <button
-                onClick={() => setIsOrderModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => onNavigate?.('customers')}
+                className="text-sm text-blue-600 hover:underline flex items-center gap-1"
               >
-                <X className="w-6 h-6" />
+                Xem tất cả
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Khách hàng</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phân khúc</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tổng đơn</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Tần suất</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Lần mua gần nhất</th>
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng chi tiêu</th>
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { rank: 1, name: 'Công ty ABC Corp', segment: 'VIP', orders: 24, frequency: '2.4/tháng', lastPurchase: '5 ngày', spent: 320000000 },
+                    { rank: 2, name: 'Tập đoàn XYZ', segment: 'VIP', orders: 18, frequency: '1.8/tháng', lastPurchase: '12 ngày', spent: 285000000 },
+                    { rank: 3, name: 'Công ty DEF Ltd', segment: 'VIP', orders: 15, frequency: '1.5/tháng', lastPurchase: '8 ngày', spent: 245000000 },
+                    { rank: 4, name: 'Nguyễn Văn Minh', segment: 'DN', orders: 12, frequency: '1.2/tháng', lastPurchase: '15 ngày', spent: 180000000 },
+                    { rank: 5, name: 'Công ty GHI', segment: 'DN', orders: 10, frequency: '1.0/tháng', lastPurchase: '22 ngày', spent: 165000000 }
+                  ].map((customer) => (
+                    <tr key={customer.rank} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4">
+                        <span className="text-gray-900 font-medium">{customer.rank}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="font-medium text-gray-900">{customer.name}</p>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${customer.segment === 'VIP' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                          {customer.segment}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center text-gray-900">{customer.orders}</td>
+                      <td className="py-3 px-4 text-center text-blue-600">{customer.frequency}</td>
+                      <td className="py-3 px-4 text-center text-orange-600">{customer.lastPurchase}</td>
+                      <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(customer.spent)}</td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          onClick={() => handleViewCustomerOrders(customer)}
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              {/* Export Button */}
-              <div className="flex justify-end mb-4">
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
-                  <Download className="w-4 h-4 mr-2" />
-                  Xuất dữ liệu
+        {/* Order Details Modal */}
+        {isOrderModalOpen && selectedCustomer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Chi tiết hiệu suất - {selectedCustomer.name}
+                </h2>
+                <button
+                  onClick={() => setIsOrderModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {/* Orders Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Mã đơn hàng</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Sản phẩm</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phương thức thanh toán</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getCustomerOrders(selectedCustomer.name).map((order, index) => (
-                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4 text-gray-900">{index + 1}</td>
-                        <td className="py-3 px-4 text-gray-900">{order.orderCode}</td>
-                        <td className="py-3 px-4 text-gray-600">{order.product}</td>
-                        <td className="py-3 px-4 text-gray-900">{order.paymentMethod}</td>
-                        <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(order.total)}</td>
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                {/* Export Button */}
+                <div className="flex justify-end mb-4">
+                  <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+                    <Download className="w-4 h-4 mr-2" />
+                    Xuất dữ liệu
+                  </button>
+                </div>
+
+                {/* Orders Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">STT</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Mã đơn hàng</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Sản phẩm</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Phương thức thanh toán</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Tổng tiền</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-50 border-t-2 border-gray-300">
-                      <td colSpan={4} className="py-3 px-4 text-right font-semibold text-gray-900">
-                        Tổng doanh số:
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-green-600 text-lg">
-                        {formatCurrency(
-                          getCustomerOrders(selectedCustomer.name).reduce((sum, order) => sum + order.total, 0)
-                        )}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                    </thead>
+                    <tbody>
+                      {getCustomerOrders(selectedCustomer.name).map((order, index) => (
+                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="py-3 px-4 text-gray-900">{index + 1}</td>
+                          <td className="py-3 px-4 text-gray-900">{order.orderCode}</td>
+                          <td className="py-3 px-4 text-gray-600">{order.product}</td>
+                          <td className="py-3 px-4 text-gray-900">{order.paymentMethod}</td>
+                          <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(order.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-50 border-t-2 border-gray-300">
+                        <td colSpan={4} className="py-3 px-4 text-right font-semibold text-gray-900">
+                          Tổng doanh số:
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-green-600 text-lg">
+                          {formatCurrency(
+                            getCustomerOrders(selectedCustomer.name).reduce((sum, order) => sum + order.total, 0)
+                          )}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     )
   }
 
@@ -3266,7 +3323,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <h2 className="text-2xl font-bold text-gray-900">Báo cáo Tùy chỉnh</h2>
           <p className="text-gray-600">Tạo và quản lý các báo cáo theo nhu cầu riêng</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
@@ -3405,7 +3462,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <div className="flex items-center space-x-4 mb-6">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Kênh:</span>
-              <select 
+              <select
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value as any)}
                 className="border border-gray-300 rounded px-3 py-1 text-sm"
@@ -3419,7 +3476,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Thời gian:</span>
-              <select 
+              <select
                 value={selectedDateRange}
                 onChange={(e) => setSelectedDateRange(e.target.value)}
                 className="border border-gray-300 rounded px-3 py-1 text-sm"
@@ -3486,7 +3543,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         <div className="font-medium">{formatTime(report.averageResponseTime)}</div>
                         <div className="text-xs text-gray-500">
                           {report.averageResponseTime < 30 ? 'Rất tốt' :
-                           report.averageResponseTime < 60 ? 'Tốt' : 'Cần cải thiện'}
+                            report.averageResponseTime < 60 ? 'Tốt' : 'Cần cải thiện'}
                         </div>
                       </div>
                     </div>
@@ -3552,7 +3609,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <div className="flex items-center space-x-4 mb-6">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Kỳ 1:</span>
-              <select 
+              <select
                 value={comparisonPeriod1}
                 onChange={(e) => setComparisonPeriod1(e.target.value)}
                 className="border border-gray-300 rounded px-3 py-1 text-sm"
@@ -3568,7 +3625,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             <div className="text-gray-400">vs</div>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">Kỳ 2:</span>
-              <select 
+              <select
                 value={comparisonPeriod2}
                 onChange={(e) => setComparisonPeriod2(e.target.value)}
                 className="border border-gray-300 rounded px-3 py-1 text-sm"
@@ -3588,7 +3645,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                 <div>
                   <h3 className="font-semibold">{comparison.period1.name} vs {comparison.period2.name}</h3>
                   <p className="text-sm text-gray-600">
-                    {formatDate(comparison.period1.startDate)} - {formatDate(comparison.period1.endDate)} 
+                    {formatDate(comparison.period1.startDate)} - {formatDate(comparison.period1.endDate)}
                     {' vs '}
                     {formatDate(comparison.period2.startDate)} - {formatDate(comparison.period2.endDate)}
                   </p>
@@ -3612,8 +3669,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-gray-600 capitalize">
                           {key === 'revenue' ? 'Doanh thu' :
-                           key === 'orders' ? 'Đơn hàng' :
-                           key === 'leads' ? 'Leads' : 'Tỷ lệ chuyển đổi'}
+                            key === 'orders' ? 'Đơn hàng' :
+                              key === 'leads' ? 'Leads' : 'Tỷ lệ chuyển đổi'}
                         </span>
                         {getChangeIcon(metric.change)}
                       </div>
@@ -3622,16 +3679,16 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                           <span className="text-xs text-gray-500">{comparison.period1.name}:</span>
                           <span className="text-sm font-medium">
                             {key === 'revenue' ? formatCurrency(metric.period1) :
-                             key === 'conversionRate' ? formatPercent(metric.period1) :
-                             metric.period1.toLocaleString()}
+                              key === 'conversionRate' ? formatPercent(metric.period1) :
+                                metric.period1.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-xs text-gray-500">{comparison.period2.name}:</span>
                           <span className="text-sm font-medium">
                             {key === 'revenue' ? formatCurrency(metric.period2) :
-                             key === 'conversionRate' ? formatPercent(metric.period2) :
-                             metric.period2.toLocaleString()}
+                              key === 'conversionRate' ? formatPercent(metric.period2) :
+                                metric.period2.toLocaleString()}
                           </span>
                         </div>
                         <div className="border-t pt-2">
@@ -3709,7 +3766,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                   <div className="space-y-3">
                     {filteredKPIs.map((kpi) => (
                       <Card key={kpi.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => setSelectedKPI(kpi)}>
+                        onClick={() => setSelectedKPI(kpi)}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
@@ -3725,14 +3782,14 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                               <p className="text-sm text-muted-foreground mb-2">{kpi.description}</p>
                               <div className="flex items-center space-x-4">
                                 <span className="text-sm">
-                                  <strong>Hiện tại:</strong> {kpi.unit === 'VND' ? formatCurrency(kpi.current) : 
-                                                           kpi.unit === '%' ? `${kpi.current}%` : 
-                                                           kpi.current.toLocaleString()}
+                                  <strong>Hiện tại:</strong> {kpi.unit === 'VND' ? formatCurrency(kpi.current) :
+                                    kpi.unit === '%' ? `${kpi.current}%` :
+                                      kpi.current.toLocaleString()}
                                 </span>
                                 <span className="text-sm">
-                                  <strong>Mục tiêu:</strong> {kpi.unit === 'VND' ? formatCurrency(kpi.target) : 
-                                                           kpi.unit === '%' ? `${kpi.target}%` : 
-                                                           kpi.target.toLocaleString()}
+                                  <strong>Mục tiêu:</strong> {kpi.unit === 'VND' ? formatCurrency(kpi.target) :
+                                    kpi.unit === '%' ? `${kpi.target}%` :
+                                      kpi.target.toLocaleString()}
                                 </span>
                                 <span className="text-sm">
                                   <strong>Người phụ trách:</strong> {sampleEmployees.find(emp => emp.id === kpi.assignedTo)?.name}
@@ -3742,16 +3799,15 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                             <div className="flex items-center space-x-3">
                               {getTrendIcon(kpi.trend)}
                               <div className="text-right">
-                                <div className={`text-lg font-bold ${kpi.achievement >= 100 ? 'text-green-600' : 
-                                                                  kpi.achievement >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                <div className={`text-lg font-bold ${kpi.achievement >= 100 ? 'text-green-600' :
+                                  kpi.achievement >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
                                   {kpi.achievement}%
                                 </div>
                                 <div className="w-20 bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className={`h-2 rounded-full transition-all duration-300 ${
-                                      kpi.achievement >= 100 ? 'bg-green-500' : 
-                                      kpi.achievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-300 ${kpi.achievement >= 100 ? 'bg-green-500' :
+                                        kpi.achievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                                      }`}
                                     style={{ width: `${Math.min(kpi.achievement, 100)}%` }}
                                   />
                                 </div>
@@ -3794,13 +3850,13 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                                 <div className="space-y-1">
                                   <div className="flex items-center space-x-2">
                                     <span className="font-medium">
-                                      {kpi.unit === 'VND' ? formatCurrency(record.value) : 
-                                       kpi.unit === '%' ? `${record.value}%` : 
-                                       record.value.toLocaleString()}
+                                      {kpi.unit === 'VND' ? formatCurrency(record.value) :
+                                        kpi.unit === '%' ? `${record.value}%` :
+                                          record.value.toLocaleString()}
                                     </span>
                                     <span className="text-sm text-muted-foreground">
-                                      / {kpi.unit === 'VND' ? formatCurrency(record.target) : 
-                                          kpi.unit === '%' ? `${record.target}%` : 
+                                      / {kpi.unit === 'VND' ? formatCurrency(record.target) :
+                                        kpi.unit === '%' ? `${record.target}%` :
                                           record.target.toLocaleString()}
                                     </span>
                                   </div>
@@ -3871,9 +3927,9 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         <div className="space-y-3">
                           {['sales', 'marketing', 'operations', 'finance'].map((category) => {
                             const categoryKPIs = sampleKPIs.filter(kpi => kpi.category === category)
-                            const avgAchievement = categoryKPIs.length > 0 ? 
+                            const avgAchievement = categoryKPIs.length > 0 ?
                               Math.round(categoryKPIs.reduce((sum, kpi) => sum + kpi.achievement, 0) / categoryKPIs.length) : 0
-                            
+
                             return (
                               <div key={category} className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
@@ -3886,11 +3942,10 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className={`h-2 rounded-full ${
-                                        avgAchievement >= 100 ? 'bg-green-500' : 
-                                        avgAchievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                                      }`}
+                                    <div
+                                      className={`h-2 rounded-full ${avgAchievement >= 100 ? 'bg-green-500' :
+                                          avgAchievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                                        }`}
                                       style={{ width: `${Math.min(avgAchievement, 100)}%` }}
                                     />
                                   </div>
@@ -4184,22 +4239,21 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                     <div className="space-y-4">
                       <div className="text-center">
                         <div className="text-3xl font-bold mb-2">
-                          {selectedKPI.unit === 'VND' ? formatCurrency(selectedKPI.current) : 
-                           selectedKPI.unit === '%' ? `${selectedKPI.current}%` : 
-                           selectedKPI.current.toLocaleString()}
+                          {selectedKPI.unit === 'VND' ? formatCurrency(selectedKPI.current) :
+                            selectedKPI.unit === '%' ? `${selectedKPI.current}%` :
+                              selectedKPI.current.toLocaleString()}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Mục tiêu: {selectedKPI.unit === 'VND' ? formatCurrency(selectedKPI.target) : 
-                                   selectedKPI.unit === '%' ? `${selectedKPI.target}%` : 
-                                   selectedKPI.target.toLocaleString()}
+                          Mục tiêu: {selectedKPI.unit === 'VND' ? formatCurrency(selectedKPI.target) :
+                            selectedKPI.unit === '%' ? `${selectedKPI.target}%` :
+                              selectedKPI.target.toLocaleString()}
                         </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-4">
-                        <div 
-                          className={`h-4 rounded-full transition-all duration-300 ${
-                            selectedKPI.achievement >= 100 ? 'bg-green-500' : 
-                            selectedKPI.achievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
+                        <div
+                          className={`h-4 rounded-full transition-all duration-300 ${selectedKPI.achievement >= 100 ? 'bg-green-500' :
+                              selectedKPI.achievement >= 80 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
                           style={{ width: `${Math.min(selectedKPI.achievement, 100)}%` }}
                         />
                       </div>
@@ -4207,8 +4261,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         <span className="text-sm text-muted-foreground">Tỷ lệ hoàn thành</span>
                         <div className="flex items-center space-x-2">
                           {getTrendIcon(selectedKPI.trend)}
-                          <span className={`font-medium ${selectedKPI.achievement >= 100 ? 'text-green-600' : 
-                                                        selectedKPI.achievement >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <span className={`font-medium ${selectedKPI.achievement >= 100 ? 'text-green-600' :
+                            selectedKPI.achievement >= 80 ? 'text-yellow-600' : 'text-red-600'}`}>
                             {selectedKPI.achievement}%
                           </span>
                         </div>
@@ -4228,18 +4282,18 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                         <div key={record.id} className="p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium">
-                              {selectedKPI.unit === 'VND' ? formatCurrency(record.value) : 
-                               selectedKPI.unit === '%' ? `${record.value}%` : 
-                               record.value.toLocaleString()}
+                              {selectedKPI.unit === 'VND' ? formatCurrency(record.value) :
+                                selectedKPI.unit === '%' ? `${record.value}%` :
+                                  record.value.toLocaleString()}
                             </span>
                             <span className="text-sm text-muted-foreground">
                               {formatDate(record.recordedAt)}
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            <div>Mục tiêu: {selectedKPI.unit === 'VND' ? formatCurrency(record.target) : 
-                                         selectedKPI.unit === '%' ? `${record.target}%` : 
-                                         record.target.toLocaleString()}</div>
+                            <div>Mục tiêu: {selectedKPI.unit === 'VND' ? formatCurrency(record.target) :
+                              selectedKPI.unit === '%' ? `${record.target}%` :
+                                record.target.toLocaleString()}</div>
                             <div>Chu kỳ: {record.period}</div>
                             {record.note && <div>Ghi chú: {record.note}</div>}
                             <div>Cập nhật bởi: {sampleEmployees.find(emp => emp.id === record.recordedBy)?.name}</div>
@@ -4288,16 +4342,16 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
             { id: 'process', name: 'Quy trình', icon: <Activity className="w-4 h-4" /> },
             { id: 'sources', name: 'Nguồn Lead', icon: <Zap className="w-4 h-4" /> },
             // { id: 'cancellation', name: 'Hủy đơn', icon: <AlertTriangle className="w-4 h-4" /> },
-            { id: 'customer', name: 'Khách hàng', icon: <Users className="w-4 h-4" /> }
+            { id: 'customer', name: 'Khách hàng', icon: <Users className="w-4 h-4" /> },
+            { id: 'employee', name: 'Nhân viên', icon: <UserCheck className="w-4 h-4" /> }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
+              className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               <span className={activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'}>
                 {tab.icon}
@@ -4317,6 +4371,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         {activeTab === 'sources' && <LeadSourceComponent />}
         {activeTab === 'cancellation' && <CancellationReportComponent />}
         {activeTab === 'customer' && <CustomerReportComponent />}
+        {activeTab === 'employee' && <EmployeeReportTab />}
       </div>
     </div>
   )

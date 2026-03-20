@@ -2389,6 +2389,51 @@ Trân trọng,
                 </tr>
               ))}
             </tbody>
+            {/* Summary Stats Row - aligned with table columns */}
+            {getFilteredOrders().length > 0 && (
+              <tfoot>
+                <tr className="bg-gray-50 border-t-2 border-gray-300">
+                  {/* Checkbox column */}
+                  <td className="px-4 py-3"></td>
+                  {/* Mã đơn column */}
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-gray-500">Tổng số bản ghi: </span>
+                    <span className="font-semibold text-gray-900">{getFilteredOrders().length}</span>
+                  </td>
+                  {/* Khách hàng column */}
+                  <td className="px-4 py-3"></td>
+                  {/* Sản phẩm column */}
+                  <td className="px-4 py-3 hidden md:table-cell"></td>
+                  {/* Tổng tiền column */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="text-xs text-gray-500 mb-0.5">Tổng tiền</div>
+                    <div className="font-semibold text-blue-600">{formatCurrency(getFilteredOrders().reduce((sum, o) => sum + o.total, 0))} đ</div>
+                  </td>
+                  {/* Số lần TT column */}
+                  <td className="px-4 py-3 hidden lg:table-cell"></td>
+                  {/* Thực tế (Đã TT) column */}
+                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-xs text-gray-500 mb-0.5">Đã TT</div>
+                    <div className="font-semibold text-green-600">{formatCurrency(getFilteredOrders().reduce((sum, o) => sum + (o.totalPaid || 0), 0))} đ</div>
+                  </td>
+                  {/* Dư nợ column */}
+                  <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
+                    <div className="text-xs text-gray-500 mb-0.5">Dư nợ</div>
+                    <div className="font-semibold text-red-600">{formatCurrency(getFilteredOrders().reduce((sum, o) => sum + (o.remainingDebt || o.total - (o.totalPaid || 0)), 0))} đ</div>
+                  </td>
+                  {/* Trạng thái column */}
+                  <td className="px-4 py-3"></td>
+                  {/* Thanh toán column */}
+                  <td className="px-4 py-3 hidden lg:table-cell"></td>
+                  {/* Thời hạn column */}
+                  <td className="px-4 py-3 hidden lg:table-cell"></td>
+                  {/* Nhãn column */}
+                  <td className="px-4 py-3 hidden xl:table-cell"></td>
+                  {/* Thao tác column */}
+                  <td className="px-4 py-3"></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
           
           {/* Empty State */}

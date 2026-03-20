@@ -5761,8 +5761,8 @@ export default function CustomersManagement() {
             {/* Advanced Filters - Inside toolbar container */}
             {showAdvancedFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
-                {/* Row 1: 3 columns - Người phụ trách, Khu vực, Sản phẩm đã mua */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Row 1: 4 columns - Người phụ trách, Khu vực, Sản phẩm đã mua, Tag */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                   {/* Người phụ trách */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Người phụ trách</label>
@@ -5821,6 +5821,24 @@ export default function CustomersManagement() {
                         <option value="">Chọn sản phẩm</option>
                         {Array.from(new Set(customers.flatMap(c => c.products?.map(p => p.name) || []))).map(productName => (
                           <option key={productName} value={productName}>{productName}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Tag */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+                    <div className="relative">
+                      <select
+                        value={filterTag}
+                        onChange={(e) => setFilterTag(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Chọn tag</option>
+                        {Array.from(new Set(customers.flatMap(c => c.tags?.map(t => t.name) || []))).sort().map(tagName => (
+                          <option key={tagName} value={tagName}>{tagName}</option>
                         ))}
                       </select>
                       <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -5904,6 +5922,7 @@ export default function CustomersManagement() {
                       setFilterLastInteraction('')
                       setFilterPurchaseDate({start: '', end: ''})
                       setFilterPurchasedProduct([])
+                      setFilterTag('')
                       setProductSearchTerm('')
                       setShowProductDropdown(false)
                     }}

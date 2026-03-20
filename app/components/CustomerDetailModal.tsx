@@ -27,7 +27,10 @@ import {
   Receipt,
   PenSquare,
   Eye,
-  MessageSquarePlus
+  MessageSquarePlus,
+  Settings,
+  CreditCard,
+  BellRing
 } from 'lucide-react'
 
 // ==================== INTERFACES ====================
@@ -77,13 +80,17 @@ interface OrderInvoice {
 interface CustomerOrder {
   id: number
   orderNumber: string
+  customerName?: string
   products: string
   total: number
+  paymentCount?: number
   paid: number
   debt: number
   paymentMethod: string
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   createdAt: string
+  dueDate?: string
+  label?: string
   items?: OrderItem[]
   discount?: number
   vat?: number
@@ -325,7 +332,7 @@ function AddNoteDialog({ isOpen, onClose, customerName, onSave }: AddNoteDialogP
               placeholder="Nhập nội dung ghi chú..."
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               File đính kèm
@@ -394,7 +401,7 @@ function CustomerInfoDetailDialog({ isOpen, onClose, customer }: CustomerInfoDet
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Row 1: Basic Info & Sales Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -857,11 +864,10 @@ function OrderDetailDialog({ isOpen, onClose, order }: OrderDetailDialogProps) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as 'info' | 'invoices' | 'notes')}
-                  className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   {tab.icon}
                   <span>{tab.label}</span>
@@ -1372,27 +1378,24 @@ function TaskDetailModal({ isOpen, onClose, task, customerName }: TaskDetailModa
           <nav className="-mb-px flex space-x-8 px-6 overflow-x-auto">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <FileText className="w-4 h-4" />
               <span>Tổng quan</span>
             </button>
             <button
               onClick={() => setActiveTab('reminders')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'reminders' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${activeTab === 'reminders' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <Bell className="w-4 h-4" />
               <span>Nhắc nhở</span>
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${
-                activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <History className="w-4 h-4" />
               <span>Lịch sử</span>
@@ -1549,13 +1552,13 @@ export default function CustomerDetailModal({
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null)
   const [showTaskDetail, setShowTaskDetail] = useState(false)
   const [selectedTask, setSelectedTask] = useState<CustomerTask | null>(null)
-  
+
   // Order action dialogs
   const [showRefundDialog, setShowRefundDialog] = useState(false)
   const [showAddOrderNote, setShowAddOrderNote] = useState(false)
   const [showAttachInvoice, setShowAttachInvoice] = useState(false)
   const [orderActionMenuOpen, setOrderActionMenuOpen] = useState<number | null>(null)
-  
+
   // History filters
   const [historyDateFrom, setHistoryDateFrom] = useState('')
   const [historyDateTo, setHistoryDateTo] = useState('')
@@ -1565,9 +1568,9 @@ export default function CustomerDetailModal({
 
   // Mock data for demonstration
   const defaultOrders: CustomerOrder[] = [
-    { id: 1, orderNumber: 'DH001', products: 'Sản phẩm A, Sản phẩm B', total: 5000000, paid: 3000000, debt: 2000000, paymentMethod: 'Chuyển khoản', status: 'pending', createdAt: '2026-02-20' },
-    { id: 2, orderNumber: 'DH002', products: 'Sản phẩm C', total: 2000000, paid: 2000000, debt: 0, paymentMethod: 'Tiền mặt', status: 'completed', createdAt: '2026-02-15' },
-    { id: 3, orderNumber: 'DH003', products: 'Sản phẩm D, E, F', total: 8000000, paid: 4000000, debt: 4000000, paymentMethod: 'Trả góp', status: 'confirmed', createdAt: '2026-02-10' },
+    { id: 1, orderNumber: 'DH001', customerName: customer.name, products: 'Sản phẩm A, Sản phẩm B', total: 5000000, paymentCount: 2, paid: 3000000, debt: 2000000, paymentMethod: 'Chuyển khoản', status: 'pending', createdAt: '2026-02-20', dueDate: '2026-03-20', label: 'Chờ xử lý' },
+    { id: 2, orderNumber: 'DH002', customerName: customer.name, products: 'Sản phẩm C', total: 2000000, paymentCount: 1, paid: 2000000, debt: 0, paymentMethod: 'Tiền mặt', status: 'completed', createdAt: '2026-02-15', dueDate: '2026-02-28', label: 'Hoàn thành' },
+    { id: 3, orderNumber: 'DH003', customerName: customer.name, products: 'Sản phẩm D, E, F', total: 8000000, paymentCount: 3, paid: 4000000, debt: 4000000, paymentMethod: 'Trả góp', status: 'confirmed', createdAt: '2026-02-10', dueDate: '2026-04-10', label: 'Đã xác nhận' },
   ]
   const mockOrders: CustomerOrder[] = Array.isArray(customer.orders) && customer.orders.length > 0 ? customer.orders : defaultOrders
 
@@ -1742,13 +1745,16 @@ export default function CustomerDetailModal({
           <thead className="bg-[#fafafb]">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Mã đơn</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Khách hàng</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Sản phẩm</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Tổng tiền</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Đã TT</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Số lần TT</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Thực tế</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Dư nợ</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Phương thức</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Trạng thái</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Thời gian</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Thanh toán</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Thời hạn</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase border-r border-gray-200">Nhãn</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase w-16">Thao tác</th>
             </tr>
           </thead>
@@ -1756,18 +1762,24 @@ export default function CustomerDetailModal({
             {mockOrders.map((order) => (
               <tr key={order.id} className="hover:bg-[#f0f7ff]">
                 <td className="px-4 py-3 border-r border-gray-200">
-                  <button 
+                  <button
                     className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
                     onClick={() => handleOpenOrderDetail(order)}
                   >
                     {order.orderNumber}
                   </button>
                 </td>
-                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700 max-w-[200px] truncate" title={order.products}>
+                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700 max-w-[150px] truncate" title={order.customerName || customer.name}>
+                  {order.customerName || customer.name}
+                </td>
+                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700 max-w-[180px] truncate" title={order.products}>
                   {order.products}
                 </td>
                 <td className="px-4 py-3 border-r border-gray-200 text-sm text-blue-600 text-right font-medium">
                   {formatCurrency(order.total)}
+                </td>
+                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700 text-center">
+                  {order.paymentCount || 0}
                 </td>
                 <td className="px-4 py-3 border-r border-gray-200 text-sm text-green-600 text-right">
                   {formatCurrency(order.paid)}
@@ -1775,27 +1787,40 @@ export default function CustomerDetailModal({
                 <td className="px-4 py-3 border-r border-gray-200 text-sm text-red-600 text-right">
                   {formatCurrency(order.debt)}
                 </td>
-                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700">
-                  {order.paymentMethod}
-                </td>
                 <td className="px-4 py-3 border-r border-gray-200">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
                   </span>
                 </td>
+                <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-700">
+                  {order.paymentMethod}
+                </td>
                 <td className="px-4 py-3 border-r border-gray-200 text-sm text-gray-500">
-                  {formatDate(order.createdAt)}
+                  {order.dueDate ? formatDate(order.dueDate) : '-'}
+                </td>
+                <td className="px-4 py-3 border-r border-gray-200">
+                  {order.label ? (
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${order.label === 'Hoàn thành' ? 'bg-green-100 text-green-700' :
+                      order.label === 'Đã xác nhận' ? 'bg-blue-100 text-blue-700' :
+                        order.label === 'Chờ xử lý' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                      }`}>
+                      {order.label}
+                    </span>
+                  ) : '-'}
                 </td>
                 <td className="px-4 py-3 text-center relative">
-                  <button 
+                  <button
                     className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                     onClick={() => setOrderActionMenuOpen(orderActionMenuOpen === order.id ? null : order.id)}
                   >
-                    <MoreVertical className="w-4 h-4" />
+                    <Settings className="w-4 h-4" />
                   </button>
                   {/* Action Menu Dropdown */}
                   {orderActionMenuOpen === order.id && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      {/* THÔNG TIN section */}
+                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thông tin</div>
                       <button
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                         onClick={() => {
@@ -1806,56 +1831,134 @@ export default function CustomerDetailModal({
                         <Eye className="w-4 h-4 text-blue-500" />
                         Xem chi tiết
                       </button>
-                      <button
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        onClick={() => {
-                          setSelectedOrder(order)
-                          setShowAttachInvoice(true)
-                          setOrderActionMenuOpen(null)
-                        }}
-                      >
-                        <Receipt className="w-4 h-4 text-purple-500" />
-                        Gắn hóa đơn
-                      </button>
-                      <button
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        onClick={() => {
-                          setSelectedOrder(order)
-                          setShowRefundDialog(true)
-                          setOrderActionMenuOpen(null)
-                        }}
-                      >
-                        <RefreshCw className="w-4 h-4 text-orange-500" />
-                        Hoàn tiền/Hủy đơn
-                      </button>
+
+                      {/* THAO TÁC NHANH section */}
+                      <div className="border-t border-gray-100 mt-1 pt-1">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setOrderActionMenuOpen(null)
+                            alert('Chức năng thanh toán đơn hàng - Đang phát triển')
+                          }}
+                        >
+                          <CreditCard className="w-4 h-4 text-green-500" />
+                          Thanh toán đơn hàng
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setOrderActionMenuOpen(null)
+                            alert('Đã gửi nhắc nhở thanh toán cho đơn hàng ' + order.orderNumber)
+                          }}
+                        >
+                          <BellRing className="w-4 h-4 text-orange-500" />
+                          Nhắc nhở thanh toán
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setShowAttachInvoice(true)
+                            setOrderActionMenuOpen(null)
+                          }}
+                        >
+                          <Receipt className="w-4 h-4 text-purple-500" />
+                          Gắn hóa đơn
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setShowAddOrderNote(true)
+                            setOrderActionMenuOpen(null)
+                          }}
+                        >
+                          <MessageSquarePlus className="w-4 h-4 text-blue-500" />
+                          Thêm ghi chú
+                        </button>
+                      </div>
+
+                      {/* THAO TÁC NGUY HIỂM section */}
+                      <div className="border-t border-gray-100 mt-1 pt-1">
+                        <div className="px-3 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wide">Thao tác nguy hiểm</div>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setShowRefundDialog(true)
+                            setOrderActionMenuOpen(null)
+                          }}
+                        >
+                          <RefreshCw className="w-4 h-4 text-red-500" />
+                          Hoàn tiền
+                        </button>
+                        {/* <button
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          onClick={() => {
+                            setOrderActionMenuOpen(null)
+                            if (confirm('Bạn có chắc chắn muốn xóa đơn hàng ' + order.orderNumber + '?')) {
+                              console.log('Delete order:', order.id)
+                              // In real app, call API to delete order
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                          Xóa đơn hàng
+                        </button> */}
+                      </div>
                     </div>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
+          {/* Summary Stats Row - aligned with table columns */}
+          {mockOrders.length > 0 && (
+            <tfoot>
+              <tr className="bg-gray-50 border-t-2 border-gray-300">
+                {/* Mã đơn column */}
+                <td className="px-4 py-3 border-r border-gray-200">
+                  <div className="text-xs text-gray-500 mb-0.5">Tổng số bản ghi: </div>
+                  <div className="font-semibold text-gray-900">{mockOrders.length}</div>
+                </td>
+                {/* Khách hàng column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Sản phẩm column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Tổng tiền column */}
+                <td className="px-4 py-3 border-r border-gray-200 text-right whitespace-nowrap">
+                  <div className="text-xs text-gray-500 mb-0.5">Tổng tiền</div>
+                  <div className="font-semibold text-blue-600">{formatCurrency(totalOrderAmount)}</div>
+                </td>
+                {/* Số lần TT column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Thực tế (Đã TT) column */}
+                <td className="px-4 py-3 border-r border-gray-200 text-right whitespace-nowrap">
+                  <div className="text-xs text-gray-500 mb-0.5">Đã TT</div>
+                  <div className="font-semibold text-green-600">{formatCurrency(totalPaid)}</div>
+                </td>
+                {/* Dư nợ column */}
+                <td className="px-4 py-3 border-r border-gray-200 text-right whitespace-nowrap">
+                  <div className="text-xs text-gray-500 mb-0.5">Dư nợ</div>
+                  <div className="font-semibold text-red-600">{formatCurrency(totalDebt)}</div>
+                </td>
+                {/* Trạng thái column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Thanh toán column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Thời hạn column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Nhãn column */}
+                <td className="px-4 py-3 border-r border-gray-200"></td>
+                {/* Thao tác column */}
+                <td className="px-4 py-3"></td>
+              </tr>
+            </tfoot>
+          )}
         </table>
-      </div>
-
-      {/* Summary Row - Swapped positions */}
-      <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
-        <div className="text-sm text-gray-500">
-          Tổng số bản ghi: <span className="font-medium text-gray-900">{mockOrders.length}</span>
-        </div>
-        <div className="flex items-center gap-8">
-          <div>
-            <span className="text-sm text-gray-500">Tổng tiền:</span>
-            <span className="ml-2 font-semibold text-blue-600">{formatCurrency(totalOrderAmount)}</span>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Đã TT:</span>
-            <span className="ml-2 font-semibold text-green-600">{formatCurrency(totalPaid)}</span>
-          </div>
-          <div>
-            <span className="text-sm text-gray-500">Dư nợ:</span>
-            <span className="ml-2 font-semibold text-red-600">{formatCurrency(totalDebt)}</span>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -1939,7 +2042,7 @@ export default function CustomerDetailModal({
                         <FileText className="w-5 h-5 text-gray-500" />
                       )}
                     </div>
-                    
+
                     {/* File Info */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-blue-600 truncate hover:underline cursor-pointer">
@@ -2058,7 +2161,7 @@ export default function CustomerDetailModal({
           <Filter className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Bộ lọc:</span>
         </div>
-        
+
         {/* Date Range */}
         <div className="flex items-center gap-2">
           <input
@@ -2108,15 +2211,14 @@ export default function CustomerDetailModal({
             <div className="pb-4 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-900">{item.action}</span>
-                <span className={`inline-flex px-1.5 py-0.5 text-xs rounded ${
-                  item.type === 'order' ? 'bg-blue-100 text-blue-700' :
+                <span className={`inline-flex px-1.5 py-0.5 text-xs rounded ${item.type === 'order' ? 'bg-blue-100 text-blue-700' :
                   item.type === 'customer' ? 'bg-green-100 text-green-700' :
-                  item.type === 'task' ? 'bg-purple-100 text-purple-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
+                    item.type === 'task' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-700'
+                  }`}>
                   {item.type === 'order' ? 'Đơn hàng' :
-                   item.type === 'customer' ? 'Khách hàng' :
-                   item.type === 'task' ? 'Công việc' : 'Hệ thống'}
+                    item.type === 'customer' ? 'Khách hàng' :
+                      item.type === 'task' ? 'Công việc' : 'Hệ thống'}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-1">{item.description}</p>
@@ -2142,34 +2244,32 @@ export default function CustomerDetailModal({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl w-full max-w-6xl mx-4 h-[90vh] flex flex-col shadow-2xl">
+        <div className="bg-white rounded-xl w-[80vw] mx-4 h-[90vh] flex flex-col shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             {/* Left: Avatar + Name + Tag + View Detail */}
             <div className="flex items-center gap-4">
               {/* Avatar */}
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold ${
-                customer.status === 'vip' ? 'bg-purple-600' :
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold ${customer.status === 'vip' ? 'bg-purple-600' :
                 customer.status === 'active' ? 'bg-green-600' :
-                customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
-              }`}>
+                  customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                }`}>
                 {customer.name.charAt(0)}
               </div>
-              
+
               {/* Name + Tag + View Detail */}
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-bold text-gray-900">{customer.name}</h2>
-                  <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
-                    customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
+                  <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
                     customer.status === 'active' ? 'bg-green-100 text-green-800' :
-                    customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
-                    customer.status === 'new' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                      customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                        customer.status === 'new' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
                     {customer.status === 'vip' ? 'VIP' :
-                     customer.status === 'active' ? 'Khách hàng' :
-                     customer.status === 'at-risk' ? 'Cần chăm sóc' :
-                     customer.status === 'new' ? 'Lead mới' : 'Đang tư vấn'}
+                      customer.status === 'active' ? 'Khách hàng' :
+                        customer.status === 'at-risk' ? 'Cần chăm sóc' :
+                          customer.status === 'new' ? 'Lead mới' : 'Đang tư vấn'}
                   </span>
                 </div>
                 <button
@@ -2180,7 +2280,7 @@ export default function CustomerDetailModal({
                 </button>
               </div>
             </div>
-            
+
             {/* Right: Customer Info + Close Button */}
             <div className="flex items-center gap-6">
               {/* Customer Info Grid */}
@@ -2208,7 +2308,7 @@ export default function CustomerDetailModal({
                   <div className="font-medium text-gray-900">{customer.assignedPerson || '-'}</div>
                 </div>
               </div>
-              
+
               {/* Close Button */}
               <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                 <X className="w-6 h-6" />
@@ -2252,11 +2352,10 @@ export default function CustomerDetailModal({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`flex items-center gap-2 py-3 px-1 border-b-2 text-sm font-medium transition-colors ${activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
                 >
                   <tab.icon className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -2281,7 +2380,7 @@ export default function CustomerDetailModal({
         onClose={() => setShowInfoDetail(false)}
         customer={customer}
       />
-      
+
       <EditNoteDialog
         isOpen={showEditNote}
         onClose={() => {
@@ -2292,7 +2391,7 @@ export default function CustomerDetailModal({
         customerName={customer.name}
         onSave={handleSaveEditedNote}
       />
-      
+
       <DeleteNoteDialog
         isOpen={showDeleteNote}
         onClose={() => {
@@ -2301,14 +2400,14 @@ export default function CustomerDetailModal({
         }}
         onConfirm={handleConfirmDeleteNote}
       />
-      
+
       <AddNoteDialog
         isOpen={showAddNote}
         onClose={() => setShowAddNote(false)}
         customerName={customer.name}
         onSave={handleAddNote}
       />
-      
+
       <OrderDetailDialog
         isOpen={showOrderDetail}
         onClose={() => {
@@ -2317,7 +2416,7 @@ export default function CustomerDetailModal({
         }}
         order={selectedOrder}
       />
-      
+
       <TaskDetailModal
         isOpen={showTaskDetail}
         onClose={() => {

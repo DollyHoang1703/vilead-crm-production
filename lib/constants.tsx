@@ -95,7 +95,7 @@ export const ACTIVITY_TYPES = [
 
 export const AUTOMATION_TRIGGERS = [
   { value: "lead_created", label: "Lead mới được tạo" },
-  { value: "lead_assigned", label: "Lead được phân bổ" },
+  { value: "lead_assigned", label: "bổ" },
   { value: "stage_changed", label: "Thay đổi giai đoạn" },
   { value: "order_created", label: "Đơn hàng mới" },
 ];
