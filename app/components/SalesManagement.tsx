@@ -4195,6 +4195,19 @@ export default function SalesManagement() {
                                     <MessageSquare className="w-3.5 h-3.5" />
                                   </button>
 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedLead(lead)
+                                      setSelectedTaskType('')
+                                      setSelectedTaskObj(null)
+                                      setShowCreateTaskModal(true)
+                                    }}
+                                    className="p-1.5 text-slate-600 hover:text-white hover:bg-teal-600 rounded-md transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
+                                    title="Thêm task"
+                                  >
+                                    <CheckSquare className="w-3.5 h-3.5" />
+                                  </button>
+
                                   {/* Hiển thị buttons khác nhau tùy theo status */}
                                   {(lead.status as string) === 'payment_pending' ? (
                                     <>

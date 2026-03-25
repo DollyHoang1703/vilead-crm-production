@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Bell, User, LogOut, Crown, Mail, Phone, Camera, Eye, EyeOff, Upload, Save, X, Settings } from 'lucide-react'
 import {
   DropdownMenu,
@@ -393,6 +393,87 @@ export default function Header() {
     }
   }
 
+  // Live clock state
+  const [currentTime, setCurrentTime] = useState(new Date())
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Get time-based greeting with icon
+  const getGreeting = () => {
+    const hour = currentTime.getHours()
+    if (hour >= 5 && hour < 10) {
+      return {
+        text: 'Chào buổi sáng',
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+            <circle cx="12" cy="8" r="4" fill="#FBBF24" />
+            <path d="M12 1v2M12 14v2M4.93 4.93l1.41 1.41M17.66 6.34l1.41-1.41M1 12h2M21 12h2M4.93 19.07l1.41-1.41M17.66 17.66l1.41 1.41" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M2 20h20" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M4 18c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+        ),
+        gradient: 'from-amber-500 to-orange-400'
+      }
+    } else if (hour >= 10 && hour < 13) {
+      return {
+        text: 'Chào buổi sáng',
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+            <circle cx="12" cy="12" r="5" fill="#FBBF24" />
+            <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        ),
+        gradient: 'from-yellow-400 to-amber-500'
+      }
+    } else if (hour >= 13 && hour < 17) {
+      return {
+        text: 'Chào buổi chiều',
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+            <circle cx="12" cy="12" r="5" fill="#FB923C" />
+            <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke="#F97316" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        ),
+        gradient: 'from-orange-400 to-amber-500'
+      }
+    } else if (hour >= 17 && hour < 20) {
+      return {
+        text: 'Chào buổi tối',
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+            <circle cx="12" cy="10" r="5" fill="#FB923C" />
+            <path d="M12 1v2M4.22 4.22l1.41 1.41M1 12h2M4.22 19.78l1.41-1.41M19.78 4.22l-1.41 1.41M23 12h-2M19.78 19.78l-1.41-1.41" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" />
+            <path d="M2 20h20" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" />
+            <path d="M3 18c2-3 5-6 9-6s7 3 9 6" stroke="#F97316" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+        ),
+        gradient: 'from-orange-500 to-red-400'
+      }
+    } else {
+      return {
+        text: 'Chào buổi tối',
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#FCD34D" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="8" cy="6" r="1" fill="#FEF3C7" opacity="0.9" />
+            <circle cx="18" cy="4" r="0.7" fill="#FEF3C7" opacity="0.7" />
+            <circle cx="16" cy="9" r="0.5" fill="#FEF3C7" opacity="0.6" />
+            <circle cx="5" cy="15" r="0.6" fill="#FEF3C7" opacity="0.5" />
+            <circle cx="20" cy="16" r="0.8" fill="#FEF3C7" opacity="0.8" />
+          </svg>
+        ),
+        gradient: 'from-indigo-500 to-purple-500'
+      }
+    }
+  }
+
+  const greeting = getGreeting()
+
   const currentDate = new Date().toLocaleDateString('vi-VN', {
     weekday: 'long',
     year: 'numeric',
@@ -407,7 +488,24 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {/* Greeting Section */}
+        <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0">
+            {greeting.icon}
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {greeting.text}, {profileData.name}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {currentTime.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+              {' | '}
+              {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </p>
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex items-center space-x-4">
           

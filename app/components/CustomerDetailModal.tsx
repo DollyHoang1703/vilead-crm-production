@@ -118,7 +118,7 @@ interface CustomerTask {
 
 interface CustomerHistoryItem {
   id: string
-  type: 'order' | 'customer' | 'task' | 'system'
+  type: 'order' | 'customer' | 'task' | 'system' | 'lead'
   action: string
   description: string
   timestamp: string
@@ -1610,6 +1610,9 @@ export default function CustomerDetailModal({
     { id: '2', type: 'customer', action: 'Cập nhật thông tin', description: 'Thay đổi số điện thoại', timestamp: '2026-02-18T14:20:00', performedBy: 'Admin' },
     { id: '3', type: 'task', action: 'Hoàn thành công việc', description: 'Gửi báo giá - Hoàn thành', timestamp: '2026-02-22T09:00:00', performedBy: 'Sale 2' },
     { id: '4', type: 'system', action: 'Tự động', description: 'Gửi email reminder', timestamp: '2026-02-21T08:00:00' },
+    { id: '5', type: 'lead', action: 'Tạo Lead mới', description: 'Lead được tạo từ Website - Quan tâm gói CRM Professional', timestamp: '2026-02-15T09:15:00', performedBy: 'Hệ thống' },
+    { id: '6', type: 'lead', action: 'Chuyển đổi Lead', description: 'Lead chuyển thành Khách hàng - Đã xác nhận thông tin', timestamp: '2026-02-19T16:45:00', performedBy: 'Sale 1' },
+    { id: '7', type: 'lead', action: 'Cập nhật trạng thái Lead', description: 'Lead chuyển sang giai đoạn Đang tư vấn', timestamp: '2026-02-17T11:30:00', performedBy: 'Sale 1' },
   ]
   const mockHistory: CustomerHistoryItem[] = Array.isArray(customer.history) && customer.history.length > 0 ? customer.history : defaultHistory
 
@@ -1695,6 +1698,7 @@ export default function CustomerDetailModal({
   const getHistoryTypeColor = (type: string) => {
     switch (type) {
       case 'order': return 'bg-blue-500'
+      case 'lead': return 'bg-orange-500'
       case 'customer': return 'bg-green-500'
       case 'task': return 'bg-purple-500'
       case 'system': return 'bg-gray-500'
@@ -2190,6 +2194,7 @@ export default function CustomerDetailModal({
           >
             <option value="all">Tất cả</option>
             <option value="order">Đơn hàng</option>
+            <option value="lead">Lead</option>
             <option value="customer">Khách hàng</option>
             <option value="task">Công việc</option>
             <option value="system">Hệ thống</option>
@@ -2212,11 +2217,13 @@ export default function CustomerDetailModal({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-900">{item.action}</span>
                 <span className={`inline-flex px-1.5 py-0.5 text-xs rounded ${item.type === 'order' ? 'bg-blue-100 text-blue-700' :
+                  item.type === 'lead' ? 'bg-orange-100 text-orange-700' :
                   item.type === 'customer' ? 'bg-green-100 text-green-700' :
                     item.type === 'task' ? 'bg-purple-100 text-purple-700' :
                       'bg-gray-100 text-gray-700'
                   }`}>
                   {item.type === 'order' ? 'Đơn hàng' :
+                    item.type === 'lead' ? 'Lead' :
                     item.type === 'customer' ? 'Khách hàng' :
                       item.type === 'task' ? 'Công việc' : 'Hệ thống'}
                 </span>
