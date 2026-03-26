@@ -57,6 +57,7 @@ import { CreatableSelect, CreatableSelectOption } from '@/components/ui/creatabl
 import { SalesTable } from './sales/components/SalesTable'
 import type { Lead as LeadType, ColumnVisibility } from './sales/types/lead.types'
 import CustomerDetailModal from './CustomerDetailModal'
+import CreateOrderModal from './CreateOrderModal'
 
 interface Lead {
   id: number
@@ -169,6 +170,7 @@ const convertLeadToCustomer = (lead: Lead) => ({
 
 export default function SalesManagement() {
   const [activeTab, setActiveTab] = useState<'pipeline'>('pipeline')
+  const [activePipelineTab, setActivePipelineTab] = useState('Quy trình mặc định')
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table')
   const [showFilters, setShowFilters] = useState(false)
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null)
@@ -182,6 +184,8 @@ export default function SalesManagement() {
   const [showAutoAssignTooltip, setShowAutoAssignTooltip] = useState<string | null>(null)
   const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null)
   const [showLeadDetailModal, setShowLeadDetailModal] = useState(false)
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false)
+  const [selectedCustomerForOrder, setSelectedCustomerForOrder] = useState<Lead | null>(null)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [activeDetailTab, setActiveDetailTab] = useState<'contact' | 'history' | 'notes'>('contact')
   const [showEditModal, setShowEditModal] = useState(false)
@@ -290,6 +294,38 @@ export default function SalesManagement() {
   // Available products and packages list (same as CustomersManagement)
   // Product categories
   const productCategories = ['Tất cả', 'Khóa học', 'Phần mềm', 'Dịch vụ tư vấn']
+
+  // Pipeline tabs logic
+  const pipelineTabs = ['Quy trình mặc định', 'Quy trình Khóa học', 'Quy trình Phần mềm', 'Quy trình Dịch vụ tư vấn']
+
+  const getLeadPipelines = (lead: Lead): string[] => {
+    const pipelines = new Set<string>()
+
+    if (lead.interestedProducts && lead.interestedProducts.length > 0) {
+      lead.interestedProducts.forEach(prodId => {
+        const product = availableProducts.find(p => p.id === prodId || p.name === prodId)
+        if (product && product.category) {
+          pipelines.add(`Quy trình ${product.category}`)
+        }
+      })
+    }
+
+    if (lead.product) {
+      const productNames = lead.product.split(',').map(s => s.trim()).filter(Boolean)
+      productNames.forEach(prodName => {
+        const product = availableProducts.find(p => p.name === prodName || p.id === prodName)
+        if (product && product.category) {
+          pipelines.add(`Quy trình ${product.category}`)
+        }
+      })
+    }
+
+    if (pipelines.size === 0) {
+      pipelines.add('Quy trình mặc định')
+    }
+
+    return Array.from(pipelines)
+  }
 
   const availableProducts = [
     // Phần mềm
@@ -454,6 +490,7 @@ export default function SalesManagement() {
     source: 'website',
     region: 'hanoi',
     product: '',
+    interestedProducts: [] as string[],
     content: '',
     notes: '',
     assignedTo: '',
@@ -1166,7 +1203,8 @@ export default function SalesManagement() {
       company: newLead.company.trim(),
       source: newLead.source,
       region: newLead.region,
-      product: newLead.product.trim(),
+      product: newLead.product?.trim() || '',
+      interestedProducts: newLead.interestedProducts || [],
       tags: newLead.tags,
       content: newLead.content.trim(),
       status: 'new',
@@ -1204,7 +1242,7 @@ export default function SalesManagement() {
       source: 'website',
       region: 'hanoi',
       product: '',
-
+      interestedProducts: [] as string[],
       content: '',
       notes: '',
       assignedTo: '', // Sẽ được set thành 'Minh Expert' khi submit
@@ -1755,7 +1793,8 @@ export default function SalesManagement() {
       email: 'nguyenvana@email.com',
       source: 'facebook',
       region: 'ha_noi',
-      product: 'CRM Solution',
+      product: 'crm-enterprise',
+      interestedProducts: ['crm-enterprise'],
       tags: ['hot', 'enterprise'],
       content: 'Cần giải pháp CRM cho 100+ nhân viên bán hàng',
       status: 'converted',
@@ -1797,7 +1836,8 @@ export default function SalesManagement() {
       email: 'tranthib@email.com',
       source: 'website',
       region: 'ho_chi_minh',
-      product: 'Marketing Automation',
+      product: 'crm-professional, marketing-course',
+      interestedProducts: ['crm-professional', 'marketing-course'],
       tags: ['warm', 'sme'],
       content: 'Tự động hóa marketing cho startup',
       status: 'qualified',
@@ -1837,7 +1877,8 @@ export default function SalesManagement() {
       email: 'levanc@email.com',
       source: 'google',
       region: 'da_nang',
-      product: 'Sales Management',
+      product: 'server-enterprise, support-package',
+      interestedProducts: ['server-enterprise', 'support-package'],
       tags: ['hot', 'follow_up'],
       content: 'Quản lý bán hàng cho công ty xuất nhập khẩu',
       status: 'negotiation',
@@ -1877,7 +1918,8 @@ export default function SalesManagement() {
       email: 'hoangthid@email.com',
       source: 'zalo',
       region: 'can_tho',
-      product: 'Customer Service',
+      product: '',
+      interestedProducts: [],
       tags: ['warm', 'sme'],
       content: 'Cải thiện chất lượng dịch vụ khách hàng',
       status: 'contacted',
@@ -2731,7 +2773,10 @@ export default function SalesManagement() {
 
       const matchesProductInterest = !filterProductInterest || (lead.interestedProducts && lead.interestedProducts.includes(filterProductInterest))
 
-      return matchesSearch && matchesStatus && matchesRegion && matchesSource &&
+      const leadPipelines = getLeadPipelines(lead)
+      const matchesPipelineTab = leadPipelines.includes(activePipelineTab)
+
+      return matchesPipelineTab && matchesSearch && matchesStatus && matchesRegion && matchesSource &&
         matchesAssignee && matchesDepartment && matchesTeam && matchesLastContact &&
         matchesCreatedDate && matchesInteractionCount && matchesPriority && matchesProductInterest
     })
@@ -4278,6 +4323,23 @@ export default function SalesManagement() {
       </div>
 
       {/* Pipeline Content */}
+      <div className="mb-4 bg-white p-2 rounded-lg border border-gray-200">
+        <div className="flex items-center space-x-2 overflow-x-auto">
+          {pipelineTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActivePipelineTab(tab)}
+              className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                activePipelineTab === tab
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
       <div>
         <div>
           {renderPipeline()}
@@ -4305,7 +4367,7 @@ export default function SalesManagement() {
                           <p className="mb-2">Nhập thông tin khách hàng tiềm năng mới:</p>
                           <ul className="text-xs space-y-1 text-gray-300">
                             <li>• Thông tin bắt buộc: Tên, Email, Số ĐT</li>
-                            <li>• Lead sẽ tự động có trạng thái "Mới"</li>
+                            <li>• Lead sẽ tự động có trạng thái &quot;Mới&quot;</li>
                             <li>• Tự động phân công cho người tạo</li>
                           </ul>
                         </div>
@@ -4619,30 +4681,38 @@ export default function SalesManagement() {
                     Thông tin sản phẩm & Bán hàng
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Sản phẩm quan tâm</label>
-                      <select
-                        value={newLead.product}
-                        onChange={(e) => setNewLead(prev => ({ ...prev, product: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Chọn sản phẩm...</option>
-                        <option value="CRM Solution">CRM Solution - Quản lý khách hàng</option>
-                        <option value="ERP System">ERP System - Quản lý tài nguyên doanh nghiệp</option>
-                        <option value="Website Development">Website Development - Phát triển website</option>
-                        <option value="E-commerce Platform">E-commerce Platform - Nền tảng thương mại điện tử</option>
-                        <option value="Mobile Application">Mobile Application - Ứng dụng di động</option>
-                        <option value="Marketing Automation">Marketing Automation - Tự động hóa marketing</option>
-                        <option value="Data Analytics">Data Analytics - Phân tích dữ liệu</option>
-                        <option value="Cloud Services">Cloud Services - Dịch vụ đám mây</option>
-                        <option value="AI/ML Solutions">AI/ML Solutions - Giải pháp trí tuệ nhân tạo</option>
-                        <option value="Cybersecurity">Cybersecurity - An ninh mạng</option>
-                        <option value="Digital Transformation">Digital Transformation - Chuyển đổi số</option>
-                        <option value="Custom Software">Custom Software - Phần mềm tùy chỉnh</option>
-                        <option value="Consulting Services">Consulting Services - Dịch vụ tư vấn</option>
-                        <option value="Training & Support">Training & Support - Đào tạo và hỗ trợ</option>
-                        <option value="Other">Khác</option>
-                      </select>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-2">Sản phẩm quan tâm</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        {productCategories.filter(c => c !== 'Tất cả').map(category => {
+                          const categoryProducts = availableProducts.filter(p => p.category === category);
+                          if (categoryProducts.length === 0) return null;
+                          return (
+                            <div key={category}>
+                              <h5 className="text-xs font-semibold text-gray-900 mb-2 border-b pb-1">{category}</h5>
+                              <div className="space-y-2">
+                                {categoryProducts.map(product => (
+                                  <label key={product.id} className="flex items-start gap-2 cursor-pointer group">
+                                    <input 
+                                      type="checkbox" 
+                                      className="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                                      checked={newLead.interestedProducts.includes(product.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setNewLead(prev => ({ ...prev, interestedProducts: [...prev.interestedProducts, product.id] }))
+                                        } else {
+                                          setNewLead(prev => ({ ...prev, interestedProducts: prev.interestedProducts.filter((id: string) => id !== product.id) }))
+                                        }
+                                      }}
+                                    />
+                                    <span className="text-xs text-gray-700 group-hover:text-blue-600 leading-tight">{product.name}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5074,7 +5144,7 @@ export default function SalesManagement() {
                       </svg>
                       <div className="text-xs text-green-700">
                         <p className="font-medium">✅ Quy tắc được khuyến nghị:</p>
-                        <p>Nên bật "Chỉ phân leads chưa được phân công" và "Gửi thông báo" để đảm bảo hoạt động hiệu quả.</p>
+                        <p>Nên bật &quot;Chỉ phân leads chưa được phân công&quot; và &quot;Gửi thông báo&quot; để đảm bảo hoạt động hiệu quả.</p>
                       </div>
                     </div>
                   </div>
@@ -6265,7 +6335,7 @@ export default function SalesManagement() {
               <div className="bg-green-50 rounded-lg p-4 mb-4">
                 <h5 className="text-sm font-medium text-green-900 mb-2">Điều gì sẽ xảy ra:</h5>
                 <ul className="text-sm text-green-800 space-y-1">
-                  <li>• Lead được chuyển thành trạng thái "Chuyển đổi - chờ thanh toán"</li>
+                  <li>• Lead được chuyển thành trạng thái &quot;Chuyển đổi - chờ thanh toán&quot;</li>
                   <li>• Deal mới sẽ được tạo trong hệ thống</li>
                   <li>• Bắt đầu quy trình theo dõi thanh toán</li>
                   {selectedProducts.length > 0 && (
@@ -6297,7 +6367,7 @@ export default function SalesManagement() {
               </div>
 
               <p className="text-sm text-gray-600">
-                Khách hàng đã đồng ý mua sản phẩm. Lead sẽ chuyển vào "Chuyển đổi - chờ thanh toán" để theo dõi việc thanh toán.
+                Khách hàng đã đồng ý mua sản phẩm. Lead sẽ chuyển vào &quot;Chuyển đổi - chờ thanh toán&quot; để theo dõi việc thanh toán.
               </p>
             </div>
 
@@ -6340,11 +6410,11 @@ export default function SalesManagement() {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-2 max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                Chuyển sang "{getStatusName(dragTargetStatus)}"
+                Chuyển sang &quot;{getStatusName(dragTargetStatus)}&quot;
               </h3>
               {originalTargetStatus === 'converted' && dragTargetStatus === 'payment_pending' && (
                 <p className="text-sm text-amber-600 mt-1">
-                  ℹ️ Bạn đã kéo vào "Chuyển đổi thành công", nhưng lead sẽ được chuyển về "Chờ thanh toán" để xác nhận thanh toán trước.
+                  ℹ️ Bạn đã kéo vào &quot;Chuyển đổi thành công&quot;, nhưng lead sẽ được chuyển về &quot;Chờ thanh toán&quot; để xác nhận thanh toán trước.
                 </p>
               )}
             </div>
@@ -7430,7 +7500,7 @@ export default function SalesManagement() {
               </h3>
               {bulkConvertTargetStatus === 'converted' && (
                 <p className="text-sm text-amber-600 mt-1">
-                  ℹ️ Leads sẽ được chuyển về "Chờ thanh toán" để xác nhận thanh toán trước khi hoàn tất chuyển đổi.
+                  ℹ️ Leads sẽ được chuyển về &quot;Chờ thanh toán&quot; để xác nhận thanh toán trước khi hoàn tất chuyển đổi.
                 </p>
               )}
               <p className="text-sm text-gray-600 mt-2">
@@ -8658,6 +8728,32 @@ export default function SalesManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create Order Modal */}
+      {showCreateOrderModal && selectedCustomerForOrder && (
+        <CreateOrderModal
+          isOpen={showCreateOrderModal}
+          onClose={() => {
+            setShowCreateOrderModal(false)
+            setSelectedCustomerForOrder(null)
+          }}
+          onSave={(orderData) => {
+            console.log('Save order:', orderData)
+            setShowCreateOrderModal(false)
+            setSelectedCustomerForOrder(null)
+          }}
+          customers={[{ 
+            id: selectedCustomerForOrder.id, 
+            name: selectedCustomerForOrder.name, 
+            phone: selectedCustomerForOrder.phone, 
+            email: selectedCustomerForOrder.email, 
+            company: selectedCustomerForOrder.company, 
+            type: 'lead'
+          }]}
+          products={availableProducts as any}
+          initialCustomerId={selectedCustomerForOrder.id.toString()}
+        />
       )}
     </div>
   )

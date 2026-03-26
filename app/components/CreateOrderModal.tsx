@@ -46,6 +46,7 @@ import {
   Save,
   Percent
 } from 'lucide-react'
+import { defaultTaxes } from './settings/TaxManagement'
 
 interface Customer {
   id: number
@@ -91,6 +92,7 @@ interface CreateOrderModalProps {
   onSave: (orderData: any) => void
   customers: Customer[]
   products: Product[]
+  initialCustomerId?: string
 }
 
 export default function CreateOrderModal({ 
@@ -98,10 +100,11 @@ export default function CreateOrderModal({
   onClose, 
   onSave, 
   customers, 
-  products 
+  products,
+  initialCustomerId
 }: CreateOrderModalProps) {
   const [formData, setFormData] = useState({
-    customerId: '',
+    customerId: initialCustomerId || '',
     items: [] as OrderItem[],
     status: 'draft',
     paymentStatus: 'unpaid',
@@ -111,7 +114,9 @@ export default function CreateOrderModal({
     notes: '',
     tags: [] as string[],
     deadline: '',
-    isVip: false
+    isVip: false,
+    taxId: 'vat-10',
+    taxRate: 10
   })
 
   const [currentItem, setCurrentItem] = useState({
@@ -133,7 +138,7 @@ export default function CreateOrderModal({
 
   const [isDraft, setIsDraft] = useState(false)
 
-  // Reset form when modal opens/closes
+  // Reset form when modal opens/closes or initialCustomerId changes
   useEffect(() => {
     if (!isOpen) {
       setFormData({
@@ -147,7 +152,9 @@ export default function CreateOrderModal({
         notes: '',
         tags: [],
         deadline: '',
-        isVip: false
+        isVip: false,
+        taxId: 'vat-10',
+        taxRate: 10
       })
       setCurrentItem({
         productId: '',
@@ -156,8 +163,10 @@ export default function CreateOrderModal({
         notes: ''
       })
       setShowSuggestions(false)
+    } else if (initialCustomerId) {
+      setFormData(prev => ({ ...prev, customerId: initialCustomerId }))
     }
-  }, [isOpen])
+  }, [isOpen, initialCustomerId])
 
   // Calculate totals
   const calculateTotals = () => {
@@ -166,7 +175,7 @@ export default function CreateOrderModal({
       ? (subtotal * formData.discount / 100)
       : formData.discount
     const taxableAmount = subtotal - discountAmount
-    const tax = Math.round(taxableAmount * 0.1) // 10% VAT
+    const tax = Math.round(taxableAmount * (formData.taxRate / 100))
     const total = taxableAmount + tax
 
     return {
@@ -565,10 +574,28 @@ export default function CreateOrderModal({
             </div>
           )}
 
-          {/* Discount and Totals */}
+          {/* Discount, Tax and Totals */}
           {formData.items.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
+                {/* Tax Selection */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Thuế GTGT *</h3>
+                  <select
+                     value={formData.taxId}
+                     onChange={(e) => {
+                       const tax = defaultTaxes.find(t => t.id === e.target.value)
+                       setFormData(prev => ({ ...prev, taxId: e.target.value, taxRate: tax ? tax.rate : 0 }))
+                     }}
+                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                     <option value="">Chọn mức thuế</option>
+                     {defaultTaxes.filter(t => t.isActive).map(tax => (
+                       <option key={tax.id} value={tax.id}>{tax.name} ({tax.rate}%)</option>
+                     ))}
+                  </select>
+                </div>
+
                 {/* Discount */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Giảm giá</h3>
@@ -669,7 +696,7 @@ export default function CreateOrderModal({
                   )}
                   
                   <div className="flex justify-between text-sm">
-                    <span>Thuế VAT (10%):</span>
+                    <span>Thuế VAT ({formData.taxRate}%):</span>
                     <span>{formatCurrency(totals.tax)}</span>
                   </div>
                   

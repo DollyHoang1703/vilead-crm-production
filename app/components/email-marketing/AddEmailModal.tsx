@@ -156,7 +156,7 @@ export default function AddEmailModal({ open, onClose, onSubmit, loading = false
               </p>
             ) : (
               <p className="mt-1.5 text-xs text-gray-500">
-                Ví dụ: "Công ty ABC", "Phòng Kinh doanh", "Nguyễn Văn A - Sales"
+                Ví dụ: &quot;Công ty ABC&quot;, &quot;Phòng Kinh doanh&quot;, &quot;Nguyễn Văn A - Sales&quot;
               </p>
             )}
           </div>

@@ -6365,7 +6365,7 @@ export default function ChatManagement() {
               )}
 
               <p className="text-sm text-gray-600 mt-4">
-                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang "Hoàn thành".
+                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang &quot;Hoàn thành&quot;.
               </p>
             </div>
 

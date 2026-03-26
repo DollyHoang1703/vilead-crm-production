@@ -144,7 +144,7 @@ export default function AddSenderModal({ open, onClose, onSubmit, loading }: Add
                     <ul className="list-disc list-inside space-y-1 text-blue-700">
                       <li>Kiểm tra cả thư mục Spam/Junk</li>
                       <li>Link xác thực có hiệu lực 24 giờ</li>
-                      <li>Sau khi xác thực, nhấn nút "Cập nhật từ Brevo" để đồng bộ</li>
+                      <li>Sau khi xác thực, nhấn nút &quot;Cập nhật từ Brevo&quot; để đồng bộ</li>
                     </ul>
                   </div>
                 </div>

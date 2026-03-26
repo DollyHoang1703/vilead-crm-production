@@ -164,6 +164,7 @@ interface CustomerDetailModalProps {
   customer: Customer | null
   onUpdate?: (customerId: number, updates: Partial<Customer>) => void
   onOpenOrderDetail?: (order: CustomerOrder) => void
+  onCreateOrder?: (customer: Customer) => void
 }
 
 // ==================== SUB COMPONENTS ====================
@@ -947,7 +948,7 @@ function OrderDetailDialog({ isOpen, onClose, order }: OrderDetailDialogProps) {
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Xác nhận xóa</h3>
               <p className="text-sm text-gray-600">
-                Bạn có chắc chắn muốn xóa hóa đơn "{selectedInvoice.fileName}"? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa hóa đơn &quot;{selectedInvoice.fileName}&quot;? Hành động này không thể hoàn tác.
               </p>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
@@ -1540,7 +1541,8 @@ export default function CustomerDetailModal({
   onClose,
   customer,
   onUpdate,
-  onOpenOrderDetail
+  onOpenOrderDetail,
+  onCreateOrder
 }: CustomerDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'notes' | 'tasks' | 'history'>('orders')
   const [showInfoDetail, setShowInfoDetail] = useState(false)
@@ -1743,6 +1745,22 @@ export default function CustomerDetailModal({
 
   const renderOrdersTab = () => (
     <div className="space-y-4">
+      {/* Header with Add Order Button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-[#1a3353]">Danh sách đơn hàng</h3>
+        <button
+          className="flex items-center gap-1 px-3 py-1.5 bg-[#3e79f7] hover:bg-[#2e69e7] text-white text-sm font-medium rounded-lg transition-colors"
+          onClick={() => {
+            if (onCreateOrder && customer) {
+              onCreateOrder(customer)
+            }
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          Tạo đơn hàng
+        </button>
+      </div>
+
       {/* Orders Table */}
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="w-full">
@@ -1824,7 +1842,7 @@ export default function CustomerDetailModal({
                   {orderActionMenuOpen === order.id && (
                     <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                       {/* THÔNG TIN section */}
-                      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thông tin</div>
+                      <div className="px-3 py-1.5 text-xs text-left font-semibold text-gray-500 uppercase tracking-wide">Thông tin</div>
                       <button
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                         onClick={() => {
@@ -1838,7 +1856,7 @@ export default function CustomerDetailModal({
 
                       {/* THAO TÁC NHANH section */}
                       <div className="border-t border-gray-100 mt-1 pt-1">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
+                        <div className="px-3 py-1 text-xs text-left font-semibold text-gray-500 uppercase tracking-wide">Thao tác nhanh</div>
                         <button
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                           onClick={() => {
@@ -1887,7 +1905,7 @@ export default function CustomerDetailModal({
 
                       {/* THAO TÁC NGUY HIỂM section */}
                       <div className="border-t border-gray-100 mt-1 pt-1">
-                        <div className="px-3 py-1.5 text-xs font-semibold text-red-400 uppercase tracking-wide">Thao tác nguy hiểm</div>
+                        <div className="px-3 py-1.5 text-xs text-left font-semibold text-red-400 uppercase tracking-wide">Thao tác nguy hiểm</div>
                         <button
                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                           onClick={() => {

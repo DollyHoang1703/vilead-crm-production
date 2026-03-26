@@ -156,7 +156,7 @@ export function CreatableSelect({
                   className="flex items-center gap-2 cursor-pointer text-blue-600 border-t border-gray-100 mt-1 pt-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Thêm lựa chọn "{inputValue}"</span>
+                  <span>Thêm lựa chọn &quot;{inputValue}&quot;</span>
                 </CommandItem>
               )}
             </CommandGroup>

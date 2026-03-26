@@ -50,6 +50,7 @@ import {
   Receipt,
   StickyNote
 } from 'lucide-react'
+import { defaultTaxes } from './settings/TaxManagement'
 
 import OrderDetailModal from './OrderDetailModal'
 import CustomerDetailModal from './CustomerDetailModal'
@@ -272,6 +273,8 @@ export default function OrderManagement() {
   const [paymentMode, setPaymentMode] = useState<'full' | 'installment'>('full')
   const [paymentInstallments, setPaymentInstallments] = useState(1)
   const [installmentData, setInstallmentData] = useState([{amount: 0, date: ''}])
+  const [taxId, setTaxId] = useState('vat-10')
+  const [taxRate, setTaxRate] = useState(10)
 
   // Available products for order creation
   const availableProducts = [
@@ -2548,6 +2551,8 @@ Trân trọng,
                   setPaymentMode('full')
                   setPaymentInstallments(1)
                   setInstallmentData([{amount: 0, date: ''}])
+                  setTaxId('vat-10')
+                  setTaxRate(10)
                 }}
                 className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Đóng"
@@ -2736,7 +2741,7 @@ Trân trọng,
                   ? subtotal * discountPercent / 100 
                   : discountPercent
                 const afterDiscount = subtotal - discountAmount
-                const vatAmount = afterDiscount * 0.1
+                const vatAmount = afterDiscount * (taxRate / 100)
                 const grandTotal = afterDiscount + vatAmount
                 
                 return (
@@ -2768,7 +2773,7 @@ Trân trọng,
                         </div>
                       )}
                       <div className="flex justify-between text-gray-600 pt-1">
-                        <span>Phí VAT (10%):</span>
+                        <span>Phí VAT ({taxRate}%):</span>
                         <span className="font-medium text-gray-700">+{formatCurrency(vatAmount.toString())} VNĐ</span>
                       </div>
                       <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
@@ -2783,19 +2788,24 @@ Trân trọng,
               {/* Payment Info Section */}
               {selectedProducts.length > 0 && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* Payment Deadline */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    {/* Tax Selection */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Thời hạn thanh toán <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={paymentDeadline}
-                        onChange={(e) => setPaymentDeadline(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Thuế GTGT <span className="text-red-500">*</span></label>
+                      <select
+                         value={taxId}
+                         onChange={(e) => {
+                           const tax = defaultTaxes.find(t => t.id === e.target.value)
+                           setTaxId(e.target.value)
+                           setTaxRate(tax ? tax.rate : 0)
+                         }}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                         <option value="">Chọn mức thuế</option>
+                         {defaultTaxes.filter(t => t.isActive).map(tax => (
+                           <option key={tax.id} value={tax.id}>{tax.name} ({tax.rate}%)</option>
+                         ))}
+                      </select>
                     </div>
 
                     {/* Discount */}
@@ -2823,6 +2833,20 @@ Trân trọng,
                           <option value="VND">VNĐ</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Payment Deadline */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Thời hạn TT <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={paymentDeadline}
+                        onChange={(e) => setPaymentDeadline(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                   </div>
 
@@ -2916,7 +2940,7 @@ Trân trọng,
                         ? totalBeforeDiscountCalc * discountPercent / 100 
                         : discountPercent
                       const afterDiscountCalc = totalBeforeDiscountCalc - discountAmountCalc
-                      const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                      const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * (taxRate / 100)
                       
                       // Calculate max allowed for this installment
                       const otherInstallmentsTotal = installmentData.reduce((sum, inst, i) => 
@@ -2994,7 +3018,7 @@ Trân trọng,
               )}
 
               <p className="text-sm text-gray-600 mt-4">
-                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang "Hoàn thành".
+                Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang &quot;Hoàn thành&quot;.
               </p>
             </div>
 

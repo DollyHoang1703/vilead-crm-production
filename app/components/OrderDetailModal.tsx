@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { 
@@ -481,7 +481,7 @@ export default function OrderDetailModal({
           <div className="bg-white rounded-lg w-full max-w-sm mx-4 shadow-xl">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Xác nhận xóa</h3>
-              <p className="text-sm text-gray-600">Bạn có chắc chắn muốn xóa hóa đơn "{selectedInvoice.fileName}"? Hành động này không thể hoàn tác.</p>
+              <p className="text-sm text-gray-600">Bạn có chắc chắn muốn xóa hóa đơn &quot;{selectedInvoice.fileName}&quot;? Hành động này không thể hoàn tác.</p>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
               <button onClick={() => setShowDeleteInvoice(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Hủy</button>

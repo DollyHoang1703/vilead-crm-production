@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { defaultTaxes } from './settings/TaxManagement'
 
 // Sample notifications data
 const notifications = [
@@ -204,6 +205,8 @@ export default function Header() {
   const [showCreateReportModal, setShowCreateReportModal] = useState(false)
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false)
   const [showEmailCampaignModal, setShowEmailCampaignModal] = useState(false)
+  const [taxId, setTaxId] = useState('vat-10')
+  const [taxRate, setTaxRate] = useState(10)
 
   // Profile modal states
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -1057,7 +1060,11 @@ export default function Header() {
                 <span className="text-sm font-normal text-gray-500">| Đơn bán hàng</span>
               </h3>
               <button 
-                onClick={() => setShowCreateOrderModal(false)}
+                onClick={() => {
+                  setShowCreateOrderModal(false)
+                  setTaxId('vat-10')
+                  setTaxRate(10)
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1107,15 +1114,34 @@ export default function Header() {
               {/* Thông tin thanh toán */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-800 border-b pb-2">💳 Thanh toán & Giao hàng</h4>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phương thức thanh toán</label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="cash">Tiền mặt</option>
-                    <option value="transfer">Chuyển khoản</option>
-                    <option value="credit">Thẻ tín dụng</option>
-                    <option value="installment">Trả góp</option>
-                    <option value="cod">COD</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Thuế GTGT *</label>
+                    <select 
+                      value={taxId}
+                      onChange={(e) => {
+                        const tax = defaultTaxes.find(t => t.id === e.target.value)
+                        setTaxId(e.target.value)
+                        setTaxRate(tax ? tax.rate : 0)
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Chọn mức thuế</option>
+                      {defaultTaxes.filter(t => t.isActive).map(tax => (
+                        <option key={tax.id} value={tax.id}>{tax.name} ({tax.rate}%)</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phương thức thanh toán</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="cash">Tiền mặt</option>
+                      <option value="transfer">Chuyển khoản</option>
+                      <option value="credit">Thẻ tín dụng</option>
+                      <option value="installment">Trả góp</option>
+                      <option value="cod">COD</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Điều khoản thanh toán</label>
@@ -1189,12 +1215,12 @@ export default function Header() {
                       <span>-0 VNĐ</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>VAT (10%):</span>
-                      <span>500,000 VNĐ</span>
+                      <span>VAT ({taxRate}%):</span>
+                      <span>{(5000000 * taxRate / 100).toLocaleString()} VNĐ</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-1">
                       <span>Tổng cộng:</span>
-                      <span className="text-blue-600">5,500,000 VNĐ</span>
+                      <span className="text-blue-600">{(5000000 * (1 + taxRate / 100)).toLocaleString()} VNĐ</span>
                     </div>
                   </div>
                 </div>

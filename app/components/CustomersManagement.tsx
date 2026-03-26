@@ -15,6 +15,7 @@ import CustomerEventsManager from './CustomerEventsManager'
 import CustomerAnalytics from './CustomerAnalytics'
 import CustomerDetailModal from './CustomerDetailModal'
 import { CreatableSelect, CreatableSelectOption } from '@/components/ui/creatable-select'
+import { defaultTaxes } from './settings/TaxManagement'
 
 interface CustomerTag {
   id: string
@@ -246,6 +247,8 @@ export default function CustomersManagement() {
     totalAmount: 0,
     finalAmount: 0
   })
+  const [taxId, setTaxId] = useState('vat-10')
+  const [taxRate, setTaxRate] = useState(10)
 
   // Available products and packages list
   const availableProducts = [
@@ -299,6 +302,7 @@ export default function CustomersManagement() {
     if (showCreateOrderModal) {
       handleOrderDiscountChange(newOrderData.discountPercent)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProducts, selectedPackages, showCreateOrderModal])
 
   const [showFilters, setShowFilters] = useState(false)
@@ -7875,6 +7879,8 @@ export default function CustomersManagement() {
                 setPaymentMode('full')
                 setPaymentInstallments(1)
                 setInstallmentData([{amount: 0, date: ''}])
+                setTaxId('vat-10')
+                setTaxRate(10)
               }}
               className="text-gray-400 hover:text-gray-600"
             >
@@ -8038,7 +8044,7 @@ export default function CustomersManagement() {
                     ? totalBeforeDiscount * discountPercent / 100 
                     : discountPercent
                   const afterDiscount = totalBeforeDiscount - discountAmount
-                  const vatAmount = afterDiscount * 0.1
+                  const vatAmount = afterDiscount * (taxRate / 100)
                   const grandTotal = afterDiscount + vatAmount
                   
                   return (
@@ -8070,7 +8076,7 @@ export default function CustomersManagement() {
                           </div>
                         )}
                         <div className="flex justify-between text-gray-600 pt-1">
-                          <span>Phí VAT (10%):</span>
+                          <span>Phí VAT ({taxRate}%):</span>
                           <span className="font-medium text-gray-700">+{formatCurrency(vatAmount.toString())} VNĐ</span>
                         </div>
                         <div className="flex justify-between font-semibold text-green-700 border-t border-green-300 pt-2 mt-2">
@@ -8084,23 +8090,24 @@ export default function CustomersManagement() {
 
                 {/* Payment Info Section */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  {/* Payment Deadline & Discount - Same Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {/* Payment Deadline */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    {/* Tax Selection */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Thời hạn thanh toán <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={paymentDeadline}
-                        onChange={(e) => setPaymentDeadline(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                      {!paymentDeadline && (
-                        <p className="mt-1 text-xs text-red-500">Vui lòng chọn thời hạn thanh toán</p>
-                      )}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Thuế GTGT <span className="text-red-500">*</span></label>
+                      <select
+                         value={taxId}
+                         onChange={(e) => {
+                           const tax = defaultTaxes.find(t => t.id === e.target.value)
+                           setTaxId(e.target.value)
+                           setTaxRate(tax ? tax.rate : 0)
+                         }}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                         <option value="">Chọn mức thuế</option>
+                         {defaultTaxes.filter(t => t.isActive).map(tax => (
+                           <option key={tax.id} value={tax.id}>{tax.name} ({tax.rate}%)</option>
+                         ))}
+                      </select>
                     </div>
 
                     {/* Discount */}
@@ -8130,6 +8137,23 @@ export default function CustomersManagement() {
                           <option value="VND">VNĐ</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Payment Deadline */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Thời hạn TT <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={paymentDeadline}
+                        onChange={(e) => setPaymentDeadline(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      {!paymentDeadline && (
+                        <p className="mt-1 text-xs text-red-500">Vui lòng chọn thời hạn thanh toán</p>
+                      )}
                     </div>
                   </div>
 
@@ -8222,7 +8246,7 @@ export default function CustomersManagement() {
                         ? totalBeforeDiscountCalc * discountPercent / 100 
                         : discountPercent
                       const afterDiscountCalc = totalBeforeDiscountCalc - discountAmountCalc
-                      const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * 0.1
+                      const grandTotalCalc = afterDiscountCalc + afterDiscountCalc * (taxRate / 100)
                       
                       // Calculate max allowed for this installment
                       const otherInstallmentsTotal = installmentData.reduce((sum, inst, i) => 
@@ -8301,7 +8325,7 @@ export default function CustomersManagement() {
             )}
 
             <p className="text-sm text-gray-600 mt-4">
-              Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang "Hoàn thành".
+              Khách hàng sẽ được tạo đơn hàng với các sản phẩm đã chọn. Sau khi xác nhận thanh toán thành công, sẽ tự động chuyển sang &quot;Hoàn thành&quot;.
             </p>
           </div>
 

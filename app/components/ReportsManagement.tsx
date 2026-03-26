@@ -2476,7 +2476,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
                     <p className="text-sm text-red-800">
                       {bottlenecks.map((stage, index) => (
                         <span key={stage.id}>
-                          Giai đoạn "{stage.stage}" có tỷ lệ chuyển đổi chỉ {stage.conversionRate}% ({stage.dropoffRate}% leads bị mất).
+                          Giai đoạn &quot;{stage.stage}&quot; có tỷ lệ chuyển đổi chỉ {stage.conversionRate}% ({stage.dropoffRate}% leads bị mất).
                           {index < bottlenecks.length - 1 && ' '}
                         </span>
                       ))}

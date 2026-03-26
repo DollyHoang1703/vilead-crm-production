@@ -5,7 +5,9 @@ export interface Lead {
   email: string
   source: string
   region: string
-  product: string
+  product: string        // Kept for backward compat (= products[0] or '')
+  products?: string[]    // Multi-select products of interest
+  pipelineStages?: { [pipelineId: number]: string }  // Stage per pipeline
   tags: string[]
   content: string
   status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'negotiation' | 'converted' | 'lost'
@@ -47,6 +49,7 @@ export interface Lead {
   }>
   discountPercent?: number
   originalValue?: number
+  estimatedRevenue?: string | number
 }
 
 export interface ColumnVisibility {
