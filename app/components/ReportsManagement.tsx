@@ -2301,23 +2301,19 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
   // Sales Process Component
   const SalesProcessComponent = () => {
-    const [processFilter, setProcessFilter] = useState({
-      period: 'this_month',
-      department: '',
-      team: ''
-    })
+    const [processFilterPeriod, setProcessFilterPeriod] = useState('this_month')
     const [processCustomDate, setProcessCustomDate] = useState({ start: '', end: '' })
     const [currentProcessData, setCurrentProcessData] = useState<SalesProcessAnalysis[]>(sampleProcessAnalysis)
 
     const handleApplyFilter = () => {
-      const newData = getProcessData(processFilter.period, processFilter.department, processFilter.team)
+      const newData = getProcessData(processFilterPeriod, reportDeptFilter, reportTeamFilter)
       setCurrentProcessData(newData)
     }
 
     // Auto-apply filters when they change
     useEffect(() => {
       handleApplyFilter()
-    }, [processFilter.period, processFilter.department, processFilter.team])
+    }, [processFilterPeriod, reportDeptFilter, reportTeamFilter])
 
     const bottlenecks = currentProcessData.filter(detectBottleneck)
 
@@ -2332,8 +2328,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <div className="flex items-center space-x-3">
             <select
               className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={processFilter.period}
-              onChange={(e) => setProcessFilter({ ...processFilter, period: e.target.value })}
+              value={processFilterPeriod}
+              onChange={(e) => setProcessFilterPeriod(e.target.value)}
             >
               <option value="today">Hôm nay</option>
               <option value="this_week">Tuần này</option>
@@ -2342,7 +2338,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_year">Năm này</option>
               <option value="custom">Chọn thời gian</option>
             </select>
-            {processFilter.period === 'custom' && (
+            {processFilterPeriod === 'custom' && (
               <div className="flex items-center space-x-2">
                 <input
                   type="date"
@@ -2360,10 +2356,10 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               </div>
             )}
             <ReportEmployeeFilter
-              selectedDepartment={processFilter.department}
-              onDepartmentChange={(val) => setProcessFilter({ ...processFilter, department: val, team: '' })}
-              selectedTeam={processFilter.team}
-              onTeamChange={(val) => setProcessFilter({ ...processFilter, team: val })}
+              selectedDepartment={reportDeptFilter}
+              onDepartmentChange={setReportDeptFilter}
+              selectedTeam={reportTeamFilter}
+              onTeamChange={setReportTeamFilter}
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
@@ -2383,7 +2379,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <CardContent>
             <div className="space-y-4">
               {(() => {
-                const procMult = getFilterMultiplier(processFilter.department, processFilter.team, reportEmployeeFilter)
+                const procMult = getFilterMultiplier(reportDeptFilter, reportTeamFilter, reportEmployeeFilter)
                 return currentProcessData.map((stage, index) => {
                 const fs = { ...stage, leadsCount: Math.round(stage.leadsCount * procMult) }
                 const isBottleneck = detectBottleneck(fs)
@@ -2534,23 +2530,19 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
   // Lead Source Component
   const LeadSourceComponent = () => {
-    const [sourceFilter, setSourceFilter] = useState({
-      period: 'this_month',
-      department: '',
-      team: ''
-    })
+    const [sourceFilterPeriod, setSourceFilterPeriod] = useState('this_month')
     const [sourceCustomDate, setSourceCustomDate] = useState({ start: '', end: '' })
     const [currentSourceData, setCurrentSourceData] = useState(getLeadSourceData('this_month', '', ''))
 
     const handleApplySourceFilter = () => {
-      const newData = getLeadSourceData(sourceFilter.period, sourceFilter.department, sourceFilter.team)
+      const newData = getLeadSourceData(sourceFilterPeriod, reportDeptFilter, reportTeamFilter)
       setCurrentSourceData(newData)
     }
 
     // Auto-apply filters when they change
     useEffect(() => {
       handleApplySourceFilter()
-    }, [sourceFilter.period, sourceFilter.department, sourceFilter.team])
+    }, [sourceFilterPeriod, reportDeptFilter, reportTeamFilter])
 
     return (
       <div className="space-y-6">
@@ -2563,8 +2555,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <div className="flex items-center space-x-3">
             <select
               className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={sourceFilter.period}
-              onChange={(e) => setSourceFilter({ ...sourceFilter, period: e.target.value })}
+              value={sourceFilterPeriod}
+              onChange={(e) => setSourceFilterPeriod(e.target.value)}
             >
               <option value="today">Hôm nay</option>
               <option value="this_week">Tuần này</option>
@@ -2573,7 +2565,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_year">Năm này</option>
               <option value="custom">Chọn thời gian</option>
             </select>
-            {sourceFilter.period === 'custom' && (
+            {sourceFilterPeriod === 'custom' && (
               <div className="flex items-center space-x-2">
                 <input
                   type="date"
@@ -2591,10 +2583,10 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               </div>
             )}
             <ReportEmployeeFilter
-              selectedDepartment={sourceFilter.department}
-              onDepartmentChange={(val) => setSourceFilter({ ...sourceFilter, department: val, team: '' })}
-              selectedTeam={sourceFilter.team}
-              onTeamChange={(val) => setSourceFilter({ ...sourceFilter, team: val })}
+              selectedDepartment={reportDeptFilter}
+              onDepartmentChange={setReportDeptFilter}
+              selectedTeam={reportTeamFilter}
+              onTeamChange={setReportTeamFilter}
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
@@ -2608,7 +2600,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
         {/* Source Performance */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {(() => {
-            const srcMult = getFilterMultiplier(sourceFilter.department, sourceFilter.team, reportEmployeeFilter)
+            const srcMult = getFilterMultiplier(reportDeptFilter, reportTeamFilter, reportEmployeeFilter)
             return currentSourceData.map((source) => {
               const fs = { ...source, leads: Math.round(source.leads * srcMult), revenue: Math.round(source.revenue * srcMult) }
               return (
@@ -2910,25 +2902,21 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
   // Customer Report Component
   const CustomerReportComponent = () => {
-    const [customerFilter, setCustomerFilter] = useState({
-      period: 'this_month',
-      department: '',
-      team: ''
-    })
+    const [customerFilterPeriod, setCustomerFilterPeriod] = useState('this_month')
     const [customerCustomDate, setCustomerCustomDate] = useState({ start: '', end: '' })
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
     const [currentCustomerData, setCurrentCustomerData] = useState(getCustomerData('this_month', '', ''))
 
     const handleApplyCustomerFilter = () => {
-      const newData = getCustomerData(customerFilter.period, customerFilter.department, customerFilter.team)
+      const newData = getCustomerData(customerFilterPeriod, reportDeptFilter, reportTeamFilter)
       setCurrentCustomerData(newData)
     }
 
     // Auto-apply filters when they change
     useEffect(() => {
       handleApplyCustomerFilter()
-    }, [customerFilter.period, customerFilter.department, customerFilter.team])
+    }, [customerFilterPeriod, reportDeptFilter, reportTeamFilter])
 
     const handleViewCustomerOrders = (customer: any) => {
       setSelectedCustomer(customer)
@@ -2957,8 +2945,8 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
           <div className="flex items-center space-x-3">
             <select
               className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              value={customerFilter.period}
-              onChange={(e) => setCustomerFilter({ ...customerFilter, period: e.target.value })}
+              value={customerFilterPeriod}
+              onChange={(e) => setCustomerFilterPeriod(e.target.value)}
             >
               <option value="today">Hôm nay</option>
               <option value="this_week">Tuần này</option>
@@ -2967,7 +2955,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <option value="this_year">Năm này</option>
               <option value="custom">Chọn thời gian</option>
             </select>
-            {customerFilter.period === 'custom' && (
+            {customerFilterPeriod === 'custom' && (
               <div className="flex items-center space-x-2">
                 <input
                   type="date"
@@ -2985,10 +2973,10 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               </div>
             )}
             <ReportEmployeeFilter
-              selectedDepartment={customerFilter.department}
-              onDepartmentChange={(val) => setCustomerFilter({ ...customerFilter, department: val, team: '' })}
-              selectedTeam={customerFilter.team}
-              onTeamChange={(val) => setCustomerFilter({ ...customerFilter, team: val })}
+              selectedDepartment={reportDeptFilter}
+              onDepartmentChange={setReportDeptFilter}
+              selectedTeam={reportTeamFilter}
+              onTeamChange={setReportTeamFilter}
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
@@ -3001,7 +2989,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
 
         {/* Customer Stats */}
         {(() => {
-          const custMult = getFilterMultiplier(customerFilter.department, customerFilter.team, reportEmployeeFilter)
+          const custMult = getFilterMultiplier(reportDeptFilter, reportTeamFilter, reportEmployeeFilter)
           const cStats = {
             total: Math.round(currentCustomerData.stats.total * custMult),
             enterprise: Math.round(currentCustomerData.stats.enterprise * custMult),

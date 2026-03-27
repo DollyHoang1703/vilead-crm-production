@@ -12,19 +12,50 @@ import {
   BarChart3,
   Plus,
   Minus,
-  Info
+  Info,
+  Calendar,
+  ChevronDown,
+  FileText
 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart } from 'recharts'
-import EnhancedDashboardFilters from './EnhancedDashboardFilters'
-// import VileadRevenueChart from './VileadRevenueChart'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, ReferenceLine } from 'recharts'
+import ReportEmployeeFilter, { getFilterMultiplier } from './reports/ReportEmployeeFilter'
 
 export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) => void } = {}) {
   // State for time period selection
-  const [selectedPeriod, setSelectedPeriod] = useState<'thismonth' | '6months' | '12months' | 'custom'>('thismonth')
+  const [selectedPeriod, setSelectedPeriod] = useState<'thismonth' | 'this_week' | 'this_quarter' | 'this_year' | 'custom'>('thismonth')
   const [showCustomModal, setShowCustomModal] = useState(false)
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   
+  // Filter state (pending, not yet applied)
+  const [filterDepartment, setFilterDepartment] = useState('')
+  const [filterTeam, setFilterTeam] = useState('')
+  const [filterEmployee, setFilterEmployee] = useState('')
+  const [filtersChanged, setFiltersChanged] = useState(false)
+  // Applied filter state - only updates data when user clicks 'Áp dụng bộ lọc'
+  const [appliedDepartment, setAppliedDepartment] = useState('')
+  const [appliedTeam, setAppliedTeam] = useState('')
+  const [appliedEmployee, setAppliedEmployee] = useState('')
+
+  // (Department/Team/Employee options are managed by ReportEmployeeFilter component)
+
+  // Mock data per department for metric cards
+  const mockMetrics: Record<string, {revenue: string; revPrev: string; revChange: string; leads: number; leadsPrev: number; leadsChange: string; conversion: string; convPrev: string; convChange: string; tasks: number; tasksPrev: number; tasksChange: string}> = {
+    '': { revenue: '2.8B', revPrev: '2.5B', revChange: '+12%', leads: 245, leadsPrev: 207, leadsChange: '+18.5%', conversion: '18.5%', convPrev: '16.2%', convChange: '+2.3%', tasks: 68, tasksPrev: 72, tasksChange: '-5.2%' },
+    phong_kinh_doanh: { revenue: '1.8B', revPrev: '1.5B', revChange: '+20%', leads: 165, leadsPrev: 140, leadsChange: '+17.9%', conversion: '22.1%', convPrev: '19.5%', convChange: '+2.6%', tasks: 42, tasksPrev: 38, tasksChange: '+10.5%' },
+    phong_marketing: { revenue: '680M', revPrev: '620M', revChange: '+9.7%', leads: 55, leadsPrev: 45, leadsChange: '+22.2%', conversion: '12.3%', convPrev: '11.0%', convChange: '+1.3%', tasks: 18, tasksPrev: 22, tasksChange: '-18.2%' },
+  }
+
+  // Get current metrics based on APPLIED filter (only after clicking 'Áp dụng bộ lọc')
+  // Apply multiplier based on team/employee filter
+  const baseMetrics = mockMetrics[appliedDepartment] || mockMetrics['']
+  const filterMult = getFilterMultiplier(appliedDepartment, appliedTeam, appliedEmployee)
+  const currentMetrics = appliedTeam || appliedEmployee ? {
+    ...baseMetrics,
+    leads: Math.round(baseMetrics.leads * filterMult * (Object.keys(mockMetrics).length)),
+    tasks: Math.round(baseMetrics.tasks * filterMult * (Object.keys(mockMetrics).length)),
+  } : baseMetrics
+
   // Tooltip state
   const [hoveredBottleneck, setHoveredBottleneck] = useState<string | null>(null)
   const [showCalculationGuide, setShowCalculationGuide] = useState(false)
@@ -115,48 +146,14 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
     { month: '30/07', revenue: 0.31, target: 0.15 },
   ]
 
-  const revenueData6Months = [
-    { month: 'T1', revenue: 2.8, target: 3.0 },
-    { month: 'T2', revenue: 3.2, target: 3.5 },
-    { month: 'T3', revenue: 2.9, target: 3.2 },
-    { month: 'T4', revenue: 3.8, target: 4.0 },
-    { month: 'T5', revenue: 4.2, target: 4.2 },
-    { month: 'T6', revenue: 3.9, target: 4.1 },
-  ]
-
-  const revenueData12Months = [
-    { month: 'T1/2024', revenue: 2.1, target: 2.5 },
-    { month: 'T2/2024', revenue: 2.3, target: 2.7 },
-    { month: 'T3/2024', revenue: 2.6, target: 2.8 },
-    { month: 'T4/2024', revenue: 2.4, target: 2.9 },
-    { month: 'T5/2024', revenue: 2.7, target: 3.0 },
-    { month: 'T6/2024', revenue: 2.9, target: 3.1 },
-    { month: 'T7/2024', revenue: 2.8, target: 3.0 },
-    { month: 'T8/2024', revenue: 3.2, target: 3.5 },
-    { month: 'T9/2024', revenue: 2.9, target: 3.2 },
-    { month: 'T10/2024', revenue: 3.8, target: 4.0 },
-    { month: 'T11/2024', revenue: 4.2, target: 4.2 },
-    { month: 'T12/2024', revenue: 3.9, target: 4.1 },
-  ]
-
-  // Get current data based on selected period
-  const getCurrentRevenueData = () => {
-    switch (selectedPeriod) {
-      case 'thismonth':
-        return revenueDataThisMonth
-      case '6months':
-        return revenueData6Months
-      case '12months':
-        return revenueData12Months
-      case 'custom':
-        // For custom, we'll use 6months data as fallback
-        return revenueData6Months
-      default:
-        return revenueData6Months
-    }
-  }
-
-  const revenueData = getCurrentRevenueData()
+  // Revenue chart data is NOT affected by date filters, only by department/team/employee
+  // Always shows the current month's daily data
+  const revenueDataMultiplier = getFilterMultiplier(appliedDepartment, appliedTeam, appliedEmployee)
+  const revenueData = revenueDataThisMonth.map(d => ({
+    ...d,
+    revenue: Math.round(d.revenue * revenueDataMultiplier * 100) / 100,
+    target: Math.round(d.target * revenueDataMultiplier * 100) / 100,
+  }))
 
   // Calculate summary stats based on current data
   const calculateSummaryStats = () => {
@@ -406,15 +403,70 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tổng quan</h1>
-          <p className="text-gray-600">Theo dõi hiệu suất kinh doanh của bạn</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Tổng quan</h1>
+        <p className="text-gray-600">Theo dõi hiệu suất kinh doanh của bạn</p>
       </div>
 
-      {/* Dashboard Filters */}
-      <EnhancedDashboardFilters onFilterChange={(filters) => console.log('Filters changed:', filters)} />
+      {/* Filter Bar - Report Style */}
+      <div className="flex items-center space-x-3">
+        {/* Time select */}
+        <select
+          value={selectedPeriod}
+          onChange={(e) => { setSelectedPeriod(e.target.value as any); setFiltersChanged(true) }}
+          className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="today">Hôm nay</option>
+          <option value="this_week">Tuần này</option>
+          <option value="thismonth">Tháng này</option>
+          <option value="this_quarter">Quý này</option>
+          <option value="this_year">Năm này</option>
+          <option value="custom">Chọn thời gian</option>
+        </select>
+
+        {/* Date range inputs - only show when 'Chọn thời gian' is selected */}
+        {selectedPeriod === 'custom' && (
+        <div className="flex items-center space-x-2">
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => { setCustomStartDate(e.target.value); setFiltersChanged(true) }}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <span className="text-gray-500 text-sm">đến</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => { setCustomEndDate(e.target.value); setFiltersChanged(true) }}
+            className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        )}
+
+        {/* Department > Team > Employee progressive filter */}
+        <ReportEmployeeFilter
+          selectedDepartment={filterDepartment}
+          onDepartmentChange={(val) => { setFilterDepartment(val); setFilterTeam(''); setFilterEmployee(''); setFiltersChanged(true) }}
+          selectedTeam={filterTeam}
+          onTeamChange={(val) => { setFilterTeam(val); setFilterEmployee(''); setFiltersChanged(true) }}
+          selectedEmployee={filterEmployee}
+          onEmployeeChange={(val) => { setFilterEmployee(val); setFiltersChanged(true) }}
+        />
+
+        {/* Áp dụng bộ lọc button */}
+        <button
+          onClick={() => {
+            setAppliedDepartment(filterDepartment)
+            setAppliedTeam(filterTeam)
+            setAppliedEmployee(filterEmployee)
+            setFiltersChanged(false)
+          }}
+          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-200 h-10 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm"
+        >
+          <FileText className="w-4 h-4" />
+          Áp dụng bộ lọc
+        </button>
+      </div>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-4 gap-4">
@@ -433,10 +485,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <div>
             <p className="text-base font-semibold text-white mb-2">Doanh thu</p>
-            <p className="text-4xl font-extrabold text-white mb-1">2.8B</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentMetrics.revenue}</p>
             <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-white/90">T.trước: 2.5B</p>
-              <p className="text-sm text-white/90 font-semibold">+12%</p>
+              <p className="text-sm text-white/90">T.trước: {currentMetrics.revPrev}</p>
+              <p className="text-sm text-white/90 font-semibold">{currentMetrics.revChange}</p>
             </div>
           </div>
         </div>
@@ -456,10 +508,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <div>
             <p className="text-base font-semibold text-white mb-2">Số lượng leads</p>
-            <p className="text-4xl font-extrabold text-white mb-1">245</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentMetrics.leads}</p>
             <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-white/90">T.trước: 207</p>
-              <p className="text-sm text-white/90 font-semibold">+18.5%</p>
+              <p className="text-sm text-white/90">T.trước: {currentMetrics.leadsPrev}</p>
+              <p className="text-sm text-white/90 font-semibold">{currentMetrics.leadsChange}</p>
             </div>
           </div>
         </div>
@@ -479,10 +531,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <div>
             <p className="text-base font-semibold text-white mb-2">Tỷ lệ chuyển đổi</p>
-            <p className="text-4xl font-extrabold text-white mb-1">18.5%</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentMetrics.conversion}</p>
             <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-white/90">T.trước: 16.2%</p>
-              <p className="text-sm text-white/90 font-semibold">+2.3%</p>
+              <p className="text-sm text-white/90">T.trước: {currentMetrics.convPrev}</p>
+              <p className="text-sm text-white/90 font-semibold">{currentMetrics.convChange}</p>
             </div>
           </div>
         </div>
@@ -496,10 +548,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
           </div>
           <div>
             <p className="text-base font-semibold text-white mb-2">Số lượng công việc</p>
-            <p className="text-4xl font-extrabold text-white mb-1">68</p>
+            <p className="text-4xl font-extrabold text-white mb-1">{currentMetrics.tasks}</p>
             <div className="flex items-center justify-between mt-3">
-              <p className="text-sm text-white/90">T.trước: 72</p>
-              <p className="text-sm text-white/90 font-semibold">-5.2%</p>
+              <p className="text-sm text-white/90">T.trước: {currentMetrics.tasksPrev}</p>
+              <p className="text-sm text-white/90 font-semibold">{currentMetrics.tasksChange}</p>
             </div>
           </div>
         </div>
@@ -508,28 +560,27 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
       {/* Main Content Grid - Charts and Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Enhanced Revenue Chart */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-white via-blue-50/30 to-blue-100/20 p-8 rounded-2xl shadow-xl border border-blue-100/60 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <TrendingUp className="w-6 h-6 text-white" />
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
-                  Doanh thu theo {selectedPeriod === 'thismonth' ? 'ngày' : selectedPeriod === '12months' ? 'tháng (năm)' : 'tháng'}
+                <h3 className="text-lg font-bold text-gray-900">
+                  Doanh thu theo ngày
                 </h3>
-                <p className="text-sm text-gray-600 font-medium">
-                  Theo dõi xu hướng {selectedPeriod === 'thismonth' ? 'hàng ngày' : 'tăng trưởng'} • Cập nhật realtime
+                <p className="text-sm text-gray-500">
+                  Theo dõi xu hướng tăng trưởng • Cập nhật realtime
                 </p>
               </div>
             </div>
-
           </div>
           
-          {/* Enhanced Summary Cards */}
+          {/* Summary Cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div 
-              className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl"
+              className="flex flex-col justify-between rounded-lg px-5 py-4 bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow cursor-pointer relative transition-all hover:shadow-lg"
               onClick={() => {
                 onNavigate?.('reports')
                 setTimeout(() => {
@@ -538,157 +589,119 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
                 }, 100)
               }}
             >
-              <div className="absolute top-2 right-2">
-                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-              </div>
               <div>
-                <p className="text-base font-semibold text-white mb-2">Doanh thu hôm nay</p>
-                <p className="text-4xl font-extrabold text-white mb-1">310M</p>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-sm text-white/90">H.qua: 294M</p>
-                  <p className="text-sm text-white/90 font-semibold">+5.5%</p>
+                <p className="text-sm font-semibold text-white/90 mb-1">Doanh thu hôm nay</p>
+                <p className="text-3xl font-extrabold text-white">310M</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-white/80">H.qua: 294M</p>
+                  <p className="text-xs text-white/90 font-semibold">+5.5%</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-green-600 to-green-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
-              <div className="absolute top-2 right-2">
-                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-              </div>
+            <div className="flex flex-col justify-between rounded-lg px-5 py-4 bg-gradient-to-br from-green-600 to-green-400 text-white shadow cursor-pointer relative transition-all hover:shadow-lg">
               <div>
-                <p className="text-base font-semibold text-white mb-2">KPI hôm nay</p>
-                <p className="text-4xl font-extrabold text-white mb-1">150M</p>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-sm text-white/90">Mục tiêu: 150M</p>
-                  <p className="text-sm text-white/90 font-semibold">206.7%</p>
+                <p className="text-sm font-semibold text-white/90 mb-1">KPI hôm nay</p>
+                <p className="text-3xl font-extrabold text-white">150M</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-white/80">Mục tiêu: 150M</p>
+                  <p className="text-xs text-white/90 font-semibold">206.7%</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col justify-between rounded-lg px-6 py-5 min-w-[180px] bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg cursor-pointer relative transition-all hover:shadow-xl">
-              <div className="absolute top-2 right-2">
-                <Info className="w-3.5 h-3.5 text-white/70 hover:text-white cursor-help transition-colors" />
-              </div>
+            <div className="flex flex-col justify-between rounded-lg px-5 py-4 bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow cursor-pointer relative transition-all hover:shadow-lg">
               <div>
-                <p className="text-base font-semibold text-white mb-2">Tăng trưởng TB</p>
-                <p className="text-4xl font-extrabold text-white mb-1">+5.5%</p>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-sm text-white/90">Trung bình hàng ngày</p>
+                <p className="text-sm font-semibold text-white/90 mb-1">Tăng trưởng TB</p>
+                <p className="text-3xl font-extrabold text-white">+5.5%</p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-white/80">Trung bình hàng ngày</p>
                 </div>
               </div>
             </div>
           </div>
 
-            <div className="relative">
-            <div className="h-80 bg-gradient-to-br from-white via-blue-50/20 to-blue-100/30 rounded-xl p-6 border border-blue-100/40 shadow-inner">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
-                      <stop offset="100%" stopColor="#93c5fd" stopOpacity={0.3} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid 
-                    strokeDasharray="3 3" 
-                    stroke="#e2e8f0" 
-                    strokeOpacity={0.5}
-                  />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#64748b" 
-                    fontSize={12}
-                    fontWeight="500"
-                    tickLine={false}
-                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                  />
-                  <YAxis 
-                    stroke="#64748b" 
-                    fontSize={12}
-                    fontWeight="500"
-                    tickLine={false}
-                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                    tickFormatter={(value) => `${(Number(value) * 1000000000).toLocaleString('vi-VN')}`}
-                    width={120}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      border: 'none',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                      padding: '12px'
-                    }}
-                    labelStyle={{ 
-                      color: '#1f2937', 
-                      fontWeight: '600', 
-                      fontSize: '14px',
-                      marginBottom: '4px'
-                    }}
-                    formatter={(value, name) => {
-                      if (name === 'revenue') {
-                        const kpiValue = revenueData[0]?.target || 0.15;
-                        return [
-                          <div key="tooltip-content" className="space-y-1">
-                            <div>
-                              <span className="text-[#151D48] text-[16px] font-semibold">
-                                {`${(Number(value) * 1000000000).toLocaleString('vi-VN')} VND`}
-                              </span>
-                              <span className="block font-medium text-blue-600">💰 Doanh thu</span>
-                            </div>
-                            <div className="pt-1 border-t border-gray-200">
-                              <span className="text-[14px] font-medium text-green-600">
-                                🎯 KPI: {`${(kpiValue * 1000000000).toLocaleString('vi-VN')} VND`}
-                              </span>
-                            </div>
-                          </div>,
-                          ""
-                        ];
-                      }
-                      return [
-                        <span key="value" className="text-[14px] font-medium text-green-600">
-                          {`${(Number(value) * 1000000000).toLocaleString('vi-VN')} VND`}
-                        </span>,
-                        <span key="label" className="font-medium text-green-600">
-                          🎯 KPI
-                        </span>
-                      ];
-                    }}
-                    labelFormatter={(label) => `📅 ${label}`}
-                  />
-                  {/* KPI Reference Line */}
-                  <Line 
-                    type="monotone"
-                    dataKey="target" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    strokeDasharray="8 4"
-                    dot={false}
-                    activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
-                    name="target"
-                  />
-                  <Bar 
-                    dataKey="revenue" 
-                    fill="url(#barGradient)"
-                    radius={[4, 4, 0, 0]}
-                    stroke="#3b82f6"
-                    strokeWidth={1}
-                    name="revenue"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-              
-              {/* Enhanced Legend */}
-              <div className="absolute bottom-4 left-6 flex items-center space-x-6 bg-white/90 px-4 py-2 rounded-full shadow-md backdrop-blur-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span className="text-xs font-semibold text-gray-700">Doanh thu</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-0.5 bg-green-500 rounded" style={{borderStyle: 'dashed', borderTop: '2px dashed #10b981', backgroundColor: 'transparent'}}></div>
-                  <span className="text-xs font-semibold text-gray-700">KPI</span>
-                </div>
-              </div>
+          {/* Chart area - taller, no inner card */}
+          <div style={{ width: '100%', height: 400 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={revenueData.map(d => ({ ...d, remaining: Math.max(d.target - d.revenue, 0) }))} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="#e2e8f0" 
+                  strokeOpacity={0.5}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#94a3b8" 
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+                />
+                <YAxis 
+                  stroke="#94a3b8" 
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${(Number(value) * 1000000000).toLocaleString('vi-VN')}`}
+                  width={110}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(59,130,246,0.06)' }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const revenueVal = payload.find(p => p.dataKey === 'revenue');
+                    const remainingVal = payload.find(p => p.dataKey === 'remaining');
+                    const rev = Number(revenueVal?.value || 0) * 1000000000;
+                    const rem = Number(remainingVal?.value || 0) * 1000000000;
+                    const kpi = rev + rem;
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm">
+                        <p className="font-semibold text-gray-800 mb-2">Ngày: {label}</p>
+                        <p className="text-gray-600">Doanh thu: <span className="font-semibold text-gray-900">{rev.toLocaleString('vi-VN')} VND</span></p>
+                        <p className="text-gray-600">KPI: <span className="font-semibold text-gray-900">{kpi.toLocaleString('vi-VN')} VND</span></p>
+                        <p className="text-gray-600">Còn lại so với KPI: <span className="font-semibold text-blue-600">{rem.toLocaleString('vi-VN')} VND</span></p>
+                      </div>
+                    );
+                  }}
+                />
+                {/* KPI target dashed line */}
+                <ReferenceLine
+                  y={revenueData[0]?.target || 0.15}
+                  stroke="#94a3b8"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                  label={{ value: 'KPI T', position: 'right', fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
+                />
+                {/* Actual revenue - medium blue */}
+                <Bar 
+                  dataKey="revenue" 
+                  stackId="stack"
+                  fill="#2563EB"
+                  radius={[0, 0, 0, 0]}
+                  name="revenue"
+                />
+                {/* Remaining to KPI - light blue */}
+                <Bar 
+                  dataKey="remaining" 
+                  stackId="stack"
+                  fill="#93C5FD"
+                  radius={[2, 2, 0, 0]}
+                  name="remaining"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center space-x-6 mt-3 pl-2">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#2563EB' }}></div>
+              <span className="text-xs font-medium text-gray-600">Doanh thu</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-0.5" style={{borderTop: '2px dashed #94a3b8'}}></div>
+              <span className="text-xs font-medium text-gray-600">KPI</span>
             </div>
           </div>
         </div>
@@ -727,7 +740,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (view: string) 
 
           {/* Upcoming Schedule */}
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <h4 className="text-md font-semibold text-gray-900 mb-3">Lịch quan trọng hôm nay</h4>
+            <h4 className="text-md font-semibold text-gray-900 mb-3">Lịch quan trọng</h4>
             <div className="space-y-3">
               {/* Today's Schedule - Display up to 4 */}
               {todaySchedule.slice(0, 4).map((schedule) => (
