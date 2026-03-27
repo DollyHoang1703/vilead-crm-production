@@ -155,12 +155,13 @@ export default function VileadSidebar({
   onRoleChange 
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [currentTime, setCurrentTime] = useState(getCurrentTime());
+  const [currentTime, setCurrentTime] = useState('');
   const [userRole, setUserRole] = useState(propUserRole || 'admin'); // Default to admin for full access
 
   const menuItems = getMenuItemsByRole(userRole);
 
   useEffect(() => {
+    setCurrentTime(getCurrentTime());
     const timer = setInterval(() => {
       setCurrentTime(getCurrentTime());
     }, 60000);

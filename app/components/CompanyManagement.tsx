@@ -201,8 +201,8 @@ const sampleEmployees: Employee[] = [
     departmentId: 1,
     teamId: 1,
     teamName: "Sales Team A",
-    roleId: 2,
-    roleName: "Quản lý",
+    roleId: 4,
+    roleName: "Manager",
     hireDate: "2023-01-15",
     officialDate: "2023-04-15",
     salary: 25000000,
@@ -221,7 +221,7 @@ const sampleEmployees: Employee[] = [
     teamId: 2,
     teamName: "Sales Team B",
     roleId: 1,
-    roleName: "Giám đốc",
+    roleName: "Admin",
     hireDate: "2022-03-20",
     officialDate: "2022-06-20",
     salary: 35000000,
@@ -239,8 +239,8 @@ const sampleEmployees: Employee[] = [
     departmentId: 2,
     teamId: 3,
     teamName: "Marketing Team",
-    roleId: 3,
-    roleName: "Nhân viên",
+    roleId: 2,
+    roleName: "Member",
     hireDate: "2023-06-10",
     officialDate: "2023-09-10",
     salary: 18000000,
@@ -257,8 +257,8 @@ const sampleEmployees: Employee[] = [
     departmentId: 3,
     teamId: 4,
     teamName: "HR Team",
-    roleId: 2,
-    roleName: "Quản lý",
+    roleId: 4,
+    roleName: "Manager",
     hireDate: "2022-11-05",
     officialDate: "2023-02-05",
     salary: 22000000,
@@ -275,8 +275,8 @@ const sampleEmployees: Employee[] = [
     departmentId: 4,
     teamId: 5,
     teamName: "Dev Team",
-    roleId: 3,
-    roleName: "Nhân viên",
+    roleId: 2,
+    roleName: "Member",
     hireDate: "2024-01-20",
     officialDate: "2024-04-20",
     salary: 15000000,
@@ -293,8 +293,8 @@ const sampleEmployees: Employee[] = [
     departmentId: 5,
     teamId: 6,
     teamName: "Accounting Team",
-    roleId: 3,
-    roleName: "Nhân viên",
+    roleId: 2,
+    roleName: "Member",
     hireDate: "2023-03-15",
     officialDate: "2023-06-15",
     resignDate: "2024-10-30",
@@ -400,8 +400,8 @@ const sampleTeams: Team[] = [
 const sampleRoles: Role[] = [
   {
     id: 1,
-    name: "Quản trị viên",
-    description: "Quyền hạn cao nhất, quản lý toàn bộ hệ thống",
+    name: "Admin",
+    description: "Quản trị viên toàn quyền, quản lý toàn bộ hệ thống",
     permissions: {
       leads: { view: 'all', create: true, edit: true, delete: true, export: true },
       deals: { view: 'all', create: true, edit: true, delete: true, export: true },
@@ -418,44 +418,62 @@ const sampleRoles: Role[] = [
   },
   {
     id: 2,
-    name: "Trưởng phòng Sales",
-    description: "Quản lý nhóm sales với quyền hạn mở rộng",
+    name: "Member",
+    description: "Nhân viên thành viên với quyền hạn cơ bản",
     permissions: {
-      leads: { view: 'department', create: true, edit: true, delete: false, export: true },
-      deals: { view: 'department', create: true, edit: true, delete: false, export: true },
-      customers: { view: 'department', create: true, edit: true, delete: false, export: false },
-      reports: { view: 'department', create: true, export: true, customReports: true },
+      leads: { view: 'own', create: true, edit: true, delete: false, export: false },
+      deals: { view: 'own', create: true, edit: true, delete: false, export: false },
+      customers: { view: 'own', create: true, edit: true, delete: false, export: false },
+      reports: { view: 'own', create: false, export: false, customReports: false },
       settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
     },
-    assignedUsers: 3,
-    departmentIds: [1],
-    teamIds: [1, 2],
+    assignedUsers: 10,
+    departmentIds: [],
+    teamIds: [],
+    status: "active",
+    createdAt: "2023-01-01",
+    updatedAt: "2025-01-10"
+  },
+  {
+    id: 3,
+    name: "Leader",
+    description: "Quản lý team, giám sát nhân viên trong nhóm",
+    permissions: {
+      leads: { view: 'team', create: true, edit: true, delete: false, export: true },
+      deals: { view: 'team', create: true, edit: true, delete: false, export: true },
+      customers: { view: 'team', create: true, edit: true, delete: false, export: true },
+      reports: { view: 'team', create: true, export: true, customReports: false },
+      settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
+    },
+    assignedUsers: 4,
+    departmentIds: [1, 2],
+    teamIds: [1, 2, 3],
     status: "active",
     createdAt: "2023-02-15",
     updatedAt: "2025-01-08"
   },
   {
-    id: 3,
-    name: "Nhân viên Marketing",
-    description: "Tập trung vào lead generation và marketing campaigns",
+    id: 4,
+    name: "Manager",
+    description: "Quản lý phòng ban, điều phối hoạt động",
     permissions: {
-      leads: { view: 'all', create: true, edit: true, delete: false, export: true },
-      deals: { view: 'none', create: false, edit: false, delete: false, export: false },
-      customers: { view: 'own', create: false, edit: false, delete: false, export: false },
-      reports: { view: 'own', create: false, export: false, customReports: false },
-      settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
+      leads: { view: 'department', create: true, edit: true, delete: true, export: true },
+      deals: { view: 'department', create: true, edit: true, delete: true, export: true },
+      customers: { view: 'department', create: true, edit: true, delete: true, export: true },
+      reports: { view: 'department', create: true, export: true, customReports: true },
+      settings: { userManagement: true, systemSettings: false, integrations: false, security: false }
     },
-    assignedUsers: 4,
-    departmentIds: [2],
-    teamIds: [3],
+    assignedUsers: 3,
+    departmentIds: [1, 2, 3],
+    teamIds: [1, 2, 3],
     status: "active",
-    createdAt: "2023-03-01",
-    updatedAt: "2025-01-05"
+    createdAt: "2023-02-01",
+    updatedAt: "2025-01-08"
   },
   {
-    id: 4,
-    name: "Nhân viên Sales",
-    description: "Nhân viên bán hàng với quyền hạn cơ bản",
+    id: 5,
+    name: "Sale",
+    description: "Nhân viên bán hàng",
     permissions: {
       leads: { view: 'team', create: true, edit: true, delete: false, export: false },
       deals: { view: 'team', create: true, edit: true, delete: false, export: false },
@@ -471,9 +489,27 @@ const sampleRoles: Role[] = [
     updatedAt: "2024-12-20"
   },
   {
-    id: 5,
-    name: "Hỗ trợ khách hàng",
-    description: "Chăm sóc và hỗ trợ khách hàng",
+    id: 6,
+    name: "Sale Manager",
+    description: "Quản lý phòng kinh doanh",
+    permissions: {
+      leads: { view: 'department', create: true, edit: true, delete: true, export: true },
+      deals: { view: 'department', create: true, edit: true, delete: true, export: true },
+      customers: { view: 'department', create: true, edit: true, delete: false, export: true },
+      reports: { view: 'department', create: true, export: true, customReports: true },
+      settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
+    },
+    assignedUsers: 2,
+    departmentIds: [1],
+    teamIds: [1, 2],
+    status: "active",
+    createdAt: "2023-03-01",
+    updatedAt: "2025-01-05"
+  },
+  {
+    id: 7,
+    name: "Support",
+    description: "Nhân viên chăm sóc khách hàng (Presale)",
     permissions: {
       leads: { view: 'none', create: false, edit: false, delete: false, export: false },
       deals: { view: 'none', create: false, edit: false, delete: false, export: false },
@@ -482,6 +518,24 @@ const sampleRoles: Role[] = [
       settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
     },
     assignedUsers: 3,
+    departmentIds: [3],
+    teamIds: [4],
+    status: "active",
+    createdAt: "2023-05-01",
+    updatedAt: "2024-11-15"
+  },
+  {
+    id: 8,
+    name: "Support Manager",
+    description: "Quản lý đội chăm sóc khách hàng",
+    permissions: {
+      leads: { view: 'department', create: false, edit: false, delete: false, export: false },
+      deals: { view: 'department', create: false, edit: false, delete: false, export: false },
+      customers: { view: 'all', create: true, edit: true, delete: true, export: true },
+      reports: { view: 'department', create: true, export: true, customReports: false },
+      settings: { userManagement: false, systemSettings: false, integrations: false, security: false }
+    },
+    assignedUsers: 1,
     departmentIds: [3],
     teamIds: [4],
     status: "active",
@@ -893,7 +947,7 @@ export default function CompanyManagement() {
       <form onSubmit={handleSubmit} className="space-y-4 px-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="name">Họ tên *</Label>
+            <Label htmlFor="name">Họ tên <span className="text-red-500">*</span></Label>
             <Input
               id="name"
               value={formData.name}
@@ -903,7 +957,7 @@ export default function CompanyManagement() {
             />
           </div>
           <div>
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
             <Input
               id="email"
               type="email"
@@ -932,7 +986,7 @@ export default function CompanyManagement() {
             />
           </div>
           <div>
-            <Label htmlFor="department">Phòng ban *</Label>
+            <Label htmlFor="department">Phòng ban</Label>
             <Select value={formData.departmentId} onValueChange={(value) => {
               const dept = departments.find(d => d.id === parseInt(value))
               setFormData({
@@ -956,7 +1010,7 @@ export default function CompanyManagement() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="team">Team *</Label>
+            <Label htmlFor="team">Team</Label>
             <Select 
               value={formData.teamId.toString()} 
               onValueChange={(value) => {
@@ -979,8 +1033,6 @@ export default function CompanyManagement() {
                     <SelectItem key={team.id} value={team.id.toString()}>
                       <div className="flex flex-col">
                         <span className="font-medium">{team.name}</span>
-                        <span className="text-xs text-gray-500">{team.description}</span>
-                        <span className="text-xs text-blue-600">Trưởng nhóm: {team.leaderName}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -988,7 +1040,7 @@ export default function CompanyManagement() {
             </Select>
           </div>
           <div>
-            <Label htmlFor="role">Vai trò *</Label>
+            <Label htmlFor="role">Vai trò</Label>
             <Select value={formData.roleId} onValueChange={(value) => {
               const role = roles.find(r => r.id === parseInt(value))
               setFormData({
@@ -1005,7 +1057,6 @@ export default function CompanyManagement() {
                   <SelectItem key={role.id} value={role.id.toString()}>
                     <div className="flex flex-col">
                       <span className="font-medium">{role.name}</span>
-                      <span className="text-xs text-gray-500">{role.description}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -1049,7 +1100,6 @@ export default function CompanyManagement() {
               <SelectContent>
                 <SelectItem value="active">Hoạt động</SelectItem>
                 <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
-                <SelectItem value="probation">Thử việc</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1479,7 +1529,7 @@ export default function CompanyManagement() {
       <>
       <form onSubmit={handleSubmit} className="space-y-4 px-6">
         <div>
-          <Label htmlFor="teamName">Tên nhóm *</Label>
+          <Label htmlFor="teamName">Tên nhóm <span className="text-red-500">*</span></Label>
           <Input
             id="teamName"
             value={formData.name}
@@ -1489,7 +1539,7 @@ export default function CompanyManagement() {
           />
         </div>
         <div>
-          <Label htmlFor="teamDepartment">Phòng ban *</Label>
+          <Label htmlFor="teamDepartment">Phòng ban <span className="text-red-500">*</span></Label>
           <Select value={formData.departmentId} onValueChange={(value) => {
             const dept = departments.find(d => d.id === parseInt(value))
             setFormData({
@@ -1511,7 +1561,7 @@ export default function CompanyManagement() {
           </Select>
         </div>
         <div>
-          <Label htmlFor="teamLeader">Trưởng nhóm *</Label>
+          <Label htmlFor="teamLeader">Trưởng nhóm <span className="text-red-500">*</span></Label>
           <Select value={formData.leaderId} onValueChange={(value) => {
             const leader = employees.find(emp => emp.id === parseInt(value))
             setFormData({

@@ -396,10 +396,11 @@ export default function Header() {
     }
   }
 
-  // Live clock state
-  const [currentTime, setCurrentTime] = useState(new Date())
+  // Live clock state - initialize null to avoid hydration mismatch
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   
   useEffect(() => {
+    setCurrentTime(new Date())
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
@@ -408,7 +409,7 @@ export default function Header() {
 
   // Get time-based greeting with icon
   const getGreeting = () => {
-    const hour = currentTime.getHours()
+    const hour = currentTime ? currentTime.getHours() : new Date().getHours()
     if (hour >= 5 && hour < 10) {
       return {
         text: 'Chào buổi sáng',
@@ -502,9 +503,9 @@ export default function Header() {
               {greeting.text}, {profileData.name}
             </h2>
             <p className="text-sm text-gray-500">
-              {currentTime.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+              {currentTime ? currentTime.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
               {' | '}
-              {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {currentTime ? currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
             </p>
           </div>
         </div>

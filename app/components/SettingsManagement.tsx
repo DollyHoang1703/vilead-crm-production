@@ -32,6 +32,7 @@ import {
   MoreHorizontal,
   MoreVertical,
   ChevronDown,
+  ChevronUp,
   ChevronRight,
   ChevronLeft,
   CheckCircle,
@@ -1461,6 +1462,34 @@ const RoleManagementNew = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     permissionModuleGroups.reduce((acc, group) => ({ ...acc, [group.id]: true }), {})
   )
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
+
+  const toggleModuleExpand = (moduleId: string) => {
+    setExpandedModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }))
+  }
+
+  // Check if a module has some but not all permissions checked (indeterminate state)
+  const isModuleIndeterminate = (moduleId: string) => {
+    const perms = modulePermissions[moduleId]
+    if (!perms) return false
+    const checkedCount = [perms.canRead, perms.canUpdate, perms.canSoftDelete, perms.canDestroy].filter(Boolean).length
+    return checkedCount > 0 && checkedCount < 4
+  }
+
+  const isModuleAnyChecked = (moduleId: string) => {
+    const perms = modulePermissions[moduleId]
+    if (!perms) return false
+    return perms.canRead || perms.canUpdate || perms.canSoftDelete || perms.canDestroy
+  }
+
+  // Check if a group has some but not all modules fully checked (indeterminate state)
+  const isGroupIndeterminate = (groupId: string) => {
+    const group = permissionModuleGroups.find(g => g.id === groupId)
+    if (!group) return false
+    const allChecked = group.modules.every(mod => modulePermissions[mod.id]?.all)
+    const anyChecked = group.modules.some(mod => isModuleAnyChecked(mod.id))
+    return anyChecked && !allChecked
+  }
 
   // Module permissions state - initialized with first role's default permissions
   const [modulePermissions, setModulePermissions] = useState<Record<string, {
@@ -1846,96 +1875,125 @@ const RoleManagementNew = () => {
           </div>
         </div>
 
-        {/* Module Permissions Grid - Grouped */}
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-          {filteredGroups.map((group) => (
-            <Card key={group.id} className="overflow-hidden">
-              {/* Group Header */}
-              <div 
-                className="flex items-center justify-between p-3 bg-[#f8fafc] border-b cursor-pointer hover:bg-[#f1f5f9] transition-colors"
-                onClick={() => toggleGroupExpand(group.id)}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm text-[#1a3353]">{group.name}</span>
-                  <span className="text-xs text-gray-400">({group.modules.length} modules)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Tất cả</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleGroupAll(group.id, !isGroupAllChecked(group.id))
-                      }}
-                      className={`w-10 h-5 rounded-full transition-colors ${
-                        isGroupAllChecked(group.id) ? 'bg-[#3e79f7]' : 'bg-gray-300'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                        isGroupAllChecked(group.id) ? 'translate-x-5' : 'translate-x-0.5'
-                      }`} />
-                    </button>
-                  </div>
-                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${
-                    expandedGroups[group.id] ? 'rotate-180' : ''
-                  }`} />
-                </div>
-              </div>
-              
-              {/* Group Content - Modules */}
-              {expandedGroups[group.id] && (
-                <div className="p-3 grid grid-cols-2 gap-3">
-                  {group.modules.map((module) => {
-                    const ModuleIcon = moduleIconMap[module.id] || Building2
-                    return (
-                    <div key={module.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between p-2.5 bg-gray-50 border-b">
-                        <div className="flex items-center gap-2">
-                          <ModuleIcon className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-xs text-gray-700">{module.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-400">Tất cả</span>
-                          <button
-                            onClick={() => toggleModuleAll(module.id, !modulePermissions[module.id]?.all)}
-                            className={`w-8 h-4 rounded-full transition-colors ${
-                              modulePermissions[module.id]?.all ? 'bg-[#3e79f7]' : 'bg-gray-300'
-                            }`}
-                          >
-                            <div className={`w-3 h-3 bg-white rounded-full shadow transition-transform ${
-                              modulePermissions[module.id]?.all ? 'translate-x-4' : 'translate-x-0.5'
-                            }`} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1.5 p-2">
-                        {[
-                          { key: 'canRead', label: 'Xem' },
-                          { key: 'canUpdate', label: 'Chỉnh sửa' },
-                          { key: 'canSoftDelete', label: 'Xóa tạm' },
-                          { key: 'canDestroy', label: 'Xóa vĩnh viễn' },
-                        ].map((perm) => (
-                          <label 
-                            key={perm.key}
-                            className="flex items-center gap-1.5 p-1.5 bg-gray-100 rounded hover:bg-blue-50 cursor-pointer transition-colors"
-                          >
-                            <input 
-                              type="checkbox"
-                              checked={modulePermissions[module.id]?.[perm.key as keyof typeof modulePermissions[string]] || false}
-                              onChange={(e) => toggleModulePermission(module.id, perm.key, e.target.checked)}
-                              className="w-3.5 h-3.5 rounded text-[#3e79f7]"
-                            />
-                            <span className="text-[10px]">{perm.label}</span>
-                          </label>
-                        ))}
-                      </div>
+        {/* Module Permissions Tree View */}
+        <div className="flex-1 overflow-y-auto pr-2">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            {filteredGroups.map((group, groupIndex) => {
+              const groupAllChecked = isGroupAllChecked(group.id)
+              const groupIndeterminate = isGroupIndeterminate(group.id)
+              return (
+                <div key={group.id} className={groupIndex > 0 ? 'border-t border-gray-100' : ''}>
+                  {/* Group Row */}
+                  <div 
+                    className="flex items-center gap-2 px-3 py-2.5 hover:bg-[#f8fafc] cursor-pointer transition-colors select-none"
+                    onClick={() => toggleGroupExpand(group.id)}
+                  >
+                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+                      expandedGroups[group.id] ? 'rotate-90' : ''
+                    }`} />
+                    <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={groupAllChecked}
+                        ref={(el) => { if (el) el.indeterminate = groupIndeterminate }}
+                        onChange={(e) => toggleGroupAll(group.id, e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7] cursor-pointer"
+                      />
                     </div>
-                    )
-                  })}
+                    <span className="font-semibold text-sm text-[#1a3353] flex-1">{group.name}</span>
+                    <span className="text-xs text-gray-400 mr-2">({group.modules.length} modules)</span>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-xs text-gray-500">Tất cả</span>
+                      <button
+                        onClick={() => toggleGroupAll(group.id, !groupAllChecked)}
+                        className={`w-9 h-[18px] rounded-full transition-colors ${
+                          groupAllChecked ? 'bg-[#3e79f7]' : 'bg-gray-300'
+                        }`}
+                      >
+                        <div className={`w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${
+                          groupAllChecked ? 'translate-x-[18px]' : 'translate-x-0.5'
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded Modules */}
+                  {expandedGroups[group.id] && (
+                    <div>
+                      {group.modules.map((module) => {
+                        const ModuleIcon = moduleIconMap[module.id] || Building2
+                        const moduleAllChecked = modulePermissions[module.id]?.all || false
+                        const moduleIndeterminate = isModuleIndeterminate(module.id)
+                        const isExpanded = expandedModules[module.id] || false
+                        return (
+                          <div key={module.id}>
+                            {/* Module Row */}
+                            <div 
+                              className="flex items-center gap-2 pl-8 pr-3 py-2 hover:bg-[#f8fafc] cursor-pointer transition-colors select-none border-t border-gray-50"
+                              onClick={() => toggleModuleExpand(module.id)}
+                            >
+                              <ChevronRight className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${
+                                isExpanded ? 'rotate-90' : ''
+                              }`} />
+                              <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={moduleAllChecked}
+                                  ref={(el) => { if (el) el.indeterminate = moduleIndeterminate }}
+                                  onChange={(e) => toggleModuleAll(module.id, e.target.checked)}
+                                  className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7] cursor-pointer"
+                                />
+                              </div>
+                              <ModuleIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              <span className="text-sm text-[#455560] flex-1">{module.name}</span>
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[10px] text-gray-400">Tất cả</span>
+                                <button
+                                  onClick={() => toggleModuleAll(module.id, !moduleAllChecked)}
+                                  className={`w-8 h-4 rounded-full transition-colors ${
+                                    moduleAllChecked ? 'bg-[#3e79f7]' : 'bg-gray-300'
+                                  }`}
+                                >
+                                  <div className={`w-3 h-3 bg-white rounded-full shadow transition-transform ${
+                                    moduleAllChecked ? 'translate-x-4' : 'translate-x-0.5'
+                                  }`} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Permission Checkboxes Row */}
+                            {isExpanded && (
+                              <div className="flex items-center gap-5 pl-[72px] pr-3 py-2 bg-[#fafbfc] border-t border-gray-50">
+                                {[
+                                  { key: 'canRead', label: 'Xem' },
+                                  { key: 'canUpdate', label: 'Chỉnh sửa' },
+                                  { key: 'canSoftDelete', label: 'Xóa tạm' },
+                                  { key: 'canDestroy', label: 'Xóa vĩnh viễn' },
+                                ].map((perm) => (
+                                  <label 
+                                    key={perm.key}
+                                    className="flex items-center gap-1.5 cursor-pointer hover:text-[#3e79f7] transition-colors"
+                                  >
+                                    <input 
+                                      type="checkbox"
+                                      checked={modulePermissions[module.id]?.[perm.key as keyof typeof modulePermissions[string]] || false}
+                                      onChange={(e) => toggleModulePermission(module.id, perm.key, e.target.checked)}
+                                      className="w-3.5 h-3.5 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7] cursor-pointer"
+                                    />
+                                    <span className="text-xs text-[#455560]">{perm.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </Card>
-          ))}
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -2091,6 +2149,8 @@ const RoleManagementNew = () => {
 
 export default function SettingsManagement() {
   const [activeTab, setActiveTab] = useState('workflow')
+  const [generalVatCollapsed, setGeneralVatCollapsed] = useState(false)
+  const [includeTaxInRevenue, setIncludeTaxInRevenue] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
@@ -6050,9 +6110,12 @@ export default function SettingsManagement() {
   // Component: Product Management (Sản phẩm & Gói sản phẩm)
   const ProductManagement = () => {
     const [products, setProducts] = useState<any[]>([
-      { id: 'p1', name: 'Sản phẩm A', code: 'PROD-A', price: 1000000, description: 'Mô tả sản phẩm A', image: '', category: 'Phần mềm', type: 'Gói cơ bản', classification: 'Dịch vụ', quantity: 100, status: 'active' },
-      { id: 'p2', name: 'Sản phẩm B', code: 'PROD-B', price: 2000000, description: 'Mô tả sản phẩm B', image: '', category: 'Phần cứng', type: 'Gói nâng cao', classification: 'Sản phẩm', quantity: 50, status: 'active' },
-      { id: 'p3', name: 'Sản phẩm C', code: 'PROD-C', price: 3000000, description: 'Mô tả sản phẩm C', image: '', category: 'Phần mềm', type: 'Gói premium', classification: 'Dịch vụ', quantity: 0, status: 'inactive' }
+      { id: 'p1', name: 'CRM Pro', code: 'PROD-001', price: 15000000, description: 'Phần mềm quản lý quan hệ khách hàng chuyên nghiệp', image: '', categoryIds: ['cat1', 'cat3'], type: 'Đơn giản', classification: 'Sản phẩm phi vật lý', quantity: 999, status: 'active', pipelineId: 2 },
+      { id: 'p2', name: 'Phần mềm kế toán', code: 'PROD-002', price: 8000000, description: 'Phần mềm kế toán tài chính doanh nghiệp', image: '', categoryIds: ['cat1'], type: 'Đơn giản', classification: 'Sản phẩm phi vật lý', quantity: 999, status: 'active', pipelineId: null },
+      { id: 'p3', name: 'Máy chủ Dell R740', code: 'PROD-003', price: 85000000, description: 'Máy chủ Dell PowerEdge R740 cấu hình cao', image: '', categoryIds: ['cat2'], type: 'Có thể cấu hình', classification: 'Sản phẩm vật lý', quantity: 10, status: 'active', pipelineId: null },
+      { id: 'p4', name: 'Gói tư vấn ERP', code: 'PROD-004', price: 50000000, description: 'Dịch vụ tư vấn triển khai hệ thống ERP', image: '', categoryIds: ['cat3'], type: 'Đơn giản', classification: 'Sản phẩm phi vật lý', quantity: 50, status: 'active', pipelineId: 3 },
+      { id: 'p5', name: 'Gói bảo trì hệ thống', code: 'PROD-005', price: 5000000, description: 'Dịch vụ bảo trì và hỗ trợ kỹ thuật hệ thống IT', image: '', categoryIds: ['cat3', 'cat4'], type: 'Đơn giản', classification: 'Sản phẩm phi vật lý', quantity: 100, status: 'active', pipelineId: null },
+      { id: 'p6', name: 'Combo Server + Phần mềm', code: 'PROD-006', price: 95000000, description: 'Combo máy chủ kèm phần mềm quản lý', image: '', categoryIds: ['cat2', 'cat4'], type: 'Có thể cấu hình', classification: 'Sản phẩm vật lý', quantity: 5, status: 'inactive', pipelineId: null }
     ])
 
     const [categories, setCategories] = useState<any[]>([
@@ -6084,9 +6147,12 @@ export default function SettingsManagement() {
       productType: 'simple', // 'simple' | 'configurable'
       quantity: '0',
       status: 'active',
-      categoryId: '',
-      classification: 'physical' // 'physical' | 'non-physical'
+      categoryIds: [] as string[],
+      classification: 'physical', // 'physical' | 'non-physical'
+      pipelineId: '' // optional pipeline assignment
     })
+    const [showPipelineConfirm, setShowPipelineConfirm] = useState(false)
+    const [pendingProductSave, setPendingProductSave] = useState(false)
     const [productFormErrors, setProductFormErrors] = useState<any>({})
     const [variants, setVariants] = useState<any[]>([
       { id: 'v1', name: '', hasImage: false, options: [{ id: 'o1', value: '' }] }
@@ -6104,12 +6170,9 @@ export default function SettingsManagement() {
 
     const handleTransferCategory = () => {
       if (productToTransfer && categoryTransferTarget) {
-        const targetCatName = categories.find(c => c.id === categoryTransferTarget)?.name
-        if (targetCatName) {
-          setProducts(prev => prev.map(p => 
-            p.id === productToTransfer.id ? { ...p, category: targetCatName } : p
-          ))
-        }
+        setProducts(prev => prev.map(p => 
+          p.id === productToTransfer.id ? { ...p, categoryIds: [categoryTransferTarget] } : p
+        ))
         setShowCategoryTransfer(false)
         setCategoryTransferTarget('')
         setProductToTransfer(null)
@@ -6126,16 +6189,29 @@ export default function SettingsManagement() {
       }
     }
 
-    const handleSaveProduct = () => {
+    const handleSaveProduct = (skipConfirm = false) => {
       // Validate
       const errors: any = {}
       if (!productForm.name.trim()) errors.name = 'Tên sản phẩm không được để trống'
-      if (!productForm.categoryId) errors.categoryId = 'Phải chọn ít nhất một thể loại'
+      if (productForm.categoryIds.length === 0) errors.categoryIds = 'Phải chọn ít nhất một thể loại'
       
       if (Object.keys(errors).length > 0) {
         setProductFormErrors(errors)
         return
       }
+
+      // If pipeline is selected and not already confirmed, show confirmation dialog
+      if (productForm.pipelineId && productForm.pipelineId !== 'none' && !skipConfirm) {
+        // For edit: if product already has same pipeline, skip confirm
+        if (editingProduct && editingProduct.pipelineId === parseInt(productForm.pipelineId)) {
+          // same pipeline, no confirm needed
+        } else {
+          setShowPipelineConfirm(true)
+          return
+        }
+      }
+
+      const categoryNames = productForm.categoryIds.map(cid => categories.find(c => c.id === cid)?.name || '').filter(Boolean)
 
       if (editingProduct) {
         // Update existing product
@@ -6147,11 +6223,12 @@ export default function SettingsManagement() {
               code: productForm.code,
               price: Number(productForm.price) || 0,
               description: productForm.description || '',
-              category: categories.find(c => c.id === productForm.categoryId)?.name || 'Phần mềm',
+              categoryIds: productForm.categoryIds,
               type: productForm.productType === 'configurable' ? 'Có thể cấu hình' : 'Đơn giản',
               classification: productForm.classification === 'physical' ? 'Sản phẩm vật lý' : 'Sản phẩm phi vật lý',
               quantity: Number(productForm.quantity) || 0,
               status: productForm.status,
+              pipelineId: (productForm.pipelineId && productForm.pipelineId !== 'none') ? parseInt(productForm.pipelineId) : p.pipelineId,
               variants: productForm.productType === 'configurable' ? variantCombinations : []
             }
           }
@@ -6160,29 +6237,33 @@ export default function SettingsManagement() {
       } else {
         // Add new product
         const newProduct = {
-          id: 'p' + (products.length + 1),
+          id: 'p' + Date.now(),
           name: productForm.name || `Sản phẩm ${products.length + 1}`,
-          code: productForm.code || `PROD-${products.length + 1}`,
+          code: productForm.code || `PROD-${String(products.length + 1).padStart(3, '0')}`,
           price: Number(productForm.price) || 0,
           description: productForm.description || '',
           image: '',
-          category: categories.find(c => c.id === productForm.categoryId)?.name || 'Phần mềm',
+          categoryIds: productForm.categoryIds,
           type: productForm.productType === 'configurable' ? 'Có thể cấu hình' : 'Đơn giản',
           classification: productForm.classification === 'physical' ? 'Sản phẩm vật lý' : 'Sản phẩm phi vật lý',
           quantity: Number(productForm.quantity) || 0,
           status: productForm.status,
+          pipelineId: (productForm.pipelineId && productForm.pipelineId !== 'none') ? parseInt(productForm.pipelineId) : null,
           variants: productForm.productType === 'configurable' ? variantCombinations : []
         }
         setProducts(prev => [newProduct, ...prev])
       }
       resetProductForm()
       setShowProductModal(false)
+      setShowPipelineConfirm(false)
+    }
+
+    const handleConfirmPipelineSave = () => {
+      handleSaveProduct(true)
     }
 
     const handleOpenEditProduct = (product: any) => {
       setEditingProduct(product)
-      // Find category id from category name
-      const categoryId = categories.find(c => c.name === product.category)?.id || ''
       setProductForm({
         name: product.name || '',
         code: product.code || '',
@@ -6191,8 +6272,9 @@ export default function SettingsManagement() {
         productType: product.type === 'Có thể cấu hình' ? 'configurable' : 'simple',
         quantity: String(product.quantity || 0),
         status: product.status || 'active',
-        categoryId: categoryId,
-        classification: product.classification === 'Sản phẩm vật lý' ? 'physical' : 'non-physical'
+        categoryIds: product.categoryIds || [],
+        classification: product.classification === 'Sản phẩm vật lý' ? 'physical' : 'non-physical',
+        pipelineId: product.pipelineId ? String(product.pipelineId) : ''
       })
       if (product.variants && product.variants.length > 0) {
         setVariantCombinations(product.variants)
@@ -6210,10 +6292,12 @@ export default function SettingsManagement() {
         productType: 'simple',
         quantity: '0',
         status: 'active',
-        categoryId: '',
-        classification: 'physical'
+        categoryIds: [],
+        classification: 'physical',
+        pipelineId: ''
       })
       setProductFormErrors({})
+      setShowPipelineConfirm(false)
       setVariants([{ id: 'v1', name: '', hasImage: false, options: [{ id: 'o1', value: '' }] }])
       setVariantCombinations([])
     }
@@ -6356,9 +6440,11 @@ export default function SettingsManagement() {
     const confirmDeleteCategory = () => {
       if (categoryToDelete) {
         setCategories(prev => prev.filter(c => c.id !== categoryToDelete))
-        // Also remove products in this category
-        const catName = categories.find(c => c.id === categoryToDelete)?.name
-        setProducts(prev => prev.filter(p => p.category !== catName))
+        // Remove this category from products' categoryIds
+        setProducts(prev => prev.map(p => ({
+          ...p,
+          categoryIds: (p.categoryIds || []).filter((cid: string) => cid !== categoryToDelete)
+        })))
         if (selectedCategory === categoryToDelete && categories.length > 1) {
           setSelectedCategory(categories.find(c => c.id !== categoryToDelete)?.id || '')
         }
@@ -6459,7 +6545,7 @@ export default function SettingsManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((p, index) => (
+                    {products.filter(p => (p.categoryIds || []).includes(selectedCategory)).map((p, index) => (
                       <TableRow key={p.id}>
                         <TableCell className="text-center">{index + 1}</TableCell>
                         <TableCell>
@@ -6478,7 +6564,14 @@ export default function SettingsManagement() {
                           <div className="text-sm">{p.type}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">{p.category}</div>
+                          <div className="flex flex-wrap gap-1">
+                            {(p.categoryIds || []).map((cid: string) => {
+                              const catName = categories.find(c => c.id === cid)?.name
+                              return catName ? (
+                                <Badge key={cid} variant="outline" className="text-xs">{catName}</Badge>
+                              ) : null
+                            })}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">{p.classification}</div>
@@ -6649,23 +6742,26 @@ export default function SettingsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm">Thể loại <span className="text-red-500">*</span></Label>
-                  <Select 
-                    value={productForm.categoryId} 
-                    onValueChange={(v)=>{
-                      setProductForm(prev=>({...prev,categoryId:v}))
-                      if (productFormErrors.categoryId) setProductFormErrors((prev: any)=>({...prev,categoryId:''}))
-                    }}
-                  >
-                    <SelectTrigger className={productFormErrors.categoryId ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Chọn thể loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {productFormErrors.categoryId && <p className="text-xs text-red-500 mt-1">{productFormErrors.categoryId}</p>}
+                  <div className={`mt-1.5 border rounded-lg p-3 space-y-2 max-h-[120px] overflow-y-auto ${productFormErrors.categoryIds ? 'border-red-500' : 'border-gray-200'}`}>
+                    {categories.map(cat => (
+                      <label key={cat.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded">
+                        <input
+                          type="checkbox"
+                          checked={productForm.categoryIds.includes(cat.id)}
+                          onChange={(e) => {
+                            const newIds = e.target.checked
+                              ? [...productForm.categoryIds, cat.id]
+                              : productForm.categoryIds.filter(id => id !== cat.id)
+                            setProductForm(prev => ({ ...prev, categoryIds: newIds }))
+                            if (productFormErrors.categoryIds) setProductFormErrors((prev: any) => ({ ...prev, categoryIds: '' }))
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm">{cat.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {productFormErrors.categoryIds && <p className="text-xs text-red-500 mt-1">{productFormErrors.categoryIds}</p>}
                 </div>
                 <div>
                   <Label className="text-sm">Phân loại sản phẩm <span className="text-red-500">*</span></Label>
@@ -6682,6 +6778,42 @@ export default function SettingsManagement() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Quy trình bán hàng (optional) */}
+              <div>
+                <Label className="text-sm">Quy trình bán hàng</Label>
+                {editingProduct && editingProduct.pipelineId ? (
+                  <div>
+                    <Input 
+                      value={(() => {
+                        const pipelineNames: Record<number, string> = { 1: 'Quy trình mặc định', 2: 'Quy trình Phần mềm', 3: 'Quy trình Dịch vụ' }
+                        return pipelineNames[editingProduct.pipelineId] || `Quy trình #${editingProduct.pipelineId}`
+                      })()}
+                      disabled
+                      className="bg-gray-50 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Quy trình đã gán không thể thay đổi
+                    </p>
+                  </div>
+                ) : (
+                  <Select 
+                    value={productForm.pipelineId} 
+                    onValueChange={(v) => setProductForm(prev => ({ ...prev, pipelineId: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Không chọn --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- Không chọn --</SelectItem>
+                      <SelectItem value="1">Quy trình mặc định</SelectItem>
+                      <SelectItem value="2">Quy trình Phần mềm</SelectItem>
+                      <SelectItem value="3">Quy trình Dịch vụ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Mô tả */}
@@ -6823,7 +6955,40 @@ export default function SettingsManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>{setShowProductModal(false); resetProductForm()}}>Hủy</Button>
-              <Button onClick={handleSaveProduct}>Đồng ý</Button>
+              <Button onClick={() => handleSaveProduct()}>Đồng ý</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Pipeline Confirmation Dialog */}
+        <Dialog open={showPipelineConfirm} onOpenChange={(open) => { if (!open) setShowPipelineConfirm(false) }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[#1a3353]">Xác nhận gán quy trình</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 px-6">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Quy trình bán hàng được gán cho sản phẩm sẽ <strong>không thể sửa, thay đổi hay gán quy trình khác</strong> được nữa.
+                  </p>
+                  <p className="text-sm text-gray-700 mt-2">
+                    Xác nhận sử dụng quy trình <strong className="text-blue-600">
+                      {(() => {
+                        const pipelineNames: Record<string, string> = { '1': 'Quy trình mặc định', '2': 'Quy trình Phần mềm', '3': 'Quy trình Dịch vụ' }
+                        return pipelineNames[productForm.pipelineId] || `Quy trình #${productForm.pipelineId}`
+                      })()}
+                    </strong> cho sản phẩm <strong className="text-blue-600">{productForm.name || 'chưa đặt tên'}</strong>?
+                  </p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowPipelineConfirm(false)}>Hủy bỏ</Button>
+              <Button onClick={handleConfirmPipelineSave}>Đồng ý</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -7427,20 +7592,21 @@ export default function SettingsManagement() {
   // PipelineManagement Component (Quản lý Quy trình bán hàng)
   // ============================================================
   const PipelineManagement = () => {
-    // Mock product categories
-    const productCategories = [
-      { id: 1, name: 'Phần mềm' },
-      { id: 2, name: 'Dịch vụ tư vấn' },
-      { id: 3, name: 'Phần cứng' },
-      { id: 4, name: 'Đào tạo' },
-      { id: 5, name: 'Bảo trì' },
+    // Mock products available for pipeline assignment
+    const availableProducts = [
+      { id: 'p1', name: 'CRM Pro', categoryNames: ['Phần mềm', 'Dịch vụ'], pipelineId: 2 },
+      { id: 'p2', name: 'Phần mềm kế toán', categoryNames: ['Phần mềm'], pipelineId: null },
+      { id: 'p3', name: 'Máy chủ Dell R740', categoryNames: ['Phần cứng'], pipelineId: null },
+      { id: 'p4', name: 'Gói tư vấn ERP', categoryNames: ['Dịch vụ'], pipelineId: 3 },
+      { id: 'p5', name: 'Gói bảo trì hệ thống', categoryNames: ['Dịch vụ', 'Combo'], pipelineId: null },
+      { id: 'p6', name: 'Combo Server + Phần mềm', categoryNames: ['Phần cứng', 'Combo'], pipelineId: null },
     ]
 
     type Pipeline = {
       id: number
       name: string
       description: string
-      categoryId: number | null
+      productIds: string[]
       isDefault: boolean
       stages: typeof sampleSalesStages
     }
@@ -7454,8 +7620,8 @@ export default function SettingsManagement() {
     ]
 
     const [pipelines, setPipelines] = useState<Pipeline[]>([
-      { id: 1, name: 'Quy trình mặc định', description: 'Quy trình bán hàng chung áp dụng cho tất cả sản phẩm', categoryId: null, isDefault: true, stages: sampleSalesStages },
-      { id: 2, name: 'Quy trình Phần mềm', description: 'Quy trình dành cho sản phẩm phần mềm', categoryId: 1, isDefault: false, stages: [
+      { id: 1, name: 'Quy trình mặc định', description: 'Quy trình bán hàng chung áp dụng cho tất cả sản phẩm', productIds: [], isDefault: true, stages: sampleSalesStages },
+      { id: 2, name: 'Quy trình Phần mềm', description: 'Quy trình dành cho sản phẩm phần mềm', productIds: ['p1'], isDefault: false, stages: [
         { id: 'new', name: 'Lead mới', description: '', color: '#3B82F6', order: 1, isActive: true, isFixed: true, autoTransition: { enabled: false, days: 1, nextStage: 'demo' } },
         { id: 'demo', name: 'Demo sản phẩm', description: 'Trình bày demo cho khách hàng', color: '#8B5CF6', order: 2, isActive: true, isFixed: false, autoTransition: { enabled: false, days: 3, nextStage: 'proposal' } },
         { id: 'proposal', name: 'Gửi báo giá', description: 'Đã gửi báo giá chi tiết', color: '#F59E0B', order: 3, isActive: true, isFixed: false, autoTransition: { enabled: false, days: 5, nextStage: 'negotiation' } },
@@ -7464,7 +7630,7 @@ export default function SettingsManagement() {
         { id: 'converted', name: 'Triển khai', description: 'Đã thanh toán, chuyển sang triển khai', color: '#10B981', order: 6, isActive: true, isFixed: true, autoTransition: { enabled: false, days: 0, nextStage: '' } },
         { id: 'lost', name: 'Thất bại', description: 'Không thành công', color: '#EF4444', order: 7, isActive: true, isFixed: true, autoTransition: { enabled: false, days: 0, nextStage: '' } },
       ] },
-      { id: 3, name: 'Quy trình Dịch vụ', description: 'Quy trình dành cho dịch vụ tư vấn', categoryId: 2, isDefault: false, stages: defaultStagesForNew },
+      { id: 3, name: 'Quy trình Dịch vụ', description: 'Quy trình dành cho dịch vụ tư vấn', productIds: ['p4'], isDefault: false, stages: defaultStagesForNew },
     ])
 
     const [selectedPipelineId, setSelectedPipelineId] = useState<number>(1)
@@ -7473,7 +7639,8 @@ export default function SettingsManagement() {
     const [showDeletePipelineConfirm, setShowDeletePipelineConfirm] = useState(false)
     const [pipelineToDelete, setPipelineToDelete] = useState<number | null>(null)
     const [showPipelineDropdown, setShowPipelineDropdown] = useState<number | null>(null)
-    const [pipelineForm, setPipelineForm] = useState({ name: '', description: '', categoryId: '' })
+    const [pipelineForm, setPipelineForm] = useState({ name: '', description: '', productIds: [] as string[] })
+    const [pipelineProductSearch, setPipelineProductSearch] = useState('')
     const [pipelineFormError, setPipelineFormError] = useState('')
     const [showAddStageModal_PL, setShowAddStageModal_PL] = useState(false)
     const [showEditStageModal_PL, setShowEditStageModal_PL] = useState(false)
@@ -7482,8 +7649,14 @@ export default function SettingsManagement() {
     const [draggedStageId_PL, setDraggedStageId_PL] = useState<string | null>(null)
 
     const selectedPipeline = pipelines.find(p => p.id === selectedPipelineId) || pipelines[0]
-    const takenCategoryIds = pipelines.filter(p => p.id !== selectedPipelineId && p.categoryId !== null).map(p => p.categoryId)
-    const takenCategoryIdsForAdd = pipelines.filter(p => p.categoryId !== null).map(p => p.categoryId)
+    // Get all product IDs taken by other pipelines
+    const getProductPipelineMap = () => {
+      const map: Record<string, number> = {}
+      pipelines.forEach(p => {
+        p.productIds.forEach(pid => { map[pid] = p.id })
+      })
+      return map
+    }
     const stageColorOptions = ['#3B82F6', '#F59E0B', '#8B5CF6', '#10B981', '#EC4899', '#EF4444', '#F97316', '#6366F1', '#14B8A6']
 
     const handleAddPipeline = () => {
@@ -7492,14 +7665,15 @@ export default function SettingsManagement() {
         id: Math.max(...pipelines.map(p => p.id)) + 1,
         name: pipelineForm.name.trim(),
         description: pipelineForm.description.trim(),
-        categoryId: pipelineForm.categoryId ? parseInt(pipelineForm.categoryId) : null,
+        productIds: pipelineForm.productIds,
         isDefault: false,
         stages: defaultStagesForNew
       }
       setPipelines(prev => [...prev, newPipeline])
       setSelectedPipelineId(newPipeline.id)
       setShowAddPipelineModal(false)
-      setPipelineForm({ name: '', description: '', categoryId: '' })
+      setPipelineForm({ name: '', description: '', productIds: [] })
+      setPipelineProductSearch('')
       setPipelineFormError('')
     }
 
@@ -7507,10 +7681,11 @@ export default function SettingsManagement() {
       if (!pipelineForm.name.trim()) { setPipelineFormError('Vui lòng nhập tên quy trình'); return }
       setPipelines(prev => prev.map(p =>
         p.id === selectedPipelineId
-          ? { ...p, name: pipelineForm.name.trim(), description: pipelineForm.description.trim(), categoryId: pipelineForm.categoryId ? parseInt(pipelineForm.categoryId) : null }
+          ? { ...p, name: pipelineForm.name.trim(), description: pipelineForm.description.trim(), productIds: pipelineForm.productIds }
           : p
       ))
       setShowEditPipelineModal(false)
+      setPipelineProductSearch('')
       setPipelineFormError('')
     }
 
@@ -7525,7 +7700,8 @@ export default function SettingsManagement() {
 
     const openEditModal = () => {
       const p = selectedPipeline
-      setPipelineForm({ name: p.name, description: p.description, categoryId: p.categoryId ? String(p.categoryId) : '' })
+      setPipelineForm({ name: p.name, description: p.description, productIds: p.productIds || [] })
+      setPipelineProductSearch('')
       setPipelineFormError('')
       setShowEditPipelineModal(true)
       setShowPipelineDropdown(null)
@@ -7642,7 +7818,7 @@ export default function SettingsManagement() {
             ))}
             <div
               className="flex items-center gap-2 px-3 py-2 mt-2 text-[#455560] hover:text-[#3e79f7] cursor-pointer transition-colors"
-              onClick={() => { setShowAddPipelineModal(true); setPipelineForm({ name: '', description: '', categoryId: '' }); setPipelineFormError('') }}
+              onClick={() => { setShowAddPipelineModal(true); setPipelineForm({ name: '', description: '', productIds: [] }); setPipelineProductSearch(''); setPipelineFormError('') }}
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm">Thêm quy trình</span>
@@ -7667,7 +7843,9 @@ export default function SettingsManagement() {
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs text-[#455560] bg-gray-100 px-2 py-0.5 rounded-full">
                     <Package className="w-3 h-3" />
-                    {productCategories.find(c => c.id === selectedPipeline.categoryId)?.name || 'Chưa gán danh mục'}
+                    {selectedPipeline.productIds.length > 0 
+                      ? `${selectedPipeline.productIds.length} sản phẩm` 
+                      : 'Chưa gán sản phẩm'}
                   </span>
                 )}
               </div>
@@ -7748,7 +7926,7 @@ export default function SettingsManagement() {
 
         {/* Modal: Thêm quy trình */}
         <Dialog open={showAddPipelineModal} onOpenChange={setShowAddPipelineModal}>
-          <DialogContent className="max-w-md p-0">
+          <DialogContent className="max-w-lg p-0">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
               <DialogTitle className="text-lg font-semibold text-[#1a3353]">Thêm quy trình mới</DialogTitle>
               <DialogDescription className="text-sm text-[#455560]">Tạo quy trình bán hàng mới cho sản phẩm/dịch vụ của bạn</DialogDescription>
@@ -7764,21 +7942,89 @@ export default function SettingsManagement() {
                 <Textarea id="pl-desc" placeholder="Mô tả quy trình này..." className="mt-1.5 min-h-[80px] resize-none" value={pipelineForm.description} onChange={(e) => setPipelineForm(prev => ({ ...prev, description: e.target.value }))} />
               </div>
               <div>
-                <Label htmlFor="pl-category" className="text-sm font-medium">Danh mục sản phẩm áp dụng</Label>
-                <select
-                  id="pl-category"
-                  value={pipelineForm.categoryId}
-                  onChange={(e) => setPipelineForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                  className="mt-1.5 w-full h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
-                >
-                  <option value="">-- Không gán (dùng làm mặc định) --</option>
-                  {productCategories.filter(c => !takenCategoryIdsForAdd.includes(c.id)).map(c => (
-                    <option key={c.id} value={String(c.id)}>{c.name}</option>
-                  ))}
-                </select>
+                <Label className="text-sm font-medium">Sản phẩm áp dụng</Label>
+                {/* Selected products chips */}
+                {pipelineForm.productIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5 mb-2">
+                    {pipelineForm.productIds.map(pid => {
+                      const prod = availableProducts.find(p => p.id === pid)
+                      return prod ? (
+                        <span key={pid} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                          {prod.name}
+                          <button onClick={() => setPipelineForm(prev => ({ ...prev, productIds: prev.productIds.filter(id => id !== pid) }))} className="hover:text-blue-900">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ) : null
+                    })}
+                  </div>
+                )}
+                {/* Search input */}
+                <div className="relative mt-1.5">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input 
+                    placeholder="Tìm kiếm sản phẩm..." 
+                    className="pl-9" 
+                    value={pipelineProductSearch} 
+                    onChange={(e) => setPipelineProductSearch(e.target.value)} 
+                  />
+                </div>
+                {/* Product list */}
+                <div className="mt-2 border border-gray-200 rounded-lg max-h-[180px] overflow-y-auto">
+                  {(() => {
+                    const productPipelineMap = getProductPipelineMap()
+                    const filtered = availableProducts.filter(p => 
+                      p.name.toLowerCase().includes(pipelineProductSearch.toLowerCase()) ||
+                      p.categoryNames.some(c => c.toLowerCase().includes(pipelineProductSearch.toLowerCase()))
+                    )
+                    return filtered.length > 0 ? filtered.map(product => {
+                      const assignedPipelineId = productPipelineMap[product.id]
+                      const isInOtherPipeline = assignedPipelineId && !pipelineForm.productIds.includes(product.id)
+                      const assignedPipelineName = isInOtherPipeline ? pipelines.find(p => p.id === assignedPipelineId)?.name : null
+                      const isSelected = pipelineForm.productIds.includes(product.id)
+                      return (
+                        <label 
+                          key={product.id} 
+                          className={`flex items-center gap-3 px-3 py-2.5 border-b border-gray-100 last:border-0 transition-colors ${
+                            isInOtherPipeline ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-blue-50'
+                          }`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={!!isInOtherPipeline}
+                            onChange={(e) => {
+                              if (isInOtherPipeline) return
+                              const newIds = e.target.checked
+                                ? [...pipelineForm.productIds, product.id]
+                                : pipelineForm.productIds.filter(id => id !== product.id)
+                              setPipelineForm(prev => ({ ...prev, productIds: newIds }))
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900 truncate">{product.name}</span>
+                              {isInOtherPipeline && assignedPipelineName && (
+                                <Badge className="text-[10px] bg-orange-100 text-orange-700 hover:bg-orange-100 px-1.5 py-0 flex-shrink-0">{assignedPipelineName}</Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-1 mt-0.5">
+                              {product.categoryNames.map((cat, i) => (
+                                <span key={i} className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{cat}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </label>
+                      )
+                    }) : (
+                      <div className="py-6 text-center text-sm text-gray-400">Không tìm thấy sản phẩm</div>
+                    )
+                  })()}
+                </div>
                 <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  Một danh mục sản phẩm chỉ thuộc một quy trình
+                  Một sản phẩm chỉ thuộc một quy trình bán hàng
                 </p>
               </div>
             </div>
@@ -7791,7 +8037,7 @@ export default function SettingsManagement() {
 
         {/* Modal: Sửa quy trình */}
         <Dialog open={showEditPipelineModal} onOpenChange={setShowEditPipelineModal}>
-          <DialogContent className="max-w-md p-0">
+          <DialogContent className="max-w-lg p-0">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#e6ebf1]">
               <DialogTitle className="text-lg font-semibold text-[#1a3353]">Chỉnh sửa quy trình</DialogTitle>
             </DialogHeader>
@@ -7807,21 +8053,90 @@ export default function SettingsManagement() {
               </div>
               {!selectedPipeline.isDefault && (
                 <div>
-                  <Label htmlFor="pl-edit-category" className="text-sm font-medium">Danh mục sản phẩm áp dụng</Label>
-                  <select
-                    id="pl-edit-category"
-                    value={pipelineForm.categoryId}
-                    onChange={(e) => setPipelineForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                    className="mt-1.5 w-full h-9 px-3 border border-[#e6ebf1] rounded-[10px] text-sm text-[#455560] hover:border-[#699dff] focus:outline-none focus:border-[#3e79f7] focus:ring-2 focus:ring-[#3e79f7]/20 transition-all duration-300"
-                  >
-                    <option value="">-- Không gán --</option>
-                    {productCategories.filter(c => !takenCategoryIds.includes(c.id) || c.id === selectedPipeline.categoryId).map(c => (
-                      <option key={c.id} value={String(c.id)}>{c.name}</option>
-                    ))}
-                  </select>
+                  <Label className="text-sm font-medium">Sản phẩm áp dụng</Label>
+                  {/* Selected products chips */}
+                  {pipelineForm.productIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5 mb-2">
+                      {pipelineForm.productIds.map(pid => {
+                        const prod = availableProducts.find(p => p.id === pid)
+                        return prod ? (
+                          <span key={pid} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                            {prod.name}
+                            <button onClick={() => setPipelineForm(prev => ({ ...prev, productIds: prev.productIds.filter(id => id !== pid) }))} className="hover:text-blue-900">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ) : null
+                      })}
+                    </div>
+                  )}
+                  {/* Search input */}
+                  <div className="relative mt-1.5">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input 
+                      placeholder="Tìm kiếm sản phẩm..." 
+                      className="pl-9" 
+                      value={pipelineProductSearch} 
+                      onChange={(e) => setPipelineProductSearch(e.target.value)} 
+                    />
+                  </div>
+                  {/* Product list */}
+                  <div className="mt-2 border border-gray-200 rounded-lg max-h-[180px] overflow-y-auto">
+                    {(() => {
+                      const productPipelineMap = getProductPipelineMap()
+                      const filtered = availableProducts.filter(p => 
+                        p.name.toLowerCase().includes(pipelineProductSearch.toLowerCase()) ||
+                        p.categoryNames.some(c => c.toLowerCase().includes(pipelineProductSearch.toLowerCase()))
+                      )
+                      return filtered.length > 0 ? filtered.map(product => {
+                        const assignedPipelineId = productPipelineMap[product.id]
+                        const isInCurrentPipeline = pipelineForm.productIds.includes(product.id)
+                        const isInOtherPipeline = assignedPipelineId && assignedPipelineId !== selectedPipelineId && !isInCurrentPipeline
+                        const assignedPipelineName = isInOtherPipeline ? pipelines.find(p => p.id === assignedPipelineId)?.name : null
+                        const isSelected = isInCurrentPipeline
+                        return (
+                          <label 
+                            key={product.id} 
+                            className={`flex items-center gap-3 px-3 py-2.5 border-b border-gray-100 last:border-0 transition-colors ${
+                              isInOtherPipeline ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-blue-50'
+                            }`}
+                          >
+                            <input 
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={!!isInOtherPipeline}
+                              onChange={(e) => {
+                                if (isInOtherPipeline) return
+                                const newIds = e.target.checked
+                                  ? [...pipelineForm.productIds, product.id]
+                                  : pipelineForm.productIds.filter(id => id !== product.id)
+                                setPipelineForm(prev => ({ ...prev, productIds: newIds }))
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900 truncate">{product.name}</span>
+                                {isInOtherPipeline && assignedPipelineName && (
+                                  <Badge className="text-[10px] bg-orange-100 text-orange-700 hover:bg-orange-100 px-1.5 py-0 flex-shrink-0">{assignedPipelineName}</Badge>
+                                )}
+                              </div>
+                              <div className="flex gap-1 mt-0.5">
+                                {product.categoryNames.map((cat, i) => (
+                                  <span key={i} className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{cat}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </label>
+                        )
+                      }) : (
+                        <div className="py-6 text-center text-sm text-gray-400">Không tìm thấy sản phẩm</div>
+                      )
+                    })()}
+                  </div>
                   <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
-                    Một danh mục sản phẩm chỉ thuộc một quy trình
+                    Một sản phẩm chỉ thuộc một quy trình bán hàng
                   </p>
                 </div>
               )}
@@ -7919,6 +8234,18 @@ export default function SettingsManagement() {
       {/* Sidebar Menu - Fixed */}
       <div className="w-52 border-r border-[#e6ebf1] pr-3 sticky top-0 self-start">
         <nav className="space-y-0.5">
+          {/* 0. Cài đặt chung */}
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'general'
+                ? 'text-[#3e79f7] bg-[#f0f7ff]'
+                : 'text-[#455560] hover:text-[#3e79f7] hover:bg-[#f8f9fa]'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Cài đặt chung
+          </button>
           {/* 1. Thiết Lập (Công ty) */}
           <button
             onClick={() => setActiveTab('company')}
@@ -8009,6 +8336,52 @@ export default function SettingsManagement() {
 
       {/* Main Content */}
       <div className="flex-1 pl-6">
+        {/* Cài đặt chung */}
+        {activeTab === 'general' && (
+          <div className="space-y-6">
+            {/* Nút Lưu thay đổi */}
+            <div className="flex justify-end">
+              <Button className="bg-[#3e79f7] text-white border border-[#3e79f7] rounded-[10px] hover:bg-[#699dff]">
+                <Save className="w-4 h-4 mr-2" />
+                Lưu thay đổi
+              </Button>
+            </div>
+            {/* Thuế GTGT - Collapsible */}
+            <div className="bg-white border border-[#e6ebf1] rounded-[10px]">
+              <button
+                onClick={() => setGeneralVatCollapsed(!generalVatCollapsed)}
+                className="w-full flex items-center justify-between p-6 text-left"
+              >
+                <div>
+                  <h2 className="text-base font-semibold text-[#1a3353]">Thuế giá trị gia tăng</h2>
+                </div>
+                {generalVatCollapsed ? (
+                  <ChevronRight className="w-5 h-5 text-[#455560]" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-[#455560]" />
+                )}
+              </button>
+              {!generalVatCollapsed && (
+                <div className="px-6 pb-6 -mt-2">
+                  <div className="flex items-center gap-3 mb-4">
+                    <input
+                      type="checkbox"
+                      id="tax-in-revenue"
+                      checked={includeTaxInRevenue}
+                      onChange={(e) => setIncludeTaxInRevenue(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#3e79f7] focus:ring-[#3e79f7]"
+                    />
+                    <label htmlFor="tax-in-revenue" className="text-sm text-[#455560] cursor-pointer select-none">
+                      Tính thuế vào doanh số nhân viên
+                    </label>
+                  </div>
+                  <TaxManagement />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'company' && <CompanyManagement />}
         
         {/* Phân quyền - 2 tabs: Vai trò, Gán quyền */}
@@ -8051,7 +8424,6 @@ export default function SettingsManagement() {
                 <TabsTrigger value="process" className="uppercase">Quy trình</TabsTrigger>
                 <TabsTrigger value="distribution" className="uppercase">Phân bố leads</TabsTrigger>
                 <TabsTrigger value="customerRanking" className="uppercase">Phân hạng khách hàng</TabsTrigger>
-                <TabsTrigger value="taxes" className="uppercase">Thuế GTGT</TabsTrigger>
                 <TabsTrigger value="labels" className="uppercase">Nhãn gán</TabsTrigger>
               </TabsList>
 
@@ -8603,9 +8975,7 @@ export default function SettingsManagement() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="taxes" className="space-y-4">
-                <TaxManagement />
-              </TabsContent>
+
 
               <TabsContent value="labels" className="space-y-4">
                 <div className="flex items-center justify-between">

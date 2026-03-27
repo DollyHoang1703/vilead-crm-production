@@ -69,40 +69,36 @@ export default function TaxManagement() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-[#1a3353]">Thuế giá trị gia tăng</h2>
-          <p className="text-sm text-[#455560]">Thuế giá trị gia tăng áp dụng cho đơn hàng</p>
-        </div>
-        <Button onClick={() => {
+        <Button size="sm" onClick={() => {
           setFormData({ id: '', name: '', description: '', rate: 0 });
           setShowAddModal(true);
         }}>
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Thêm mức thuế
         </Button>
       </div>
 
       <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
+        <CardContent className="pt-4">
+          <div className="space-y-2">
             {taxes.map((tax) => (
-              <div key={tax.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+              <div key={tax.id} className="flex items-center justify-between px-3 py-2.5 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-semibold text-blue-600">
                     {tax.rate}%
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">{tax.name}</h4>
-                    <p className="text-sm text-gray-500">{tax.description}</p>
+                    <h4 className="text-sm font-medium text-gray-900">{tax.name}</h4>
+                    <p className="text-xs text-gray-500">{tax.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <Switch checked={tax.isActive} onCheckedChange={() => toggleActive(tax.id)} />
-                  <Button variant="outline" size="sm" onClick={() => openEdit(tax)}>
-                    <Edit2 className="w-4 h-4" />
+                <div className="flex items-center space-x-2">
+                  <Switch className="scale-90" checked={tax.isActive} onCheckedChange={() => toggleActive(tax.id)} />
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => openEdit(tax)}>
+                    <Edit2 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => { setTaxToDelete(tax.id); setShowDeleteModal(true); }}>
-                    <Trash2 className="w-4 h-4" />
+                  <Button variant="outline" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => { setTaxToDelete(tax.id); setShowDeleteModal(true); }}>
+                    <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>

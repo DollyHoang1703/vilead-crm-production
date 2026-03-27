@@ -381,10 +381,7 @@ export default function SenderEmailConfig() {
                       Tên người gửi
                     </th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Trạng thái Brevo
-                    </th>
-                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Trạng thái ViLead
+                      Trạng thái
                     </th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Quyền sử dụng
@@ -417,9 +414,6 @@ export default function SenderEmailConfig() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <BrevoStatusBadge status={sender.brevo_status} />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <ViLeadStatusBadge status={sender.vilead_status} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <PermissionBadge type={sender.permission_type} />
@@ -472,7 +466,7 @@ export default function SenderEmailConfig() {
                                       {sender.vilead_status === 'active' ? (
                                         <>
                                           <Ban className="w-4 h-4 mr-3 text-gray-400" />
-                                          Vô hiệu hóa trên ViLead
+                                          Vô hiệu hóa sender
                                         </>
                                       ) : (
                                         <>
@@ -495,7 +489,7 @@ export default function SenderEmailConfig() {
                                     className="w-full px-4 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 flex items-center"
                                   >
                                     <ExternalLink className="w-4 h-4 mr-3 text-gray-400" />
-                                    Quản lý trên Brevo
+                                    Quản lý trên dịch vụ
                                   </a>
                                 </div>
                               )}

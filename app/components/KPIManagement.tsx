@@ -2575,8 +2575,8 @@ export default function KPIManagement() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div>
-                              <div className="font-medium">{new Date().toLocaleDateString('vi-VN')}</div>
-                              <div className="text-xs text-gray-500">{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                              <div className="font-medium" suppressHydrationWarning>{new Date().toLocaleDateString('vi-VN')}</div>
+                              <div className="text-xs text-gray-500" suppressHydrationWarning>{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -3132,8 +3132,8 @@ export default function KPIManagement() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <div>
-                                      <div className="font-medium">{new Date().toLocaleDateString('vi-VN')}</div>
-                                      <div className="text-xs text-gray-500">{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                      <div className="font-medium" suppressHydrationWarning>{new Date().toLocaleDateString('vi-VN')}</div>
+                                      <div className="text-xs text-gray-500" suppressHydrationWarning>{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -3420,8 +3420,8 @@ export default function KPIManagement() {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     <div>
-                                      <div className="font-medium">{new Date().toLocaleDateString('vi-VN')}</div>
-                                      <div className="text-xs text-gray-500">{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                      <div className="font-medium" suppressHydrationWarning>{new Date().toLocaleDateString('vi-VN')}</div>
+                                      <div className="text-xs text-gray-500" suppressHydrationWarning>{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
