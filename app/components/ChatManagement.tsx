@@ -94,6 +94,7 @@ import {
 import { cn } from '@/lib/utils'
 import CustomerDetailModal from './CustomerDetailModal'
 import { ChatShiftPermissionModal } from './chat/ChatShiftPermissionModal'
+import { TagManagementModal, ChatTag, PRESET_COLORS, SolidTagIcon } from './chat/TagManagementModal'
 
 // ===== TYPE DEFINITIONS =====
 
@@ -289,16 +290,26 @@ const lastMessages = [
 ]
 
 const tags = [
-  ['VIP', 'Quan tâm CRM'],
-  ['Hot Lead', 'Marketing'],
-  ['Mới', 'Tư vấn'],
-  ['Khách hàng cũ', 'Gia hạn'],
-  ['Startup', 'Tech'],
-  ['Ưu tiên'],
-  ['Demo'],
-  ['Báo giá'],
-  ['Hỗ trợ kỹ thuật'],
-  ['Tư vấn']
+  ['Khách hàng'],
+  ['Gia đình'],
+  ['Công việc'],
+  ['Bạn bè'],
+  ['Trả lời sau'],
+  ['Yobe'],
+  ['Khách tiềm năng'],
+  ['Trực page'],
+  ['Công việc'],
+  ['Ưu tiên']
+]
+
+const demoChatTags: ChatTag[] = [
+  { id: 't1', name: 'Khách hàng', color: '#EF4444' }, // Red
+  { id: 't2', name: 'Gia đình', color: '#22C55E' }, // Green
+  { id: 't3', name: 'Công việc', color: '#F97316' }, // Orange
+  { id: 't4', name: 'Bạn bè', color: '#3B82F6' }, // Blue
+  { id: 't5', name: 'Trả lời sau', color: '#EAB308' }, // Yellow
+  { id: 't6', name: 'Yobe', color: '#EC4899' }, // Pink
+  { id: 't7', name: 'Khách tiềm năng', color: '#991B1B' }, // Dark Red
 ]
 
 // Connected Zalo accounts
@@ -766,6 +777,10 @@ export default function ChatManagement() {
   const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'contacts'>('all')
   const [contactTab, setContactTab] = useState<'friends' | 'groups' | 'strangers'>('friends')
   const [selectedChannel, setSelectedChannel] = useState<'zalo-personal' | 'zalo-oa' | 'facebook'>('zalo-personal')
+  const [chatTags, setChatTags] = useState<ChatTag[]>(demoChatTags)
+  const [selectedTagFilters, setSelectedTagFilters] = useState<string[]>([])
+  const [showTagManagementModal, setShowTagManagementModal] = useState(false)
+  
   const [selectedAccount, setSelectedAccount] = useState<ZaloAccount>(connectedZaloAccounts[0])
   const [showAccountDropdown, setShowAccountDropdown] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<'zalo' | 'sync' | 'community' | 'files' | 'reminders'>('zalo')
@@ -1503,8 +1518,14 @@ export default function ChatManagement() {
     const matchesChannel = (selectedChannel === 'zalo-oa' || selectedChannel === 'facebook')
       ? conv.conversationType === 'individual'
       : true
+      
+    const matchesTags = selectedTagFilters.length === 0 || 
+      (conv.tags && conv.tags.some(t => 
+        selectedTagFilters.includes(t) || 
+        selectedTagFilters.map(id => chatTags.find(tag => tag.id === id)?.name).includes(t)
+      ));
     
-    return matchesSearch && matchesUnread && matchesChannel && matchesAccount && matchesPlatform
+    return matchesSearch && matchesUnread && matchesChannel && matchesAccount && matchesPlatform && matchesTags
   })
 
   const unreadCount = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
@@ -1811,6 +1832,52 @@ export default function ChatManagement() {
                   </Button>
                 )}
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 flex items-center gap-1">
+                    Phân loại <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 p-0 z-[60]">
+                  <div className="p-2 border-b bg-gray-50/50">
+                    <p className="text-xs font-semibold text-gray-500 uppercase">Theo thẻ phân loại</p>
+                  </div>
+                  <ScrollArea className="max-h-64">
+                    {chatTags.map(tag => (
+                      <div 
+                        key={tag.id} 
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (selectedTagFilters.includes(tag.id)) {
+                            setSelectedTagFilters(prev => prev.filter(t => t !== tag.id));
+                          } else {
+                            setSelectedTagFilters(prev => [...prev, tag.id]);
+                          }
+                        }}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTagFilters.includes(tag.id)} 
+                          readOnly 
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 mr-1"
+                        />
+                        <SolidTagIcon color={tag.color} className="w-3.5 h-3.5" />
+                        <span className="text-sm text-gray-700 font-medium truncate">{tag.name}</span>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                  <div className="p-2 border-t mt-1">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full text-xs h-8 justify-center hover:bg-gray-100 text-blue-600 font-medium"
+                      onClick={() => setShowTagManagementModal(true)}
+                    >
+                      Quản lý thẻ phân loại
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
               </>
             )}
@@ -2113,18 +2180,27 @@ export default function ChatManagement() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-0.5">
-                        <h4 className="font-semibold text-sm truncate pr-2 max-w-[180px]">
-                          {conversation.contact.name}
-                        </h4>
+                        <div className="flex items-center gap-2 overflow-hidden pr-2">
+                          <h4 className="font-semibold text-sm truncate max-w-[150px]">
+                            {conversation.contact.name}
+                          </h4>
+                          {conversation.tags && conversation.tags.length > 0 && (() => {
+                            const firstTag = chatTags.find(t => t.name === conversation.tags![0] || t.id === conversation.tags![0]);
+                            if (firstTag) {
+                              return <SolidTagIcon color={firstTag.color} className="w-[14px] h-[14px] flex-shrink-0" />;
+                            }
+                            return null;
+                          })()}
+                        </div>
                         <span className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
                           {formatConversationTime(conversation.lastMessageAt)}
                         </span>
                       </div>
 
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs text-gray-600 truncate flex-1 max-w-[200px]">
-                          {conversation.lastMessage?.content || 'Chưa có tin nhắn'}
-                        </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center text-xs text-gray-600 truncate flex-1 max-w-[200px]">
+                          <span className="truncate">{conversation.lastMessage?.content || 'Chưa có tin nhắn'}</span>
+                        </div>
 
                         {conversation.unreadCount > 0 && (
                           <Badge className="bg-red-500 text-white text-xs h-5 px-2 rounded-full flex-shrink-0">
@@ -2159,15 +2235,76 @@ export default function ChatManagement() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-base truncate">{selectedConversation.contact.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <p className="text-xs text-gray-500 whitespace-nowrap">
+                    <h3 className="font-semibold text-base truncate mb-0.5">{selectedConversation.contact.name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center text-xs text-gray-500">
                         {selectedConversation.contact.isActive ? (
-                          <span className="text-green-600">● Đang hoạt động</span>
+                          <span className="text-green-600 mr-2 whitespace-nowrap">● Đang hoạt động</span>
                         ) : (
-                          `Hoạt động ${formatConversationTime(selectedConversation.contact.lastContactedAt)} trước`
+                          <span className="mr-2 whitespace-nowrap">Truy cập {formatConversationTime(selectedConversation.contact.lastContactedAt)} trước</span>
                         )}
-                      </p>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-1 -ml-1 rounded transition-colors group h-5 py-3">
+                              {selectedConversation.tags && selectedConversation.tags.length > 0 ? (
+                                <>
+                                  <span className="text-gray-300">|</span>
+                                  {selectedConversation.tags.map(tagName => {
+                                    const tagMeta = chatTags.find(t => t.name === tagName || t.id === tagName);
+                                    if (!tagMeta) return null;
+                                    return (
+                                      <div key={tagName} className="flex items-center gap-1 -mt-[2px]">
+                                        <SolidTagIcon color={tagMeta.color} className="w-[15px] h-[15px]" />
+                                        <span className="font-semibold text-[13px] text-gray-700">{tagMeta.name}</span>
+                                      </div>
+                                    )
+                                  })}
+                                </>
+                              ) : (
+                                <button className="text-gray-400 group-hover:text-blue-500 p-0.5 rounded-sm transition-colors" title="Phân loại">
+                                  <Tag className="w-[14px] h-[14px]" />
+                                </button>
+                              )}
+                            </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-56 p-0 z-[60]">
+                              <div className="p-2 border-b bg-gray-50/50 flex justify-between items-center">
+                                <p className="text-xs font-semibold text-gray-500 uppercase">Phân loại</p>
+                              </div>
+                              <ScrollArea className="max-h-64">
+                                {chatTags.map(tag => {
+                                  const isAssigned = selectedConversation.tags?.includes(tag.name) || selectedConversation.tags?.includes(tag.id);
+                                  return (
+                                  <div 
+                                    key={tag.id} 
+                                    className={cn("flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors", isAssigned ? "bg-blue-50/50 hover:bg-blue-50" : "hover:bg-gray-50")}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      // Single selection logic: toggle current, remove others
+                                      const newTags = isAssigned ? [] : [tag.name];
+                                      
+                                      setSelectedConversation({...selectedConversation, tags: newTags});
+                                      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? {...c, tags: newTags} : c));
+                                    }}
+                                  >
+                                    <SolidTagIcon color={tag.color} className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span className={cn("text-sm font-medium truncate", isAssigned ? "text-blue-700" : "text-gray-700")}>{tag.name}</span>
+                                  </div>
+                                )})}
+                              </ScrollArea>
+                              <div className="p-2 border-t mt-1">
+                                <Button 
+                                  variant="ghost" 
+                                  className="w-full text-xs h-8 justify-center hover:bg-gray-100 text-blue-600 font-medium"
+                                  onClick={() => setShowTagManagementModal(true)}
+                                >
+                                  Quản lý thẻ phân loại
+                                </Button>
+                              </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                       {conversationCustomerMap.has(selectedConversation.id) && (() => {
                         const connectionInfo = conversationCustomerMap.get(selectedConversation.id)
                         const customerId = connectionInfo?.customerId || ''
@@ -4462,6 +4599,15 @@ export default function ChatManagement() {
           </div>
         )}
       </div>
+
+      <TagManagementModal
+        isOpen={showTagManagementModal}
+        onClose={() => setShowTagManagementModal(false)}
+        tags={chatTags}
+        onAddTag={(t) => setChatTags(prev => [...prev, t])}
+        onUpdateTag={(t) => setChatTags(prev => prev.map(tag => tag.id === t.id ? t : tag))}
+        onDeleteTag={(id) => setChatTags(prev => prev.filter(tag => tag.id !== id))}
+      />
 
       {/* Lead Detail Modal */}
       <CustomerDetailModal

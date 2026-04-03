@@ -13,7 +13,7 @@ import KPIManagement from './components/KPIManagement'
 import ReportsManagement from './components/ReportsManagement'
 import SettingsManagement from './components/SettingsManagement'
 import ChatManagement from './components/ChatManagement'
-import EmailMarketing from './components/EmailMarketing'
+import MarketingCampaigns from './components/MarketingCampaigns'
 import ChatbotAssistant from './components/ChatbotAssistantNew'
 // import VileadsChatbot from './components/VileadsChatbot'
 
@@ -70,7 +70,7 @@ export default function Home() {
       case 'chat':
         return <ChatManagement />
       case 'email-marketing':
-        return <EmailMarketing />
+        return <MarketingCampaigns />
       default:
         return userRole === 'accountant' ? <AccountantDashboard /> : <Dashboard />
     }
