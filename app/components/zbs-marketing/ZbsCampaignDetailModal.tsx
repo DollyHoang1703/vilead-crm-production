@@ -7,12 +7,11 @@ import {
   Send, 
   Check, 
   AlertCircle, 
-  Mail, 
-  MousePointer,
   Copy,
   Download,
   Pause,
-  Play
+  Play,
+  ExternalLink
 } from 'lucide-react';
 
 interface ZbsCampaign {
@@ -21,6 +20,12 @@ interface ZbsCampaign {
   status: 'draft' | 'running' | 'paused' | 'scheduled' | 'sent' | 'cancelled'
   recipientCount: number
   scheduledAt?: string
+  oa?: string
+  templateName?: string
+  templateId?: string
+  createdBy?: string
+  createdAt?: string
+  estimatedCost?: string
 }
 
 interface ZbsCampaignDetailModalProps {
@@ -31,7 +36,7 @@ interface ZbsCampaignDetailModalProps {
   onClone?: (campaign: ZbsCampaign) => void;
 }
 
-// Stat Card Component
+// Stat Card Component - Updated for 3 cards only
 function StatCard({
   label,
   value,
@@ -42,25 +47,23 @@ function StatCard({
   label: string;
   value: number;
   percentage?: number;
-  color: 'gray' | 'green' | 'red' | 'blue' | 'purple';
+  color: 'gray' | 'green' | 'red';
   icon: React.ElementType;
 }) {
   const colorClasses = {
     gray: 'text-gray-600 bg-gray-100',
     green: 'text-green-600 bg-green-100',
     red: 'text-red-600 bg-red-100',
-    blue: 'text-blue-600 bg-blue-100',
-    purple: 'text-purple-600 bg-purple-100'
   };
 
   return (
-    <div className="bg-white rounded-xl border p-4">
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon className="w-5 h-5" />
+    <div className="bg-white rounded-xl border p-5 flex-1">
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[color]}`}>
+          <Icon className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
           <p className="text-sm text-gray-500">{label}</p>
           {percentage !== undefined && (
             <p className="text-xs text-gray-400">{percentage.toFixed(1)}%</p>
@@ -95,39 +98,89 @@ const getStatusLabel = (status: string) => {
   }
 }
 
+// New recipient interface matching the image
+interface Recipient {
+  id: string;
+  templateName: string;
+  templateId: string;
+  oaName: string;
+  phone: string;
+  sentTime: string | null;
+  status: 'success' | 'failed';
+  cost: string;
+  costCharged: boolean;
+}
+
 export function ZbsCampaignDetailModal({ campaign, onClose, onPause, onResume, onClone }: ZbsCampaignDetailModalProps) {
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Hardcode fake stats for visual check
+  // Stats for 3 cards only
   const stats = {
     total_sent: campaign.recipientCount,
-    total_delivered: Math.floor(campaign.recipientCount * 0.95),
-    delivery_rate: 95.0,
-    total_bounced: Math.floor(campaign.recipientCount * 0.05),
-    bounce_rate: 5.0,
-    total_opened: Math.floor(campaign.recipientCount * 0.45),
-    open_rate: 45.0,
-    total_clicked: Math.floor(campaign.recipientCount * 0.12),
-    click_rate: 12.0
+    total_success: Math.floor(campaign.recipientCount * 0.95),
+    success_rate: 95.0,
+    total_failed: Math.floor(campaign.recipientCount * 0.05),
+    fail_rate: 5.0,
   };
 
-  const recipients = Array.from({ length: 5 }).map((_, i) => ({
-    id: i,
-    phone: `09${Math.floor(Math.random() * 100000000)}`,
-    name: `Khách hàng ${i + 1}`,
-    status: i === 4 ? 'failed' : 'delivered',
-    sentTime: '31/01/2026 16:00',
-    openTime: i < 3 ? '31/01/2026 16:15' : null,
-    opens: i < 3 ? 1 : 0
-  }))
+  // Mock recipients with new fields matching Image 5
+  const recipients: Recipient[] = [
+    {
+      id: '-',
+      templateName: 'TEST - Tra cứu hóa đơn GTGT',
+      templateId: '485941',
+      oaName: 'eEvent',
+      phone: '0387968624',
+      sentTime: null,
+      status: 'failed',
+      cost: '300đ',
+      costCharged: false
+    },
+    {
+      id: '-',
+      templateName: 'TEST - Tra cứu hóa đơn GTGT',
+      templateId: '485941',
+      oaName: 'eEvent',
+      phone: '0972945940',
+      sentTime: null,
+      status: 'failed',
+      cost: '300đ',
+      costCharged: false
+    },
+    {
+      id: 'd9f5706fa9d2be8ae7c5',
+      templateName: 'Thông báo thanh toán dịch vụ',
+      templateId: '464324',
+      oaName: 'eEvent',
+      phone: '0972945940',
+      sentTime: '01:09:35 05/04/2026',
+      status: 'success',
+      cost: '300đ',
+      costCharged: true
+    },
+    {
+      id: '9ff5376feed2f98aa0c5',
+      templateName: 'Thông báo thanh toán dịch vụ',
+      templateId: '464324',
+      oaName: 'eEvent',
+      phone: '0387968624',
+      sentTime: '01:09:36 05/04/2026',
+      status: 'success',
+      cost: '300đ',
+      costCharged: true
+    },
+  ];
 
   const statusTabs = [
-    { id: 'all', label: 'Tất cả', count: campaign.recipientCount },
-    { id: 'delivered', label: 'Thành công', count: stats.total_delivered },
-    { id: 'opened', label: 'Đã mở', count: stats.total_opened },
-    { id: 'clicked', label: 'Đã click', count: stats.total_clicked },
-    { id: 'failed', label: 'Thất bại', count: stats.total_bounced }
+    { id: 'all', label: 'Tất cả', count: stats.total_sent },
+    { id: 'success', label: 'Thành công', count: stats.total_success },
+    { id: 'failed', label: 'Thất bại', count: stats.total_failed }
   ];
+
+  const filteredRecipients = recipients.filter(r => {
+    if (filterStatus === 'all') return true;
+    return r.status === filterStatus;
+  });
 
   return (
     <div className="fixed inset-0 z-[100] bg-gray-50 flex flex-col overflow-hidden">
@@ -149,7 +202,7 @@ export function ZbsCampaignDetailModal({ campaign, onClose, onPause, onResume, o
                 </span>
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Tạo lúc 30/01/2026 22:00
+                Tạo lúc {campaign.createdAt || '30/01/2026 22:00'}
                 {campaign.status === 'running' || campaign.status === 'sent' ? ` • Bắt đầu lúc ${campaign.scheduledAt || '31/01/2026 16:00'}` : ''}
               </p>
             </div>
@@ -203,8 +256,8 @@ export function ZbsCampaignDetailModal({ campaign, onClose, onPause, onResume, o
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-5 gap-4">
+          {/* Stats Overview - Only 3 cards */}
+          <div className="grid grid-cols-3 gap-4">
             <StatCard
               label="Tổng gửi"
               value={stats.total_sent}
@@ -213,31 +266,17 @@ export function ZbsCampaignDetailModal({ campaign, onClose, onPause, onResume, o
             />
             <StatCard
               label="Thành công"
-              value={stats.total_delivered}
-              percentage={stats.delivery_rate}
+              value={stats.total_success}
+              percentage={stats.success_rate}
               color="green"
               icon={Check}
             />
             <StatCard
               label="Thất bại"
-              value={stats.total_bounced}
-              percentage={stats.bounce_rate}
+              value={stats.total_failed}
+              percentage={stats.fail_rate}
               color="red"
               icon={AlertCircle}
-            />
-            <StatCard
-              label="Đã mở"
-              value={stats.total_opened}
-              percentage={stats.open_rate}
-              color="blue"
-              icon={Mail}
-            />
-            <StatCard
-              label="Đã click"
-              value={stats.total_clicked}
-              percentage={stats.click_rate}
-              color="purple"
-              icon={MousePointer}
             />
           </div>
 
@@ -272,32 +311,69 @@ export function ZbsCampaignDetailModal({ campaign, onClose, onPause, onResume, o
               </div>
             </div>
 
-            {/* Table */}
+            {/* Table - Updated fields */}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SĐT</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên KH</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên mẫu ZNS</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên OA</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">SĐT/User ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thời gian gửi</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gửi lúc</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mở lúc</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Số lần mở</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chi phí</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {recipients.filter(r => filterStatus === 'all' || r.status === filterStatus || (filterStatus !== 'failed' && filterStatus !== 'delivered')).map(recipient => (
-                    <tr key={recipient.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{recipient.phone}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{recipient.name}</td>
-                      <td className="px-4 py-3">
-                         <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${recipient.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {recipient.status === 'delivered' ? 'Thành công' : 'Thất bại'}
-                        </span>
+                  {filteredRecipients.map((recipient, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-600 font-mono">
+                        {recipient.id === '-' ? '-' : recipient.id}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{recipient.sentTime}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{recipient.openTime || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{recipient.opens}</td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm text-gray-900">{recipient.templateName}</p>
+                          <a href="#" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                            Id: {recipient.templateId}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                            <span className="text-xs font-medium text-green-700">
+                              {recipient.oaName.charAt(0)}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-700">{recipient.oaName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{recipient.phone}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{recipient.sentTime || '-'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-sm font-medium ${
+                            recipient.status === 'success' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {recipient.status === 'success' ? 'Thành công' : 'Thất bại'}
+                          </span>
+                          <span className={`w-2 h-2 rounded-full ${
+                            recipient.status === 'success' ? 'bg-green-500' : 'bg-red-500'
+                          }`} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{recipient.cost}</p>
+                          {recipient.status === 'success' ? (
+                            <span className="text-xs text-gray-400">Đã tính phí</span>
+                          ) : (
+                            <span className="text-xs text-gray-400">Không tính phí</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

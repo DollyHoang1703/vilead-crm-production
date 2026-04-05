@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Bell, User, LogOut, Crown, Mail, Phone, Camera, Eye, EyeOff, Upload, Save, X, Settings } from 'lucide-react'
+import { Search, Bell, User, LogOut, Crown, Mail, Phone, Camera, Eye, EyeOff, Upload, Save, X, Settings, Sparkles, Download } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,48 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { defaultTaxes } from './settings/TaxManagement'
+
+// Sample system updates data
+const systemUpdates = [
+  {
+    id: 1,
+    date: "04-03-2026",
+    time: "9:30 am",
+    title: "Cập nhật trải nghiệm Người dùng & Tối ưu hóa UI",
+    description: "Phiên bản này mang đến một giao diện tươi mới, tập trung vào khả năng truy cập nhanh và giảm sự phân tâm cho người dùng.",
+    items: [
+      "Thêm nút 'Cập nhật hệ thống' trên thanh Header để dễ theo dõi Changelog",
+      "Giao diện chuẩn hóa theo tone màu Blue / Orange mới của ViLead",
+      "Khắc phục triệt để lỗi Hydration liên quan đến đồng hồ máy khách",
+      "Hợp nhất các Filter chọn Pipeline thành một component duy nhất"
+    ]
+  },
+  {
+    id: 2,
+    date: "03-15-2026",
+    time: "2:15 pm",
+    title: "Ra mắt tính năng Email Marketing B2B",
+    description: "Bộ công cụ mới giúp tự động hóa quy trình nuôi dưỡng Leads, thiết kế Email Drag & Drop thông minh.",
+    items: [
+      "Tích hợp trình kéo thả thiết kế Template Email",
+      "Gửi email hàng loạt theo điều kiện tệp khách hàng",
+      "Báo cáo chuyên sâu: On-time delivery, Open rate, Click-through rate",
+      "A/B Testing các chiến dịch nhỏ"
+    ]
+  },
+  {
+    id: 3,
+    date: "02-02-2026",
+    time: "10:00 am",
+    title: "Cải tiến module Báo cáo Doanh thu",
+    description: "Cung cấp cái nhìn đa chiều về dòng tiền và hiệu suất thực tế của đội ngũ kinh doanh.",
+    items: [
+      "Báo cáo hiệu suất theo cấp độ: Phòng ban > Đội nhóm > Cá nhân",
+      "Bộ lọc thời gian linh hoạt trực tiếp trên biểu đồ",
+      "Bổ sung chỉ số Growth (Tăng trưởng so với tháng trước)"
+    ]
+  }
+];
 
 // Sample notifications data
 const notifications = [
@@ -179,6 +221,8 @@ const notifications = [
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [unreadCount, setUnreadCount] = useState(4)
+  const [updateUnreadCount, setUpdateUnreadCount] = useState(systemUpdates.length)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   
   // Notification tab state
@@ -513,8 +557,29 @@ export default function Header() {
         {/* Actions */}
         <div className="flex items-center space-x-4">
           
-          {/* Notifications */}
-          <Popover>
+          <div className="flex items-center gap-1">
+            {/* Updates */}
+            <button 
+              className="relative p-2 text-gray-400 hover:text-blue-500 transition-colors"
+              onClick={() => {
+                setShowUpdateModal(true)
+                setUpdateUnreadCount(0)
+              }}
+              title="Cập nhật hệ thống"
+            >
+              <Download className="w-[22px] h-[22px]" />
+              {updateUnreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 w-5 h-5 text-xs flex items-center justify-center"
+                >
+                  {updateUnreadCount}
+                </Badge>
+              )}
+            </button>
+
+            {/* Notifications */}
+            <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
@@ -795,6 +860,7 @@ export default function Header() {
               </div>
             </PopoverContent>
           </Popover>
+          </div>
 
           {/* User Profile Dropdown */}
           <DropdownMenu>
@@ -2550,6 +2616,63 @@ export default function Header() {
               Xóa
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* System Updates Timeline Modal */}
+      <Dialog open={showUpdateModal} onOpenChange={setShowUpdateModal}>
+        <DialogContent className="max-w-[960px] p-0 overflow-hidden rounded-[10px] sm:rounded-[10px] border-none shadow-2xl">
+          {/* Header */}
+          <div className="bg-white px-10 py-4 border-b border-gray-100 relative">
+            <h2 className="text-[20px] font-bold text-[#1a3353] tracking-tight">Lịch sử cập nhật hệ thống</h2>
+          </div>
+          
+          <div className="bg-[#f8f9fc] px-10 py-8 max-h-[75vh] overflow-y-auto w-full">
+            <div className="relative">
+              {/* Timeline continuous line */}
+              <div className="absolute left-[156px] top-4 bottom-8 w-[2px] border-l-[1.5px] border-dashed border-[#c3d9fb]"></div>
+
+              {systemUpdates.map((update, index) => (
+                <div key={update.id} className="relative pl-[200px] pb-10 group">
+                  {/* Left side Date */}
+                  <div className="absolute left-0 top-0.5 w-[130px] flex justify-end mt-0.5 whitespace-nowrap">
+                    <span className="text-[#5f6e7c] font-medium text-[13px] flex gap-2">
+                       <span>{update.date}</span>
+                       <span className="w-[60px] text-left">{update.time}</span>
+                    </span>
+                  </div>
+
+                  {/* Timeline node */}
+                  <div className="absolute left-[150px] top-1.5 flex items-center justify-center w-[13px] h-[13px] bg-white border-[2px] border-[#397cf6] rounded-full z-10 transition-transform group-hover:scale-110">
+                     <div className="w-[4px] h-[4px] bg-[#397cf6] rounded-full"></div>
+                  </div>
+
+                  {/* Content right */}
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-3 mt-0.5">
+                      <h3 className="text-[16.5px] font-bold text-[#1a3353]">{update.title}</h3>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-2 bg-white p-5 rounded-[12px] shadow-sm border border-[#e6ebf1]">
+                      <p className="font-medium text-gray-700 mb-4 italic text-[13.5px]">
+                        {update.description}
+                      </p>
+                      <div className="space-y-3.5">
+                        {update.items.map((item, idx) => (
+                          <div key={idx} className="flex items-start">
+                            <span className="text-[#397cf6] mr-2.5 mt-[5px] text-[7px] flex-shrink-0">●</span>
+                            <span className="text-[#5f6e7c] leading-relaxed block text-[13.5px]">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* End of timeline arrow */}
+              <div className="absolute left-[153px] bottom-[-5px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-[#c3d9fb]"></div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </header>

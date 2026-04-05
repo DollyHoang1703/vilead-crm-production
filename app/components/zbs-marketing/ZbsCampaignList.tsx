@@ -24,6 +24,7 @@ import ZbsConnectionModal from './ZbsConnectionModal'
 import { ZbsCampaignCreator } from './ZbsCampaignCreator'
 import { ZbsConfirmStartModal } from './ZbsConfirmStartModal'
 import { ZbsCampaignDetailModal } from './ZbsCampaignDetailModal'
+import { ZbsCampaignWizardModal } from './ZbsCampaignWizardModal'
 import { StopCircle, BarChart2 } from 'lucide-react'
 
 interface ZbsCampaign {
@@ -32,49 +33,91 @@ interface ZbsCampaign {
   status: 'draft' | 'running' | 'paused' | 'scheduled' | 'sent' | 'cancelled'
   recipientCount: number
   scheduledAt?: string
+  // New fields
+  oa?: string
+  templateName?: string
+  templateId?: string
+  createdBy?: string
+  createdAt?: string
+  estimatedCost?: string
 }
 
 // ==================== MOCK DATA ====================
 const mockCampaigns: ZbsCampaign[] = [
   {
     id: 'zbs-1',
-    name: 'Draft - Test thời gian gửi',
-    status: 'draft',
-    recipientCount: 295,
+    name: 'Chiến dịch 05/04/2026',
+    status: 'sent',
+    recipientCount: 1,
+    oa: 'eEvent',
+    templateName: 'TEST - Tra cứu hóa đơn GTGT',
+    templateId: '485941',
+    createdBy: 'MKT',
+    createdAt: '02:44 05/04/2026',
+    estimatedCost: '600đ'
   },
   {
     id: 'zbs-2',
-    name: 'Khảo sát khách hàng Q1',
-    status: 'draft',
-    recipientCount: 275,
+    name: 'Chiến dịch 05/04/2026',
+    status: 'sent',
+    recipientCount: 2,
+    oa: 'eEvent',
+    templateName: 'Thông báo thanh toán dịch vụ',
+    templateId: '464324',
+    createdBy: 'MKT',
+    createdAt: '01:08 05/04/2026',
+    estimatedCost: '600đ'
   },
   {
     id: 'zbs-3',
-    name: 'Giới thiệu sản phẩm mới',
-    status: 'running',
-    recipientCount: 780,
-    scheduledAt: '31/01/2026 17:00'
+    name: 'Khảo sát khách hàng Q1',
+    status: 'draft',
+    recipientCount: 275,
+    oa: 'eEvent',
+    templateName: 'Khảo sát ý kiến khách hàng',
+    templateId: '485920',
+    createdBy: 'MKT',
+    createdAt: '15:30 04/04/2026',
+    estimatedCost: '82,500đ'
   },
   {
     id: 'zbs-4',
-    name: 'Tin nhắn chào mừng tự động',
-    status: 'scheduled',
-    recipientCount: 195,
-    scheduledAt: '31/01/2026 16:00'
+    name: 'Giới thiệu sản phẩm mới',
+    status: 'running',
+    recipientCount: 780,
+    scheduledAt: '31/01/2026 17:00',
+    oa: 'CCycle AI',
+    templateName: 'Thông báo sản phẩm mới',
+    templateId: '464325',
+    createdBy: 'Admin',
+    createdAt: '10:00 30/01/2026',
+    estimatedCost: '234,000đ'
   },
   {
     id: 'zbs-5',
-    name: 'Thông báo ưu đãi Tết 2026',
-    status: 'sent',
-    recipientCount: 1200,
-    scheduledAt: '15/01/2026 09:00'
+    name: 'Tin nhắn chào mừng tự động',
+    status: 'scheduled',
+    recipientCount: 195,
+    scheduledAt: '31/01/2026 16:00',
+    oa: 'eEvent',
+    templateName: 'Chào mừng khách hàng mới',
+    templateId: '464326',
+    createdBy: 'MKT',
+    createdAt: '09:00 29/01/2026',
+    estimatedCost: '58,500đ'
   },
   {
     id: 'zbs-6',
-    name: 'Nhắc hẹn tự động',
-    status: 'scheduled',
-    recipientCount: 45,
-    scheduledAt: '05/04/2026 08:00',
+    name: 'Thông báo ưu đãi Tết 2026',
+    status: 'sent',
+    recipientCount: 1200,
+    scheduledAt: '15/01/2026 09:00',
+    oa: 'CCycle AI',
+    templateName: 'Chương trình Tết 2026',
+    templateId: '464327',
+    createdBy: 'Admin',
+    createdAt: '22:00 14/01/2026',
+    estimatedCost: '360,000đ'
   },
 ]
 
@@ -120,6 +163,7 @@ export default function ZbsCampaignList() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [showConnectionModal, setShowConnectionModal] = useState(false)
   const [showCampaignCreator, setShowCampaignCreator] = useState(false)
+  const [showCampaignWizard, setShowCampaignWizard] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   
   // Dropdown states for OA selection
@@ -149,7 +193,7 @@ export default function ZbsCampaignList() {
 
   const handleEdit = (campaign: ZbsCampaign) => {
     setSelectedCampaign(campaign)
-    setShowCampaignCreator(true)
+    setShowCampaignWizard(true)
     setOpenMenuId(null)
   }
 
@@ -377,7 +421,7 @@ export default function ZbsCampaignList() {
             <p className="text-sm text-gray-500 mt-0.5">Quản lý và theo dõi các chiến dịch gửi ZBS</p>
           </div>
           <button 
-            onClick={() => setShowCampaignCreator(true)}
+            onClick={() => setShowCampaignWizard(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -423,28 +467,25 @@ export default function ZbsCampaignList() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-1">
-                    Tên chiến dịch
-                    <ChevronDown className="w-3 h-3" />
-                  </div>
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-1">
-                    Người nhận
-                    <ChevronDown className="w-3 h-3" />
-                  </div>
+                  Tên chiến dịch
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-1">
-                    Thời gian gửi
-                    <ChevronDown className="w-3 h-3" />
-                  </div>
+                  OA
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-1">
-                    
-                  </div>
+                  Mẫu tin
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Người tạo
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ngày tạo
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Chi phí dự kiến
                 </th>
                 <th className="w-12 px-3 py-3"></th>
               </tr>
@@ -455,33 +496,58 @@ export default function ZbsCampaignList() {
                 return (
                   <tr key={campaign.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-5 py-4">
-                      <div>
-                        <p className="text-sm font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
-                          {campaign.name}
-                        </p>
-                      </div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {campaign.name}
+                      </p>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
-                        <span className={`text-sm font-medium ${statusCfg.color}`}>{statusCfg.label}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        {campaign.recipientCount.toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      {campaign.scheduledAt ? (
-                        <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          {campaign.scheduledAt}
+                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                          <span className="text-xs font-medium text-green-700">
+                            {campaign.oa?.charAt(0) || 'O'}
+                          </span>
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">-</span>
-                      )}
+                        <span className="text-sm text-gray-700">{campaign.oa || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div>
+                        <p className="text-sm text-gray-900">{campaign.templateName || '-'}</p>
+                        {campaign.templateId && (
+                          <a 
+                            href="#" 
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            Id: {campaign.templateId}
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-sm text-gray-700">{campaign.createdBy || '-'}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-sm text-gray-700">{campaign.createdAt || '-'}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
+                        campaign.status === 'sent' ? 'bg-green-100 text-green-700' :
+                        campaign.status === 'running' ? 'bg-blue-100 text-blue-700' :
+                        campaign.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                        campaign.status === 'scheduled' ? 'bg-purple-100 text-purple-700' :
+                        campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {statusCfg.label === 'Đã gửi' ? 'Hoàn thành' : statusCfg.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-medium text-green-600">{campaign.estimatedCost || '-'}</span>
                     </td>
                     <td className="px-3 py-4">
                       <div className="relative">
@@ -556,7 +622,7 @@ export default function ZbsCampaignList() {
         />
       )}
 
-      {/* Campaign Creator Modal */}
+      {/* Campaign Creator Modal (Old - kept for edit mode) */}
       {showCampaignCreator && (
         <ZbsCampaignCreator 
           initialCampaign={selectedCampaign}
@@ -566,6 +632,21 @@ export default function ZbsCampaignList() {
           }}
         />
       )}
+
+      {/* Campaign Wizard Modal (New - 4 steps flow) */}
+      <ZbsCampaignWizardModal
+        open={showCampaignWizard}
+        onClose={() => {
+          setShowCampaignWizard(false)
+          setSelectedCampaign(null)
+        }}
+        editCampaign={selectedCampaign}
+        mode={selectedCampaign ? 'edit' : 'create'}
+        onSaveDraft={(draft) => {
+          console.log('Draft saved:', draft)
+          // TODO: Save draft to server
+        }}
+      />
 
       {/* Delete Confirm Modal */}
       {modals.delete && selectedCampaign && (

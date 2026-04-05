@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import ZbsCampaignList from './ZbsCampaignList'
 import ZbsTemplateLibrary from './ZbsTemplateLibrary'
+import { ZbsReportsDashboard } from './ZbsReportsDashboard'
 
 // ==================== MAIN COMPONENT ====================
 export default function ZbsMarketing() {
@@ -45,18 +46,7 @@ export default function ZbsMarketing() {
       <div>
         {activeTab === 'campaigns' && <ZbsCampaignList />}
         {activeTab === 'templates' && <ZbsTemplateLibrary />}
-        {activeTab === 'reports' && (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
-              <BarChart3 className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Báo cáo chất lượng</h3>
-            <p className="text-gray-500 max-w-md">
-              Tính năng báo cáo chất lượng chiến dịch ZBS đang được phát triển.
-              <br />Vui lòng quay lại sau.
-            </p>
-          </div>
-        )}
+        {activeTab === 'reports' && <ZbsReportsDashboard />}
       </div>
     </div>
   )

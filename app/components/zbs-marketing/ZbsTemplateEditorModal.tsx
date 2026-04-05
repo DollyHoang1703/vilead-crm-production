@@ -23,6 +23,14 @@ export interface ZbsTemplate {
   type: 'system' | 'user';
   content?: string;
   buttons?: Array<{ type: 'web' | 'phone', label: string, value: string }>;
+  znsId?: string;
+  templateType?: string;
+  oa?: string;
+  price?: string;
+  priceUserId?: string;
+  ztime?: string;
+  quality?: string;
+  purpose?: string;
 }
 
 interface ZbsTemplateEditorModalProps {

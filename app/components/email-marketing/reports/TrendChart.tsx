@@ -100,23 +100,6 @@ export function TrendChart({
           <BarChart3 className="h-5 w-5 text-blue-500" />
           <h3 className="text-lg font-semibold text-gray-900">Xu hướng gửi email</h3>
         </div>
-        
-        {/* Interval selector */}
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-          {INTERVAL_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onIntervalChange(option.value as 'day' | 'week' | 'month')}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                interval === option.value 
-                  ? 'bg-white text-blue-600 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Legend / Metric toggles */}

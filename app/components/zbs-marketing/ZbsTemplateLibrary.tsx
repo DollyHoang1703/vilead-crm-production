@@ -3,20 +3,15 @@
 import React, { useState } from 'react'
 import {
   Search,
-  Folder,
-  User,
   Inbox,
   Eye,
-  Copy,
-  Edit,
-  Trash2,
   MoreVertical,
-  Calendar,
-  MessageSquare
+  MessageSquare,
+  Plus
 } from 'lucide-react'
 
-import { ZbsTemplateEditorModal } from './ZbsTemplateEditorModal';
-import { ZbsPreviewModal, ZbsDeleteTemplateModal } from './ZbsTemplateModals';
+import { ZbsPreviewModal } from './ZbsTemplateModals';
+import { ZbsCampaignQuickCreateModal } from './ZbsCampaignQuickCreateModal';
 
 // ==================== TYPES ====================
 interface ZbsTemplate {
@@ -30,82 +25,146 @@ interface ZbsTemplate {
   type: 'system' | 'user'
   content?: string
   buttons?: Array<{ type: 'web' | 'phone', label: string, value: string }>
+  znsId?: string
+  templateType?: string
+  oa?: string
+  price?: string
+  priceUserId?: string
+  ztime?: string
+  quality?: string
+  purpose?: string
 }
 
 // ==================== MOCK DATA ====================
 const mockSystemTemplates: ZbsTemplate[] = [
   {
     id: 'zbs-tpl-1',
+    znsId: '485941',
     name: 'Chào mừng khách hàng mới',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Chào mừng',
     description: 'Template chào mừng khi có khách hàng mới đăng ký',
+    price: '300đ',
     status: 'approved',
     usageCount: 1250,
     updatedAt: '2026-01-15T00:00:00Z',
-    type: 'system'
+    type: 'system',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'CSKH'
   },
   {
     id: 'zbs-tpl-2',
+    znsId: '464324',
     name: 'Xác nhận đơn hàng',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Giao dịch',
     description: 'Thông báo xác nhận đơn hàng đã được tiếp nhận',
+    price: '300đ',
     status: 'approved',
     usageCount: 890,
     updatedAt: '2026-01-10T00:00:00Z',
-    type: 'system'
+    type: 'system',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'Giao dịch'
   },
   {
     id: 'zbs-tpl-3',
+    znsId: '464318',
     name: 'Nhắc lịch hẹn',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Nhắc nhở',
     description: 'Nhắc nhở khách hàng về lịch hẹn sắp tới',
+    price: '300đ',
     status: 'approved',
     usageCount: 670,
     updatedAt: '2026-01-08T00:00:00Z',
-    type: 'system'
+    type: 'system',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'CSKH'
   },
   {
     id: 'zbs-tpl-4',
+    znsId: '464339',
     name: 'Khuyến mãi đặc biệt',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Khuyến mãi',
     description: 'Thông báo chương trình khuyến mãi, giảm giá',
+    price: '300đ',
     status: 'approved',
     usageCount: 2100,
     updatedAt: '2026-01-20T00:00:00Z',
-    type: 'system'
+    type: 'system',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'Khuyến mãi'
   },
 ]
 
 const mockUserTemplates: ZbsTemplate[] = [
   {
     id: 'zbs-utpl-1',
+    znsId: '480001',
     name: 'Chương trình Tết 2026',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Khuyến mãi',
     description: 'Template khuyến mãi Tết Nguyên Đán 2026',
+    price: '300đ',
     status: 'approved',
     usageCount: 45,
     updatedAt: '2026-01-28T00:00:00Z',
-    type: 'user'
+    type: 'user',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'Khuyến mãi'
   },
   {
     id: 'zbs-utpl-2',
+    znsId: '480002',
     name: 'Follow up khách hàng VIP',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Chăm sóc',
     description: 'Template chăm sóc dành cho khách VIP',
+    price: '300đ',
     status: 'approved',
     usageCount: 23,
     updatedAt: '2026-01-20T00:00:00Z',
-    type: 'user'
+    type: 'user',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'CSKH'
   },
   {
     id: 'zbs-utpl-3',
+    znsId: '480003',
     name: 'Giới thiệu sản phẩm mới',
+    templateType: 'Dạng bảng',
+    oa: 'eEvent',
     category: 'Marketing',
     description: 'Thông báo ra mắt sản phẩm / dịch vụ mới',
+    price: '300đ',
     status: 'pending',
     usageCount: 0,
     updatedAt: '2026-01-30T00:00:00Z',
-    type: 'user'
+    type: 'user',
+    priceUserId: '0đ/ZBS',
+    ztime: '7.200 giây',
+    quality: 'Chưa được xác định',
+    purpose: 'Khuyến mãi'
   },
 ]
 
@@ -132,15 +191,17 @@ const getPlaceholderBg = (name: string) => {
 function ZbsTemplateCard({
   template,
   showEditActions,
+  showCreateCampaign = true,
   onPreview,
-  onClone,
+  onCreateCampaign,
   onEdit,
   onDelete,
 }: {
   template: ZbsTemplate
   showEditActions: boolean
+  showCreateCampaign?: boolean
   onPreview: (t: ZbsTemplate) => void
-  onClone: (t: ZbsTemplate) => void
+  onCreateCampaign: (t: ZbsTemplate) => void
   onEdit?: (t: ZbsTemplate) => void
   onDelete?: (t: ZbsTemplate) => void
 }) {
@@ -149,7 +210,7 @@ function ZbsTemplateCard({
 
   return (
     <div
-      className="relative bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer group hover:shadow-lg hover:border-indigo-300 transition-all duration-200"
+      className="relative bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer group hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -158,88 +219,80 @@ function ZbsTemplateCard({
       onClick={() => onPreview(template)}
     >
       {/* Thumbnail */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        {/* Placeholder gradient */}
+      <div className="relative h-32 bg-gray-100 overflow-hidden shrink-0">
         <div className={`w-full h-full bg-gradient-to-br ${getPlaceholderBg(template.name)} flex items-center justify-center`}>
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-            <MessageSquare className="w-10 h-10 text-white" />
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <MessageSquare className="w-6 h-6 text-white" />
           </div>
         </div>
 
         {/* Hover Overlay with actions */}
         <div 
           className={`
-            absolute inset-0 bg-black/50 flex items-center justify-center gap-3
+            absolute inset-0 bg-black/60 flex items-center justify-center gap-3
             transition-opacity duration-200
             ${isHovered ? 'opacity-100' : 'opacity-0'}
           `}
         >
           <button
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onPreview(template);
             }}
           >
-            <Eye className="w-4 h-4" />
-            Xem trước
+            <Eye className="w-3.5 h-3.5" />
+            Xem chi tiết
           </button>
-          <button
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClone(template);
-            }}
-          >
-            <Copy className="w-4 h-4" />
-            Tạo bản sao
-          </button>
+          {showCreateCampaign && template.status === 'approved' && (
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateCampaign(template);
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tạo chiến dịch
+            </button>
+          )}
         </div>
 
-        {/* System Badge */}
-        {template.type === 'system' && (
-          <span className="absolute top-3 left-3 px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
-            Mẫu có sẵn
-          </span>
-        )}
+        {/* Badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1.5">
+          {template.type === 'system' && (
+            <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-medium rounded shadow-sm">
+              Mẫu có sẵn
+            </span>
+          )}
+          {template.type === 'user' && template.status !== 'approved' && (
+            <span className={`px-2 py-0.5 text-[10px] font-medium rounded shadow-sm ${
+              template.status === 'pending'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-red-500 text-white'
+            }`}>
+              {template.status === 'pending' ? 'Chợ duyệt' : 'Từ chối'}
+            </span>
+          )}
+        </div>
 
-        {/* Status indicator for user templates */}
-        {template.type === 'user' && template.status !== 'approved' && (
-          <span className={`absolute top-3 left-3 px-2 py-1 text-xs font-medium rounded-full shadow-sm ${
-            template.status === 'pending'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}>
-            {template.status === 'pending' ? 'Chờ duyệt' : 'Từ chối'}
-          </span>
-        )}
-
-        {/* Usage count badge */}
         {template.usageCount > 0 && (
-          <span className="absolute top-3 right-3 px-2 py-1 bg-gray-800/70 text-white text-xs font-medium rounded-full">
+          <span className="absolute top-2 right-2 px-2 py-0.5 bg-gray-800/80 text-white text-[10px] font-medium rounded shadow-sm">
             Đã dùng {template.usageCount} lần
           </span>
         )}
       </div>
 
-      {/* Info */}
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-gray-900 truncate" title={template.name}>
-              {template.name}
-            </h3>
-            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{formatDate(template.updatedAt)}</span>
-            </div>
-          </div>
-
-          {/* Actions Menu (only for user templates) */}
+      {/* Info Stack (like table rows) */}
+      <div className="p-4 flex-1 flex flex-col text-sm">
+        <div className="flex items-start justify-between mb-3 min-h-[40px]">
+          <h3 className="font-semibold text-gray-900 leading-tight line-clamp-2" title={template.name}>
+            {template.name}
+          </h3>
           {showEditActions && onEdit && onDelete && (
-            <div className="relative">
+            <div className="relative shrink-0 ml-2">
               <button
-                className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMenu(!showMenu);
@@ -248,7 +301,6 @@ function ZbsTemplateCard({
                 <MoreVertical className="w-4 h-4" />
               </button>
 
-              {/* Dropdown Menu */}
               {showMenu && (
                 <>
                   <div 
@@ -258,39 +310,28 @@ function ZbsTemplateCard({
                       setShowMenu(false);
                     }}
                   />
-                  <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                  <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
                     <button
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(false);
                         onEdit(template);
                       }}
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-3.5 h-3.5" />
                       Chỉnh sửa
-                    </button>
-                    <button
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(false);
-                        onClone(template);
-                      }}
-                    >
-                      <Copy className="w-4 h-4" />
-                      Sao chép
                     </button>
                     <hr className="my-1 border-gray-100" />
                     <button
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(false);
                         onDelete(template);
                       }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                       Xóa
                     </button>
                   </div>
@@ -299,46 +340,52 @@ function ZbsTemplateCard({
             </div>
           )}
         </div>
+
+        <div className="space-y-2 mt-auto">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">ID:</span>
+            <span className="font-medium text-gray-900">{template.znsId || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Loại mẫu:</span>
+            <span className="text-gray-800">{template.templateType || 'Dạng bảng'}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">OA:</span>
+            <span className="text-gray-800">{template.oa || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Ngày tạo:</span>
+            <span className="text-gray-800">{formatDate(template.updatedAt)}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Giá bán:</span>
+            <span className="font-medium text-green-600">{template.price || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs mt-1 pt-2 border-t border-gray-100">
+            <span className="text-gray-500">Trạng thái:</span>
+            <span className={`font-medium ${template.status === 'approved' ? 'text-green-600' : template.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}`}>
+              {template.status === 'approved' ? 'Đã duyệt' : template.status === 'pending' ? 'Chở duyệt' : 'Từ chối'}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-// ==================== CREATE CARD ====================
-function CreateNewTemplateCard({ onClick }: { onClick: () => void }) {
-  return (
-    <div
-      className="relative bg-white rounded-xl border-2 border-dashed border-gray-300 overflow-hidden cursor-pointer group hover:border-indigo-400 hover:bg-indigo-50/30 transition-all duration-200"
-      onClick={onClick}
-    >
-      <div className="flex flex-col items-center justify-center h-[264px] text-center p-6">
-        <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 group-hover:bg-indigo-200 transition-colors">
-          <span className="text-3xl font-light text-indigo-600">+</span>
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-2">Tạo mới</h3>
-        <p className="text-sm text-gray-500">
-          Tạo mẫu ZNS campaign mới
-        </p>
-      </div>
-    </div>
-  )
-}
+
 
 // ==================== MAIN COMPONENT ====================
 export default function ZbsTemplateLibrary() {
-  const [activeTab, setActiveTab] = useState<'system' | 'user'>('system')
   const [searchQuery, setSearchQuery] = useState('')
   
-  // States for Modals
-  const [userTemplates, setUserTemplates] = useState<ZbsTemplate[]>(mockUserTemplates)
+  // States for Modals - Only user templates now (combined)
+  const [templates] = useState<ZbsTemplate[]>([...mockUserTemplates])
   const [selectedTemplate, setSelectedTemplate] = useState<ZbsTemplate | null>(null)
   
-  const [editorMode, setEditorMode] = useState<'create' | 'edit' | 'clone'>('create')
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-
-  const templates = activeTab === 'system' ? mockSystemTemplates : userTemplates
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false)
 
   const filteredTemplates = templates.filter(t =>
     t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -351,88 +398,15 @@ export default function ZbsTemplateLibrary() {
     setIsPreviewOpen(true)
   }
 
-  const handleClone = (t: ZbsTemplate) => {
+  const handleCreateCampaign = (t: ZbsTemplate) => {
     setSelectedTemplate(t)
-    setEditorMode('clone')
-    setIsEditorOpen(true)
-  }
-  
-  const handleEdit = (t: ZbsTemplate) => {
-    setSelectedTemplate(t)
-    setEditorMode('edit')
-    setIsEditorOpen(true)
-  }
-  
-  const handleDeleteTrigger = (t: ZbsTemplate) => {
-    setSelectedTemplate(t)
-    setIsDeleteOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (selectedTemplate) {
-      setUserTemplates(prev => prev.filter(t => t.id !== selectedTemplate.id))
-    }
-  }
-
-  const handleSaveTemplate = async (data: Partial<ZbsTemplate>) => {
-    return new Promise<{ success: boolean; message: string }>((resolve) => {
-      setTimeout(() => {
-        if (editorMode === 'create' || editorMode === 'clone') {
-          const newTemplate: ZbsTemplate = {
-            id: `zbs-tpl-${Date.now()}`,
-            name: data.name || '',
-            category: data.category || '',
-            description: '',
-            status: 'pending',
-            usageCount: 0,
-            updatedAt: data.updatedAt || new Date().toISOString(),
-            type: 'user',
-            content: data.content,
-            buttons: data.buttons
-          };
-          setUserTemplates(prev => [newTemplate, ...prev]);
-        } else if (editorMode === 'edit' && selectedTemplate) {
-          setUserTemplates(prev => prev.map(t => 
-            t.id === selectedTemplate.id ? { ...t, ...data } as ZbsTemplate : t
-          ));
-        }
-        setIsEditorOpen(false);
-        resolve({ success: true, message: 'Đã lưu template' });
-      }, 500);
-    });
+    setIsQuickCreateOpen(true)
   }
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex items-center gap-4 border-b border-gray-200">
-        <button
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'system'
-              ? 'text-indigo-600 border-indigo-600'
-              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-          }`}
-          onClick={() => setActiveTab('system')}
-        >
-          <Folder className="w-4 h-4" />
-          Kho mẫu ZBS
-        </button>
-        <button
-          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'user'
-              ? 'text-indigo-600 border-indigo-600'
-              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-          }`}
-          onClick={() => setActiveTab('user')}
-        >
-          <User className="w-4 h-4" />
-          Mẫu ZBS của bạn
-        </button>
-      </div>
-
-      {/* Search & Actions */}
+      {/* Search */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -446,23 +420,15 @@ export default function ZbsTemplateLibrary() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {activeTab === 'user' && (
-          <CreateNewTemplateCard onClick={() => {
-            setSelectedTemplate(null);
-            setEditorMode('create');
-            setIsEditorOpen(true);
-          }} />
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
         {filteredTemplates.map(template => (
           <ZbsTemplateCard
             key={template.id}
             template={template}
-            showEditActions={activeTab === 'user'}
+            showEditActions={false}
+            showCreateCampaign={true}
             onPreview={handlePreview}
-            onClone={handleClone}
-            onEdit={handleEdit}
-            onDelete={handleDeleteTrigger}
+            onCreateCampaign={handleCreateCampaign}
           />
         ))}
       </div>
@@ -474,53 +440,43 @@ export default function ZbsTemplateLibrary() {
             <Inbox className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {searchQuery ? 'Không tìm thấy mẫu' : activeTab === 'user' ? 'Bạn chưa có mẫu ZNS nào' : 'Chưa có mẫu ZNS có sẵn'}
+            {searchQuery ? 'Không tìm thấy mẫu' : 'Chưa có mẫu ZNS nào'}
           </h3>
           <p className="text-gray-500 mb-6 max-w-sm">
-            {searchQuery ? 'Thử tìm với từ khóa khác' : activeTab === 'user' ? 'Tạo mẫu đầu tiên hoặc clone từ mẫu có sẵn' : 'Hệ thống sẽ cập nhật mẫu có sẵn sớm'}
+            {searchQuery ? 'Thử tìm với từ khóa khác' : 'Liên hệ Vilead-CRM để được hỗ trợ đăng ký mẫu ZNS mới'}
           </p>
-          {activeTab === 'user' && (
-            <button
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              onClick={() => {
-                setSelectedTemplate(null);
-                setEditorMode('create');
-                setIsEditorOpen(true);
-              }}
-            >
-              + Tạo mẫu mới
-            </button>
-          )}
         </div>
       )}
 
-      {/* Results count */}
+      {/* Results count & Note */}
       {filteredTemplates.length > 0 && (
-        <div className="flex items-center justify-between text-sm text-gray-500 mt-6">
-          <span>Hiển thị {filteredTemplates.length} / {templates.length} mẫu</span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <span>Hiển thị {filteredTemplates.length} / {templates.length} mẫu</span>
+          </div>
+          
+          {/* Red Note */}
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600 font-medium">
+              <span className="font-semibold">Lưu ý:</span> Khách hàng muốn đăng ký template ZBS mới vui lòng liên hệ Vilead-CRM để được hỗ trợ đăng ký.
+            </p>
+          </div>
         </div>
       )}
 
       {/* Modals */}
-      <ZbsTemplateEditorModal
-        open={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        mode={editorMode}
-        template={selectedTemplate}
-        onSave={handleSaveTemplate}
-      />
-      
       <ZbsPreviewModal
         open={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
         template={selectedTemplate}
+        onCreateCampaign={handleCreateCampaign}
+        showCreateCampaign={true}
       />
-      
-      <ZbsDeleteTemplateModal
-        open={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
+
+      <ZbsCampaignQuickCreateModal
+        open={isQuickCreateOpen}
+        onClose={() => setIsQuickCreateOpen(false)}
         template={selectedTemplate}
-        onConfirm={handleDeleteConfirm}
       />
     </div>
   )
