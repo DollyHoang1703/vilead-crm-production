@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Users,
   Calendar,
-  TrendingUp,
   ChevronDown,
   Link2,
   Send,

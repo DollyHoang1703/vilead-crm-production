@@ -44,7 +44,7 @@ interface TemplateParam {
 }
 
 interface ParsedDataRow {
-  [key: string]: string;
+  [key: string]: string | boolean | string[] | undefined;
   _valid?: boolean;
   _errors?: string[];
 }
@@ -483,7 +483,7 @@ function Step3VerifyData({
                 <tr key={i} className={`hover:bg-gray-50/50 ${row._valid === false ? 'bg-red-50' : ''}`}>
                   {template.params.map((param, j) => (
                     <td key={j} className="py-2.5 px-4 text-gray-700">
-                      {row[param.name] || '-'}
+                      {typeof row[param.name] === 'string' ? row[param.name] : '-'}
                     </td>
                   ))}
                 </tr>
@@ -660,7 +660,7 @@ export function ZbsCampaignWizardModal({
   };
 
   const { completed, total } = getCompletionStatus();
-  const isComplete = completed === total && (sendTime === 'now' || (scheduleDate && scheduleTime));
+  const isComplete = completed === total && (sendTime === 'now' || (scheduleDate !== '' && scheduleTime !== ''));
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
@@ -718,12 +718,12 @@ export function ZbsCampaignWizardModal({
     onClose();
   };
 
-  const canProceed = () => {
+  const canProceed = (): boolean => {
     switch (step) {
       case 1: return selectedTemplate !== null;
       case 2: return uploadedFile !== null || parsedData.length > 0;
       case 3: return validCount > 0;
-      case 4: return campaignName.trim() !== '' && (sendTime === 'now' || (scheduleDate && scheduleTime));
+      case 4: return campaignName.trim() !== '' && (sendTime === 'now' || (scheduleDate !== '' && scheduleTime !== ''));
       default: return false;
     }
   };

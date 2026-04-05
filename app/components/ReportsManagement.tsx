@@ -2363,7 +2363,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
-            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-omi-ease focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
             </button>
@@ -2590,7 +2590,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
-            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-omi-ease focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
             </button>
@@ -2980,7 +2980,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               selectedEmployee={reportEmployeeFilter}
               onEmployeeChange={setReportEmployeeFilter}
             />
-            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+            <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-omi-ease focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
               <Download className="w-4 h-4 mr-2" />
               Xuất Excel
             </button>
@@ -3252,7 +3252,7 @@ export default function ReportsManagement({ onNavigate }: { onNavigate?: (view: 
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
                 {/* Export Button */}
                 <div className="flex justify-end mb-4">
-                  <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-[cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
+                  <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-300 ease-omi-ease focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,121,247,0.2)] focus-visible:ring-offset-0 disabled:pointer-events-none disabled:opacity-50 border border-[#3e79f7] rounded-[10px] hover:border-[#699dff] active:bg-[#2a59d1] active:border-[#2a59d1] h-10 px-4 py-[8.5px] bg-green-600 hover:bg-green-700 text-white">
                     <Download className="w-4 h-4 mr-2" />
                     Xuất dữ liệu
                   </button>

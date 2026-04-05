@@ -5,6 +5,8 @@ import {
   Search,
   Inbox,
   Eye,
+  Edit,
+  Trash2,
   MoreVertical,
   MessageSquare,
   Plus
@@ -36,81 +38,6 @@ interface ZbsTemplate {
 }
 
 // ==================== MOCK DATA ====================
-const mockSystemTemplates: ZbsTemplate[] = [
-  {
-    id: 'zbs-tpl-1',
-    znsId: '485941',
-    name: 'Chào mừng khách hàng mới',
-    templateType: 'Dạng bảng',
-    oa: 'eEvent',
-    category: 'Chào mừng',
-    description: 'Template chào mừng khi có khách hàng mới đăng ký',
-    price: '300đ',
-    status: 'approved',
-    usageCount: 1250,
-    updatedAt: '2026-01-15T00:00:00Z',
-    type: 'system',
-    priceUserId: '0đ/ZBS',
-    ztime: '7.200 giây',
-    quality: 'Chưa được xác định',
-    purpose: 'CSKH'
-  },
-  {
-    id: 'zbs-tpl-2',
-    znsId: '464324',
-    name: 'Xác nhận đơn hàng',
-    templateType: 'Dạng bảng',
-    oa: 'eEvent',
-    category: 'Giao dịch',
-    description: 'Thông báo xác nhận đơn hàng đã được tiếp nhận',
-    price: '300đ',
-    status: 'approved',
-    usageCount: 890,
-    updatedAt: '2026-01-10T00:00:00Z',
-    type: 'system',
-    priceUserId: '0đ/ZBS',
-    ztime: '7.200 giây',
-    quality: 'Chưa được xác định',
-    purpose: 'Giao dịch'
-  },
-  {
-    id: 'zbs-tpl-3',
-    znsId: '464318',
-    name: 'Nhắc lịch hẹn',
-    templateType: 'Dạng bảng',
-    oa: 'eEvent',
-    category: 'Nhắc nhở',
-    description: 'Nhắc nhở khách hàng về lịch hẹn sắp tới',
-    price: '300đ',
-    status: 'approved',
-    usageCount: 670,
-    updatedAt: '2026-01-08T00:00:00Z',
-    type: 'system',
-    priceUserId: '0đ/ZBS',
-    ztime: '7.200 giây',
-    quality: 'Chưa được xác định',
-    purpose: 'CSKH'
-  },
-  {
-    id: 'zbs-tpl-4',
-    znsId: '464339',
-    name: 'Khuyến mãi đặc biệt',
-    templateType: 'Dạng bảng',
-    oa: 'eEvent',
-    category: 'Khuyến mãi',
-    description: 'Thông báo chương trình khuyến mãi, giảm giá',
-    price: '300đ',
-    status: 'approved',
-    usageCount: 2100,
-    updatedAt: '2026-01-20T00:00:00Z',
-    type: 'system',
-    priceUserId: '0đ/ZBS',
-    ztime: '7.200 giây',
-    quality: 'Chưa được xác định',
-    purpose: 'Khuyến mãi'
-  },
-]
-
 const mockUserTemplates: ZbsTemplate[] = [
   {
     id: 'zbs-utpl-1',

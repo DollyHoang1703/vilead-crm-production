@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import { 
   X, 
   ArrowLeft,
-  Send, 
   Check, 
   AlertCircle, 
   Copy,
   Download,
   Pause,
   Play,
-  ExternalLink
+  ExternalLink,
+  Send
 } from 'lucide-react';
 
 interface ZbsCampaign {
