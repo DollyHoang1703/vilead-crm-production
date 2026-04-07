@@ -151,7 +151,7 @@ export function PermissionTab({
                 Email
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                Phạm vi quyền
+                Phạm vi truy cập
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase w-20">
                 
@@ -225,7 +225,7 @@ export function PermissionTab({
                                   {option.label}
                                   {isAdminOption && currentAdminId && currentAdminId !== emp.id && (
                                     <span className="text-xs text-orange-500 ml-2">
-                                      (sẽ thay thế admin hiện tại)
+                                      (sẽ thay thế chủ sở hữu hiện tại)
                                     </span>
                                   )}
                                 </span>

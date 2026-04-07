@@ -4756,7 +4756,7 @@ export default function ChatManagement() {
                               className="text-xs h-8 px-3 border-gray-300 hover:bg-gray-50 hover:border-[#3e79f7] hover:text-[#3e79f7] rounded-md"
                             >
                               <Calendar className="w-3.5 h-3.5 mr-1.5" />
-                              Phân ca
+                              Phân ca trực
                             </Button>
                             <Button
                               size="sm"

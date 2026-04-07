@@ -202,7 +202,7 @@ export function ChatShiftPermissionModal({
 
   const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: 'permission', label: 'Thiết lập nhân viên', icon: Users },
-    { id: 'shift', label: 'Phân ca', icon: Calendar },
+    { id: 'shift', label: 'Phân ca trực', icon: Calendar },
     { id: 'history', label: 'Lịch sử', icon: History },
   ]
 

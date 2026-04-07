@@ -95,9 +95,9 @@ export const DAYS_OF_WEEK = [
 
 // Permission level options for dropdown
 export const PERMISSION_LEVEL_OPTIONS = [
-  { value: 'admin', label: 'Quản trị', description: 'Quản lý tài khoản' },
+  { value: 'admin', label: 'Chủ sở hữu', description: 'Quản lý tài khoản' },
   { value: 'member', label: 'Truy cập', description: 'Phải có ca trực mới nhận chat' },
-  { value: 'none', label: 'Không có quyền', description: 'Không thể xem tài khoản này' },
+  { value: 'none', label: 'Không được truy cập', description: 'Không thể xem tài khoản này' },
 ] as const
 
 // Default shift settings
