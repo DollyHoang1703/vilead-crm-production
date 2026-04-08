@@ -14,6 +14,8 @@ import ReportsManagement from './components/ReportsManagement'
 import SettingsManagement from './components/SettingsManagement'
 import ChatManagement from './components/ChatManagement'
 import MarketingCampaigns from './components/MarketingCampaigns'
+import AutomationManagement from './components/automation/AutomationManagement'
+
 import ChatbotAssistant from './components/ChatbotAssistantNew'
 // import VileadsChatbot from './components/VileadsChatbot'
 
@@ -71,6 +73,8 @@ export default function Home() {
         return <ChatManagement />
       case 'email-marketing':
         return <MarketingCampaigns />
+      case 'automation':
+        return <AutomationManagement />
       default:
         return userRole === 'accountant' ? <AccountantDashboard /> : <Dashboard />
     }
@@ -86,7 +90,7 @@ export default function Home() {
       />
       <div className="flex-1 flex flex-col overflow-hidden" style={{ marginLeft: '256px' }}>
         <Header />
-        <main className={currentView === 'chat' ? 'flex-1 overflow-hidden' : 'flex-1 overflow-auto p-6'}>
+        <main className={['chat', 'automation'].includes(currentView) ? 'flex-1 overflow-hidden' : 'flex-1 overflow-auto p-6'}>
           {renderContent()}
         </main>
       </div>

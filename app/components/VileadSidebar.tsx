@@ -17,7 +17,8 @@ import {
   X,
   CreditCard,
   MessageSquare,
-  Megaphone
+  Megaphone,
+  Workflow
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -120,6 +121,15 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Chiến dịch Marketing",
       iconText: "📣",
       tooltip: "Chiến dịch Marketing: Email & ZBS Marketing",
+      roles: ["admin", "leader", "sale"],
+      disabled: false
+    },
+    {
+      id: 'automation',
+      icon: Workflow,
+      label: "Automation",
+      iconText: "⚡",
+      tooltip: "Automation: Luồng tin nhắn & Kịch bản chăm sóc",
       roles: ["admin", "leader", "sale"],
       disabled: false
     },
